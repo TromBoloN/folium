@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { requireUser } from "@/features/auth/queries";
@@ -34,7 +36,12 @@ async function SettingsContent() {
           <p className="text-muted-foreground text-sm">
             Signed in as <span className="text-foreground">{user.email}</span>
           </p>
-          <SignOutButton />
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/update-password">Change password</Link>
+            </Button>
+            <SignOutButton />
+          </div>
         </CardContent>
       </Card>
     </div>

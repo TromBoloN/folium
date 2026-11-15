@@ -43,6 +43,15 @@ export const courseInputSchema = z.object({
   lecturer: optionalText(120, "Lecturer"),
   room: optionalText(80, "Room"),
   semester: optionalText(60, "Semester"),
+  /** Credit units (SKS); 0 = not counted in the GPA. Blank means 0. */
+  credits: z.preprocess(
+    (v) => (v === "" || v == null ? 0 : typeof v === "string" ? Number(v) : v),
+    z
+      .number("Credits must be a number.")
+      .min(0, "Credits can't be negative.")
+      .max(24, "Credits can be at most 24.")
+      .refine((v) => Number.isInteger(v * 10), "Use at most one decimal place."),
+  ),
 });
 
 export type CourseInput = z.infer<typeof courseInputSchema>;
@@ -55,5 +64,6 @@ export type Course = {
   lecturer: string | null;
   room: string | null;
   semester: string | null;
+  credits: number;
   archivedAt: string | null;
 };

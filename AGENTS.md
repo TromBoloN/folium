@@ -28,6 +28,9 @@ Package manager: `bun`. Stack: Next.js App Router, strict TS, Tailwind v4 (CSS-v
 - **UI & tokens:** Mobile-first; always handle empty, loading, and error states. Use CSS-variable theme tokens only—no hardcoded colors, radii, or fonts.
 - **Domain:** Use `text` + named `CHECK` constraints (not Postgres enums) for statuses/priorities. Merge versioned JSON settings over defaults on read. Store UTC timestamps; display/interpret in `Asia/Makassar`.
 
+## Current stage
+Stages 1–6 of the v1 plan are done (foundation, auth + settings, courses + timetable, tasks, Today dashboard, polish: password reset, error/not-found pages, axe accessibility suite, e2e in CI, security review, demo seed, README screenshots), plus grades (credits, assessments, grade scale, GPA, Grades widget). Next: deploy to a hosted Supabase project + Vercel. Read `docs/documentation/00-start-here.md` before exploring the code.
+
 ## Workflow
 - log real decisions in `docs/documentation/decisions.md`.
 - Pass before finishing: `bun run typecheck`, `bunx biome check .`, `bun run test`, `bunx supabase test db`.

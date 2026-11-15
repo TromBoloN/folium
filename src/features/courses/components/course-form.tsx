@@ -29,7 +29,9 @@ const TEXT_FIELDS = [
 export function CourseForm(props: Props) {
   const [state, action, pending] = useActionState(props.mode === "create" ? createCourse : updateCourse, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
-  const initial: Record<string, string | null | undefined> = props.course ?? {};
+  const initial: Record<string, string | null | undefined> = props.course
+    ? { ...props.course, credits: String(props.course.credits) }
+    : {};
   const value = (name: string) => state?.values?.[name] ?? initial[name] ?? "";
   const cancelHref = props.mode === "edit" ? `/courses/${props.course.id}` : "/courses";
 
@@ -55,6 +57,28 @@ export function CourseForm(props: Props) {
           </Field>
         );
       })}
+
+      <Field
+        id="credits"
+        label="Credits (SKS)"
+        optional
+        error={errors.credits}
+        hint="Used to weight your GPA. Leave 0 for things that aren't graded."
+      >
+        <Input
+          id="credits"
+          name="credits"
+          type="number"
+          inputMode="decimal"
+          min={0}
+          max={24}
+          step="0.5"
+          defaultValue={value("credits") || "0"}
+          className="w-28"
+          aria-invalid={errors.credits ? true : undefined}
+          aria-describedby={describedBy("credits", errors.credits, "hint")}
+        />
+      </Field>
 
       <ColorField
         // Remount with the submitted colour if the server sends the form back.

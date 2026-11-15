@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
+import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { DashboardEditor } from "@/features/dashboard/components/dashboard-editor";
@@ -96,9 +97,11 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
             href={widget.href}
             hrefLabel={widget.hrefLabel}
           >
-            <Suspense fallback={<WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />}>
-              <widget.Component />
-            </Suspense>
+            <SectionErrorBoundary label={widget.title}>
+              <Suspense fallback={<WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />}>
+                <widget.Component />
+              </Suspense>
+            </SectionErrorBoundary>
           </WidgetFrame>
         );
       })}

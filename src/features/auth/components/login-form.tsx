@@ -30,7 +30,12 @@ export function LoginForm({ next, notice }: Props) {
         />
       </div>
       <div className="grid gap-2">
-        <Label htmlFor="password">Password</Label>
+        <div className="flex items-center justify-between">
+          <Label htmlFor="password">Password</Label>
+          <Link href="/forgot-password" className="text-muted-foreground text-sm underline-offset-4 hover:underline">
+            Forgot password?
+          </Link>
+        </div>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
       <FormError message={error} />

@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from "@/lib/dates";
+import { DEFAULT_GRADE_SCALE, gradeScaleSchema } from "../grades/scale";
 
 /**
  * Settings are stored as JSON in user_settings, one column per group, holding
@@ -41,6 +42,8 @@ export const preferencesSchema = z.object({
   language: z.enum(LANGUAGES),
   /** IANA zone. Decides "today", week boundaries and when date-only deadlines end. */
   timeZone: z.string().refine(isValidTimeZone, "Choose a time zone from the list."),
+  /** Percentage → letter → grade points. Default: Indonesian 4.0 scale. */
+  gradeScale: gradeScaleSchema,
 });
 
 export type Theme = z.infer<typeof themeSchema>;
@@ -60,6 +63,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   timeFormat: "24h",
   language: "en",
   timeZone: DEFAULT_TIME_ZONE,
+  gradeScale: DEFAULT_GRADE_SCALE,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -90,7 +94,8 @@ export function mergeOverDefaults<S extends Shape>(
 export function diffFromDefaults<T extends Record<string, unknown>>(value: T, defaults: T): Partial<T> {
   const diff: Partial<T> = {};
   for (const key of Object.keys(value) as (keyof T)[]) {
-    if (value[key] !== defaults[key]) diff[key] = value[key];
+    // Compare by value: arrays/objects (e.g. the grade scale) are never === their default.
+    if (JSON.stringify(value[key]) !== JSON.stringify(defaults[key])) diff[key] = value[key];
   }
   return diff;
 }

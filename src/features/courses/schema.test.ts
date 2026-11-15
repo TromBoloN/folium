@@ -6,7 +6,15 @@ describe("courseInputSchema", () => {
   it("trims text and turns empty optional fields into null", () => {
     expect(
       courseInputSchema.parse({ name: "  Calculus ", code: "", color: "#2F9E44", lecturer: " Dr. Ana ", room: "" }),
-    ).toEqual({ name: "Calculus", code: null, color: "#2f9e44", lecturer: "Dr. Ana", room: null, semester: null });
+    ).toEqual({
+      name: "Calculus",
+      code: null,
+      color: "#2f9e44",
+      lecturer: "Dr. Ana",
+      room: null,
+      semester: null,
+      credits: 0,
+    });
   });
 
   it("requires a name and a valid colour", () => {
@@ -67,5 +75,18 @@ describe("slotInputSchema", () => {
   it("rejects impossible dates and out-of-range weekdays", () => {
     expect(slotInputSchema.safeParse({ ...base, startsOn: "2026-02-30" }).success).toBe(false);
     expect(slotInputSchema.safeParse({ ...base, weekday: "8" }).success).toBe(false);
+  });
+});
+
+describe("course credits", () => {
+  const base = { name: "Calculus", color: "#2f9e44" };
+  it("parses form strings and defaults blank to 0", () => {
+    expect(courseInputSchema.parse({ ...base, credits: "3" }).credits).toBe(3);
+    expect(courseInputSchema.parse({ ...base, credits: "2.5" }).credits).toBe(2.5);
+    expect(courseInputSchema.parse({ ...base, credits: "" }).credits).toBe(0);
+  });
+
+  it.each([["-1"], ["25"], ["abc"], ["1.25"]])("rejects %s", (credits) => {
+    expect(courseInputSchema.safeParse({ ...base, credits }).success).toBe(false);
   });
 });

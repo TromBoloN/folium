@@ -1,6 +1,7 @@
-import { AlarmClock, CalendarClock, type LucideIcon, Plus, Sun } from "lucide-react";
+import { AlarmClock, CalendarClock, GraduationCap, type LucideIcon, Plus, Sun } from "lucide-react";
 import type { WidgetId } from "./widget-ids";
 import { ClassesWidget } from "./widgets/classes-widget";
+import { GradesWidget } from "./widgets/grades-widget";
 import { QuickAddWidget } from "./widgets/quick-add-widget";
 import { DueSoonWidget, OverdueWidget } from "./widgets/task-widgets";
 
@@ -53,5 +54,13 @@ export const WIDGETS: Record<WidgetId, WidgetDefinition> = {
     icon: Plus,
     Component: QuickAddWidget,
     skeletonRows: 1,
+  },
+  grades: {
+    title: "Grades",
+    description: "This semester's GPA and your grade so far in each course.",
+    icon: GraduationCap,
+    Component: GradesWidget,
+    href: "/grades",
+    skeletonRows: 3,
   },
 };

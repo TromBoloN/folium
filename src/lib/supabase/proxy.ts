@@ -4,7 +4,7 @@ import { env } from "@/lib/env";
 import type { Database } from "@/types/database";
 
 /** Pages a logged-out user may visit. */
-const PUBLIC_PATHS = ["/login", "/signup", "/auth"];
+const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth"];
 /** Pages a logged-in user has no reason to see. */
 const GUEST_ONLY_PATHS = ["/login", "/signup"];
 

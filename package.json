@@ -12,7 +12,8 @@
     "test:db": "bunx supabase test db",
     "db:types": "bunx supabase gen types typescript --local > src/types/database.ts.tmp && mv src/types/database.ts.tmp src/types/database.ts",
     "test:e2e": "playwright test",
-    "db:seed": "docker exec -i supabase_db_folium-web psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/seed.sql"
+    "db:seed": "docker exec -i supabase_db_folium-web psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/seed.sql",
+    "screenshots": "node scripts/screenshots.mjs"
   },
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
@@ -37,6 +38,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.14.0",
     "@biomejs/biome": "^2.6.7",
     "@playwright/test": "^1.65.1",
     "@tailwindcss/postcss": "^4.3.5",

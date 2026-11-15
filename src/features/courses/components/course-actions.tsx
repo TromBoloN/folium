@@ -1,4 +1,4 @@
-import { Archive, ArchiveRestore, ListChecks, Pencil, Trash2 } from "lucide-react";
+import { Archive, ArchiveRestore, GraduationCap, ListChecks, Pencil, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,12 @@ export function CourseActions({ course }: { course: Course }) {
         <Link href={`/tasks?course=${course.id}`}>
           <ListChecks aria-hidden />
           Tasks
+        </Link>
+      </Button>
+      <Button asChild variant="outline" size="sm">
+        <Link href={`/grades/${course.id}`}>
+          <GraduationCap aria-hidden />
+          Grades
         </Link>
       </Button>
       <Button asChild variant="outline" size="sm">

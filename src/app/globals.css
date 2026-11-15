@@ -44,7 +44,8 @@
   --destructive: light-dark(oklch(0.56 0.21 27), oklch(0.68 0.19 22));
   --destructive-foreground: oklch(0.985 0 0);
 
-  --warning: light-dark(oklch(0.62 0.15 70), oklch(0.8 0.14 80));
+  /* Light value is dark enough for 4.5:1 text contrast on card and muted surfaces (axe-checked). */
+  --warning: light-dark(oklch(0.53 0.13 65), oklch(0.8 0.14 80));
 
   --border: light-dark(oklch(0.91 0.01 var(--hue)), oklch(0.3 0.015 var(--hue)));
   --input: var(--border);

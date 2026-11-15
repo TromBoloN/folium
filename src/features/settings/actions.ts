@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { type FormState, formValues } from "@/lib/action-result";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
+import { parseGradeScaleField } from "../grades/scale";
 import { DEFAULT_PREFERENCES, DEFAULT_THEME, diffFromDefaults, SETTINGS_VERSION, settingsFormSchema } from "./schema";
 
 type JsonObject = { [key: string]: Json | undefined };
@@ -23,6 +24,7 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
       timeFormat: formData.get("timeFormat"),
       language: formData.get("language"),
       timeZone: formData.get("timeZone"),
+      gradeScale: parseGradeScaleField(formData.get("gradeScale")),
     },
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message, values };

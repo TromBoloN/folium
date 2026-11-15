@@ -18,6 +18,7 @@ function parseCourse(formData: FormData) {
     lecturer: formData.get("lecturer") ?? "",
     room: formData.get("room") ?? "",
     semester: formData.get("semester") ?? "",
+    credits: formData.get("credits") ?? "",
   });
 }
 

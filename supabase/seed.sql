@@ -5,7 +5,9 @@
 -- Runs automatically on `bunx supabase db reset`, and can be re-run any time
 -- with `bun run db:seed` (it deletes and rebuilds only the demo account).
 -- Every date is relative to "today" in Asia/Makassar, so the dashboard always
--- has classes, overdue work, things due today and things coming up.
+-- has classes, overdue work, things due today and things coming up. Courses
+-- have credits and assessments, so Grades shows a GPA for this semester and
+-- the archived one.
 
 -- ---------------------------------------------------------------------------
 -- Helpers (session-only)
@@ -125,6 +127,41 @@ begin
   insert into public.courses (user_id, name, code, color, lecturer, room, semester, archived_at)
   values (v_user, 'Basic Mathematics', 'MAT100', '#5c940d', 'Dr. Siti Rahma', 'B2.04', '2026 Genap', now() - interval '90 days')
   returning id into c_old;
+
+  -- Credits (SKS). The study group isn't graded.
+  update public.courses set credits = 3 where id in (c_calc, c_phys, c_chem, c_old);
+  update public.courses set credits = 4 where id = c_prog;
+  update public.courses set credits = 2 where id in (c_eng, c_pkn);
+
+  -- -------------------------------------------------------------------------
+  -- Assessments (scores: some graded, some still to come)
+  -- -------------------------------------------------------------------------
+  insert into public.assessments (user_id, course_id, name, weight, max_score, score, due_at) values
+    (v_user, c_calc, 'Quiz 1',          10, 20,  17,   pg_temp.at_local(-49, '23:59:59.999')),
+    (v_user, c_calc, 'Quiz 2',          10, 20,  14,   pg_temp.at_local(-21, '23:59:59.999')),
+    (v_user, c_calc, 'Problem sets',    20, 100, 88,   null),
+    (v_user, c_calc, 'Midterm exam',    25, 100, null, pg_temp.at_local(14, '08:00')),
+    (v_user, c_calc, 'Final exam',      35, 100, null, pg_temp.at_local(48, '08:00')),
+    (v_user, c_phys, 'Lab reports',     25, 100, 81,   null),
+    (v_user, c_phys, 'Quiz',            15, 50,  33,   pg_temp.at_local(-14, '23:59:59.999')),
+    (v_user, c_phys, 'Midterm exam',    25, 100, null, pg_temp.at_local(15, '13:00')),
+    (v_user, c_phys, 'Final exam',      35, 100, null, pg_temp.at_local(49, '13:00')),
+    (v_user, c_chem, 'Lab work',        30, 100, 90,   null),
+    (v_user, c_chem, 'Presentation',    20, 100, null, pg_temp.at_local(6, '10:00')),
+    (v_user, c_chem, 'Final exam',      50, 100, null, pg_temp.at_local(47, '08:00')),
+    (v_user, c_prog, 'Assignment 1',    10, 100, 95,   pg_temp.at_local(-42, '23:00')),
+    (v_user, c_prog, 'Assignment 2',    10, 100, 100,  pg_temp.at_local(-28, '23:00')),
+    (v_user, c_prog, 'Assignment 3',    10, 100, 92,   pg_temp.at_local(-5, '23:00')),
+    (v_user, c_prog, 'Assignment 4',    10, 100, null, pg_temp.at_local(0, '23:00')),
+    (v_user, c_prog, 'Mini project',    60, 100, null, pg_temp.at_local(40, '23:59:59.999')),
+    (v_user, c_eng,  'Vocabulary logs', 20, 100, 78,   null),
+    (v_user, c_eng,  'Essay outline',   10, 10,  null, pg_temp.at_local(1, '23:59:59.999')),
+    (v_user, c_eng,  'Final essay',     70, 100, null, pg_temp.at_local(28, '23:59:59.999')),
+    (v_user, c_pkn,  'Discussion',      40, 100, 85,   null),
+    (v_user, c_pkn,  'Reflection paper', 60, 100, null, pg_temp.at_local(21, '23:59:59.999')),
+    -- Last semester, fully graded.
+    (v_user, c_old,  'Midterm exam',    40, 100, 74,   pg_temp.at_local(-150, '08:00')),
+    (v_user, c_old,  'Final exam',      60, 100, 81,   pg_temp.at_local(-100, '08:00'));
 
   -- -------------------------------------------------------------------------
   -- Weekly class times (ISO weekday: 1 = Monday … 7 = Sunday)

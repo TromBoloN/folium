@@ -11,6 +11,7 @@ const course = (id: string, name: string, code: string | null = null): Course =>
   lecturer: null,
   room: "B2.04",
   semester: null,
+  credits: 0,
   archivedAt: null,
 });
 

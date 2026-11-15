@@ -2,6 +2,64 @@
 
 Short records of real choices, newest first. Each says what was decided, why, and what it costs.
 
+## 2026-11-15: Course grades normalise by the weights entered
+
+**Decision.** A course's grade so far is Σ(weight × %) / Σ(graded weight). Weights are percentages of the course grade but are **not** forced to sum to 100; the course page warns when they don't. "What do I need?" solves for the average on ungraded work over the total weight entered.
+
+**Why.** Students enter assessments as they appear; a hard 100% rule would block saving the first quiz. Normalising gives a sensible "so far" grade at every point.
+
+**Cost.** Answers are only as complete as the assessments entered (documented in [16-grades.md](16-grades.md)).
+
+## 2026-11-15: GPA counts only graded courses with credits
+
+**Decision.** GPA = Σ(credits × grade points) / Σ(credits) over courses with credits > 0 and at least one graded assessment. Ungraded courses are left out (not counted as 0). Grades in progress use the grade so far. Semester GPA groups by the free-text `courses.semester`; the semester containing active courses is shown first.
+
+**Why.** Counting an ungraded course as 0 would make every new semester look like a failing one. The semester stays a label (open question in the plan) rather than a table.
+
+## 2026-11-15: Credits are `numeric(4,1)`; scores have no extra credit
+
+**Decision.** `courses.credits` is `numeric(4,1)`, 0–24, default 0 (0 = not in the GPA). `assessments.score` is between 0 and `max_score` (checked in the DB and Zod); `weight` is >0–100.
+
+**Why.** Half credits exist; numeric avoids float rounding. Extra credit can be added later by relaxing one named constraint.
+
+## 2026-11-15: The grade scale is a preference, default Indonesian 4.0
+
+**Decision.** `preferences.gradeScale` holds `{ letter, min, points }` bands, validated by `gradeScaleSchema` (2–15 bands, one at 0%, unique minimums and letters, points never rising for lower bands) and merged over the default like every setting. The settings form submits it as one JSON field.
+
+**Also.** `diffFromDefaults` now compares by value (JSON), because an array is never `===` its default and would otherwise always be stored.
+
+## 2026-11-15: Password reset uses a token-hash recovery template
+
+**Decision.** `/forgot-password` always answers "If an account exists…" (no enumeration, even on provider errors). The recovery email (`supabase/templates/recovery.html`) links to `/auth/confirm?token_hash=…&type=recovery&next=/update-password`, which signs the user in and lands on `/update-password` (also reachable from Settings).
+
+**Security.** `secure_password_change = true`: changing a password needs a recent sign-in (the reset link counts). Mirror this and the template in the hosted project.
+
+## 2026-11-15: Per-widget error boundaries with `catchError`
+
+**Decision.** Each dashboard widget is wrapped in `SectionErrorBoundary`, built with Next's `catchError` (works with `redirect`/`notFound`, supports `retry`). Added `src/app/error.tsx` (auth pages), `global-error.tsx` (root layout) and `(app)/not-found.tsx` (not-found inside the shell). Error UIs never show raw error messages.
+
+## 2026-11-15: Accessibility is tested with axe across every theme
+
+**Decision.** `e2e/accessibility.spec.ts` runs axe (WCAG 2.2 A/AA) on every page, including forms with errors and not-found, in light and dark mode for all five presets (mobile layout for the default preset). Any violation fails the suite.
+
+**Fix it found.** The light `--warning` (due-today labels, overlap text) had 3.74:1 contrast; darkened to `oklch(0.53 0.13 65)` (≈5.2:1).
+
+## 2026-11-15: E2E tests run in CI against a production build
+
+**Decision.** A third CI job starts the full local Supabase stack (Auth + Mailpit for sign-up emails), writes `.env.local` from `supabase status`, builds, serves on port 3000 (the configured `site_url`, so email links return to the app under test) and runs Playwright; failures upload traces.
+
+## 2026-11-15: Security headers in `next.config.ts`
+
+**Decision.** Every response sends `frame-ancestors 'none'`, `X-Frame-Options: DENY`, `nosniff`, a referrer policy and a permissions policy. A full script CSP is deferred (needs nonces, which conflict with the static shell). See [security-review.md](security-review.md).
+
+## 2026-11-15: Grades is a fifth top-level section
+
+**Decision.** "Grades" joins the sidebar and the bottom nav (now five columns). It's used weekly, like Tasks; hiding it under Courses would bury the GPA.
+
+## 2026-11-15: README screenshots live in `.github/screenshots`
+
+**Decision.** `bun run screenshots` (Playwright, demo account) writes to `.github/screenshots/`, not `docs/`, because `docs/` is git-ignored in this repo.
+
 ## 2026-11-15: Dashboard widgets come from a registry; the layout stores overrides only
 
 **Decision.** `src/features/dashboard/widget-ids.ts` lists widget ids in default order, and `registry.tsx` maps each id to its title, icon and server component. The dashboard renders whatever the user's layout lists, each widget in its own `<Suspense>`. Adding a widget: one id plus one registry entry; no dashboard code changes.

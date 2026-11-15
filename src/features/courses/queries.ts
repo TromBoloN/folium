@@ -8,7 +8,7 @@ import type { Course } from "./schema";
 export type CourseWithSlots = Course & { slots: TimetableSlot[] };
 
 const COURSE_COLUMNS =
-  "id, name, code, color, lecturer, room, semester, archived_at, timetable_slots(id, weekday, start_time, end_time, location, starts_on, ends_on)";
+  "id, name, code, color, lecturer, room, semester, credits, archived_at, timetable_slots(id, weekday, start_time, end_time, location, starts_on, ends_on)";
 
 type Row = {
   id: string;
@@ -18,6 +18,7 @@ type Row = {
   lecturer: string | null;
   room: string | null;
   semester: string | null;
+  credits: number;
   archived_at: string | null;
   timetable_slots: {
     id: string;
@@ -39,6 +40,7 @@ function toCourse(row: Row): CourseWithSlots {
     lecturer: row.lecturer,
     room: row.room,
     semester: row.semester,
+    credits: Number(row.credits),
     archivedAt: row.archived_at,
   };
   return {

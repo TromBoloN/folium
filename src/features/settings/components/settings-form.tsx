@@ -7,6 +7,7 @@ import { ChoiceGroup } from "@/components/ui/choice-group";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { FormState } from "@/lib/action-result";
+import { GradeScaleEditor } from "../../grades/components/grade-scale-editor";
 import { updateSettings } from "../actions";
 import { PRESETS, type Settings } from "../schema";
 import { PRESET_LABELS } from "../theme";
@@ -176,6 +177,7 @@ function SettingsFields({
               { value: "12h", label: "12-hour (2:30 PM)" },
             ]}
           />
+          <GradeScaleEditor initial={submitted?.gradeScale ?? preferences.gradeScale} />
         </CardContent>
       </Card>
 

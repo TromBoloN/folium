@@ -23,16 +23,36 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "courses": {
+            "assessments": {
                   Row: {
-                    "archived_at": string | null,"code": string | null,"color": string,"created_at": string,"id": string,"lecturer": string | null,"name": string,"room": string | null,"semester": string | null,"updated_at": string,"user_id": string
+                    "course_id": string,"created_at": string,"due_at": string | null,"id": string,"max_score": number,"name": string,"score": number | null,"updated_at": string,"user_id": string,"weight": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"id"?: string,"lecturer"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "course_id": string,"created_at"?: string,"due_at"?: string | null,"id"?: string,"max_score"?: number,"name": string,"score"?: number | null,"updated_at"?: string,"user_id"?: string,"weight": number
                   }
                   Update: {
-                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"id"?: string,"lecturer"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "course_id"?: string,"created_at"?: string,"due_at"?: string | null,"id"?: string,"max_score"?: number,"name"?: string,"score"?: number | null,"updated_at"?: string,"user_id"?: string,"weight"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "assessments_course_fk"
+      columns: ["course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "courses"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"courses": {
+                  Row: {
+                    "archived_at": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"lecturer": string | null,"name": string,"room": string | null,"semester": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     

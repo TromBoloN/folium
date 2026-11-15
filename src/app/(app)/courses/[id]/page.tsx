@@ -43,6 +43,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
     ["Lecturer", course.lecturer],
     ["Room", course.room],
     ["Semester", course.semester],
+    ["Credits", course.credits > 0 ? `${course.credits} SKS` : null],
   ].filter((d): d is [string, string] => Boolean(d[1]));
 
   return (
