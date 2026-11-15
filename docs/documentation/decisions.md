@@ -2,6 +2,20 @@
 
 Short records of real choices, newest first. Each says what was decided, why, and what it costs.
 
+## 2026-11-15: Dashboard widgets come from a registry; the layout stores overrides only
+
+**Decision.** `src/features/dashboard/widget-ids.ts` lists widget ids in default order, and `registry.tsx` maps each id to its title, icon and server component. The dashboard renders whatever the user's layout lists, each widget in its own `<Suspense>`. Adding a widget: one id plus one registry entry; no dashboard code changes.
+
+**Layout format** (`user_settings.dashboard_layout`): `{ version: 1, order?: string[], hidden?: string[] }`, storing only what differs from the default. Reading (`resolveLayout`) drops unknown ids and duplicates, and appends registry ids missing from a saved order, so a widget added later appears for users who already saved a layout. Tested in `layout.test.ts`.
+
+**Editing** happens on `/?edit=1` with dnd-kit (pointer, touch with a press delay, and keyboard sensors with spoken announcements) plus move up/down buttons for phones. Nothing is saved until "Save layout".
+
+## 2026-11-15: Allow 127.0.0.1 as a dev origin
+
+**Decision.** `next.config.ts` sets `allowedDevOrigins: ["127.0.0.1"]`.
+
+**Why.** Supabase's local `site_url` is `http://127.0.0.1:3000`, so after confirming an email you browse the app on 127.0.0.1. `next dev` treats that as cross-origin and blocks its HMR WebSocket, and without it Turbopack can't load client chunks: no client component hydrated in dev (forms fell back to full page posts, the dashboard editor didn't work). Dev-only; production is unaffected.
+
 ## 2026-11-15: Deadlines are a date with an optional time
 
 **Decision.** `tasks.due_at` is one instant. A date-only deadline is stored as 23:59:59.999 on that date in the user's time zone, and `due_has_time = false` says to show only the date. A check constraint stops a time without a date.

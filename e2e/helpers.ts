@@ -24,6 +24,8 @@ export async function signUp(page: Page) {
   // The link uses the configured site URL; cookies are per host, not per port.
   await page.goto(link as string);
   await expect(page).toHaveURL(/\/$/);
+  // The link points at the configured site URL, which may not be the server under test.
+  await page.goto("/");
   return email;
 }
 

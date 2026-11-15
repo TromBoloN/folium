@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import type { WeekStart } from "../timetable/logic";
@@ -127,3 +128,16 @@ export async function getTask(id: string): Promise<Task | null> {
   const subtasks = await loadSubtasks(supabase, [id]);
   return toTask(data as Row, subtasks.get(id) ?? []);
 }
+
+/**
+ * Every open top-level task, cached per request so several dashboard widgets
+ * share one query. Widgets pick their slice with dueState().
+ */
+export const listOpenTasks = cache(
+  (): Promise<Task[]> =>
+    // The due window is "any", so the context is never used for a range.
+    listTasks(
+      { status: "open", due: "any", course: undefined },
+      { now: new Date(0), timeZone: "UTC", weekStart: "monday" },
+    ),
+);

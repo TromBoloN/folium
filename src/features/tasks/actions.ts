@@ -45,8 +45,9 @@ function friendly(code: string | undefined, fallback: string) {
   return fallback;
 }
 
-function done(path = "/tasks") {
-  revalidatePath(path, "layout");
+/** Tasks show on /tasks and on the Today dashboard (/), so refresh from the root. */
+function done() {
+  revalidatePath("/", "layout");
 }
 
 export async function createTask(_prev: FormState, formData: FormData): Promise<FormState> {

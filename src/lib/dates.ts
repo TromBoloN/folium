@@ -58,3 +58,14 @@ export function isoWeekday(date: CivilDate): number {
 export function formatDate(date: CivilDate, options: Intl.DateTimeFormatOptions, locale = "en-GB"): string {
   return new Intl.DateTimeFormat(locale, { ...options, timeZone: "UTC" }).format(toUtc(date));
 }
+
+/** Minutes since local midnight in the given time zone (e.g. 14:30 -> 870). */
+export function minutesNowIn(timeZone: string, now: Date = new Date()): number {
+  const parts = new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" })
+    .formatToParts(now)
+    .reduce<Record<string, string>>((acc, p) => {
+      acc[p.type] = p.value;
+      return acc;
+    }, {});
+  return Number(parts.hour) * 60 + Number(parts.minute);
+}
