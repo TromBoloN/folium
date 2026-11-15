@@ -17,7 +17,7 @@ export function CourseList({ courses, timeFormat }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {active.length > 0 ? (
-        <ul className="grid gap-3 sm:grid-cols-2">
+        <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {active.map((c, i) => (
             <CourseTile key={c.id} course={c} timeFormat={timeFormat} conflicts={conflicts} index={i} />
           ))}
@@ -33,7 +33,7 @@ export function CourseList({ courses, timeFormat }: Props) {
             Archived ({archived.length})
             <ChevronRight aria-hidden className="size-4 transition-transform group-open:rotate-90" />
           </summary>
-          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {archived.map((c) => (
               <CourseTile key={c.id} course={c} timeFormat={timeFormat} muted />
             ))}

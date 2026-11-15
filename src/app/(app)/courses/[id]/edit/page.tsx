@@ -12,9 +12,11 @@ export const metadata: Metadata = { title: "Edit course" };
 
 export default function EditCoursePage({ params }: PageProps<"/courses/[id]/edit">) {
   return (
-    <Suspense fallback={<FormSkeleton />}>
-      <EditCourse params={params} />
-    </Suspense>
+    <div className="mx-auto w-full max-w-2xl">
+      <Suspense fallback={<FormSkeleton />}>
+        <EditCourse params={params} />
+      </Suspense>
+    </div>
   );
 }
 

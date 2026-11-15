@@ -49,3 +49,8 @@ export function localDate(offsetDays: number, timeZone = "Asia/Makassar") {
 export async function waitForContent(page: Page) {
   await expect(page.locator('[role="status"][aria-label^="Loading"]')).toHaveCount(0, { timeout: 15_000 });
 }
+
+/** Waits until the app's client code is running, so clicks use the JS paths (toasts, sheets, undo). */
+export async function waitForHydration(page: Page) {
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached", timeout: 15_000 });
+}

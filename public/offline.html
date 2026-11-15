@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Offline · Folium</title>
+    <style>
+      /* Standalone page (no app CSS offline): system colours follow light and dark mode. */
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0; min-height: 100svh; display: grid; place-items: center;
+        font: 16px/1.5 ui-sans-serif, system-ui, sans-serif; background: Canvas; color: CanvasText;
+      }
+      main { max-width: 22rem; padding: 2rem 1.5rem; text-align: center; }
+      h1 { font: 500 1.75rem/1.2 ui-serif, Georgia, serif; margin: 0 0 0.5rem; }
+      p { margin: 0 0 1.25rem; }
+      button { font: inherit; padding: 0.5rem 1rem; border-radius: 0.6rem; border: 1px solid CanvasText; background: transparent; color: inherit; cursor: pointer; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>You're offline</h1>
+      <p>Folium needs a connection to load your classes and tasks. It'll be right here when you're back.</p>
+      <button type="button" onclick="location.reload()">Try again</button>
+    </main>
+  </body>
+</html>

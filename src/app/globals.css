@@ -394,6 +394,39 @@
   }
 }
 
+/* Sheets slide up on phones and in from the right on wide screens. */
+.sheet[open] {
+  animation: sheet-up var(--dur-enter) var(--ease-out) both;
+}
+@media (min-width: 48rem) {
+  .sheet[open] {
+    animation-name: sheet-in;
+  }
+}
+@keyframes sheet-up {
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, 24px, 0);
+  }
+}
+@keyframes sheet-in {
+  from {
+    opacity: 0.01;
+    transform: translate3d(32px, 0, 0);
+  }
+}
+
+/* Toasts rise in from below. */
+@utility toast-in {
+  animation: toast-in var(--dur-base) var(--ease-out) both;
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 12px, 0) scale(0.98);
+  }
+}
+
 /* The pulsing "Now" dot: the only looping element besides the ambient background. */
 @utility now-dot {
   position: relative;

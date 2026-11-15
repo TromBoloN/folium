@@ -1,5 +1,16 @@
 import { describe, expect, it } from "vitest";
-import { compareTasks, dayBounds, dueAtFrom, dueParts, dueState, dueSummary, dueWindowRange, formatDue } from "./due";
+import {
+  compareTasks,
+  dayBounds,
+  dueAtFrom,
+  dueParts,
+  dueState,
+  dueSummary,
+  dueWindowRange,
+  formatDue,
+  movedDue,
+  rescheduleDate,
+} from "./due";
 
 const MKS = "Asia/Makassar"; // UTC+8, no DST
 const AMS = "Europe/Amsterdam"; // UTC+1 / +2 in summer
@@ -161,5 +172,41 @@ describe("dueSummary", () => {
   it("uses the user's week start", () => {
     // With Sunday starts, the week containing Wed 18 Nov ends Sat 21 Nov.
     expect(dueSummary([task("2026-11-22")], now, TZ, "sunday").week).toBe(0);
+  });
+});
+
+describe("rescheduling", () => {
+  const TZ = "Asia/Makassar";
+  const now = new Date("2026-11-18T06:00:00Z"); // Wed 18 Nov, 14:00 Makassar
+
+  it("picks the target date", () => {
+    expect(rescheduleDate("today", "2026-11-18", "monday")).toBe("2026-11-18");
+    expect(rescheduleDate("tomorrow", "2026-11-18", "monday")).toBe("2026-11-19");
+    expect(rescheduleDate("next-week", "2026-11-18", "monday")).toBe("2026-11-23");
+    expect(rescheduleDate("next-week", "2026-11-18", "sunday")).toBe("2026-11-22");
+  });
+
+  it("keeps the time of day when it's still ahead", () => {
+    const due = { dueAt: dueAtFrom("2026-11-16", "17:00", TZ), dueHasTime: true };
+    expect(movedDue(due, "2026-11-18", now, TZ)).toEqual({
+      dueAt: dueAtFrom("2026-11-18", "17:00", TZ),
+      dueHasTime: true,
+    });
+  });
+
+  it("drops a time that has already passed on the new day", () => {
+    const due = { dueAt: dueAtFrom("2026-11-16", "07:00", TZ), dueHasTime: true };
+    expect(movedDue(due, "2026-11-18", now, TZ)).toEqual({
+      dueAt: dueAtFrom("2026-11-18", null, TZ),
+      dueHasTime: false,
+    });
+    expect(movedDue(due, "2026-11-19", now, TZ).dueHasTime).toBe(true);
+  });
+
+  it("gives date-only and undated tasks the end of the new day", () => {
+    expect(movedDue({ dueAt: null, dueHasTime: false }, "2026-11-19", now, TZ)).toEqual({
+      dueAt: dueAtFrom("2026-11-19", null, TZ),
+      dueHasTime: false,
+    });
   });
 });

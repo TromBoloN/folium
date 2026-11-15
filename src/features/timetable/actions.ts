@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { type FormState, fieldErrorsFrom, formValues } from "@/lib/action-result";
+import { type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/action-result";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
 import { slotInputSchema } from "./schema";
@@ -32,6 +32,13 @@ function toRow(slot: z.infer<typeof slotInputSchema>) {
     starts_on: slot.startsOn,
     ends_on: slot.endsOn,
   };
+}
+
+/** An in-app path to go back to after saving; anything else (other sites, "//host") is ignored. */
+function safeReturnTo(value: FormDataEntryValue | null): string | null {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !value.includes("\\")
+    ? value
+    : null;
 }
 
 const SAVE_FAILED = "Couldn't save the class time. Please try again.";
@@ -64,7 +71,9 @@ export async function createSlot(_prev: FormState, formData: FormData): Promise<
   }
 
   revalidatePath("/courses", "layout");
-  redirect(`/courses/${parsed.data.courseId}`);
+  revalidatePath("/");
+  if (fromSheet(formData)) return { ok: true };
+  redirect(safeReturnTo(formData.get("returnTo")) ?? `/courses/${parsed.data.courseId}`);
 }
 
 export async function updateSlot(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -95,6 +104,7 @@ export async function updateSlot(_prev: FormState, formData: FormData): Promise<
   if (data.length === 0) return { ok: false, error: "That class time no longer exists.", values };
 
   revalidatePath("/courses", "layout");
+  if (fromSheet(formData)) return { ok: true };
   redirect(`/courses/${parsed.data.courseId}`);
 }
 

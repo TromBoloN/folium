@@ -2,6 +2,46 @@
 
 Short records of real choices, newest first. Each says what was decided, why, and what it costs.
 
+## 2026-11-15: Add and edit happen in sheets (intercepted routes), with no catch-all in the slot
+
+**Decision.** `src/app/(app)/@modal` intercepts `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit`, `/courses/new`, `/courses/[id]/slots/new`, `/courses/timetable/new` and the assessment new/edit routes, showing them in a `<Sheet>` (a native modal `<dialog>`) over the current page. Hard loads and shared links still render the full pages. Page bodies live in shared "screen" components with a `page | sheet` variant. A form inside a sheet sends `_sheet=1`; its action then returns `{ ok }` instead of redirecting, and the form closes the sheet, refreshes the page underneath and shows a toast.
+
+**Why.** Small actions shouldn't cost a page load and a trip back, and URLs stay real (back closes the sheet, links are shareable).
+
+**No `[...catchAll]` in the slot.** Next's docs suggest a catch-all page returning null so the slot clears on navigation. With Next 16.4 that page put the client router into an endless segment-prefetch loop (about 190 requests a second for one link, `/tasks?due=today`). Instead the slot only has `default.tsx`, and `<Sheet>` hides itself once `usePathname()` moves away from the URL it opened on. The page crossfade and nav pill key on `usePagePath()` (the main slot's segments), so opening a sheet doesn't remount the page behind it.
+
+## 2026-11-15: Undo by putting things back, not by delaying the write
+
+**Decision.** Completing, rescheduling, editing and deleting a task save immediately. The action returns what undo needs (the previous status or fields, or a full snapshot of a deleted task and its steps), and "Undo" writes that back. A deleted task is re-inserted with its original id and `created_at`.
+
+**Why.** A delayed delete (wait for the toast to expire, then delete) loses or resurrects data when the tab closes or the user navigates. Writing immediately keeps the database the source of truth.
+
+**Cost.** Undo of a delete can't restore a course that was deleted in between (the task comes back without a course). Rows hide optimistically through `useOptimistic`, which lasts exactly as long as the action's transition.
+
+## 2026-11-15: Client-wide data goes through an external store, not context
+
+**Decision.** Courses and preferences the client needs everywhere (row menus, quick-add parsing) are loaded once in the shell and handed to a `useSyncExternalStore` store (`client-data-store.ts`), not to React context.
+
+**Why.** The data arrives just after hydration starts. A context update reaching a Suspense boundary that is still hydrating makes React discard the server HTML and client-render it (seen as a hidden duplicate of the page content and failed e2e tests under load). Components only subscribe to an external store after they hydrate, so the update can't do that.
+
+## 2026-11-15: Settings apply instantly; the action is called directly
+
+**Decision.** Changing a setting re-themes `<html>` at once (the same `themeAttributes()` the server uses) and saves 500 ms after the last change by calling `updateSettings` directly, with an "Undo" toast. The Save button only renders without JavaScript.
+
+**Why.** The preview already showed the result, so a separate Save step was friction. Calling the action directly (not via a form submission) avoids React's automatic reset of uncontrolled fields after a form action, which would snap fields back mid-edit.
+
+## 2026-11-15: Quick add is a tested plain-text grammar, not AI
+
+**Decision.** `parseQuickAdd()` (`tasks/parse.ts`) reads dates, times, `#course` and `!priority` out of one line; the server re-parses in the user's zone. An unknown `#course` stays in the title.
+
+**Why.** Predictable, instant, offline-capable and testable. The preview chips show exactly what will be saved before Enter.
+
+## 2026-11-15: Installable app now; reminders not yet
+
+**Decision.** Folium ships a web app manifest, generated icons and a minimal service worker (offline fallback page only; no caching of personal data). Push or email reminders are not built.
+
+**Why.** Reminders need infrastructure choices that aren't code-only: a scheduler (Supabase pg_cron or an external cron), a sender (an email provider, or Web Push with VAPID keys and a subscriptions table and migration), and per-user opt-in settings. Those should be decided first.
+
 ## 2026-11-15: Visual redesign uses CSS and View Transitions, no animation library
 
 **Decision.** The "rich and alive" redesign (bento Today page, layered surfaces, serif display font, motion) is built with CSS animations on `transform`/`opacity` and React's `<ViewTransition>` (the browser View Transitions API). Motion (Framer Motion) was not added. The only new download is Fraunces via `next/font`.

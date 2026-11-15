@@ -3,8 +3,18 @@ import { type NextRequest, NextResponse } from "next/server";
 import { env } from "@/lib/env";
 import type { Database } from "@/types/database";
 
-/** Pages a logged-out user may visit. */
-const PUBLIC_PATHS = ["/login", "/signup", "/forgot-password", "/auth"];
+/** Pages a logged-out user may visit, plus the files that make the app installable. */
+const PUBLIC_PATHS = [
+  "/login",
+  "/signup",
+  "/forgot-password",
+  "/auth",
+  "/manifest.webmanifest",
+  "/icon",
+  "/apple-icon",
+  "/sw.js",
+  "/offline.html",
+];
 /** Pages a logged-in user has no reason to see. */
 const GUEST_ONLY_PATHS = ["/login", "/signup"];
 

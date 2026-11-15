@@ -3,8 +3,11 @@ export type ActionResult<T = undefined> =
   | ({ ok: true } & (T extends undefined ? object : { data: T }))
   | { ok: false; error: string; fieldErrors?: Record<string, string> };
 
-/** Form actions also echo back what was submitted, so the form can keep it after an error. */
-export type FormState = (ActionResult & { values?: Record<string, string> }) | null;
+/**
+ * Form actions also echo back what was submitted, so the form can keep it after
+ * an error, and may return a few strings on success (e.g. the new row's id).
+ */
+export type FormState = (ActionResult & { values?: Record<string, string>; result?: Record<string, string> }) | null;
 
 /** First Zod issue per field, keyed by the field's name. */
 export function fieldErrorsFrom(issues: { path: PropertyKey[]; message: string }[]): Record<string, string> {
@@ -23,4 +26,9 @@ export function formValues(formData: FormData): Record<string, string> {
     if (typeof value === "string" && !key.startsWith("$ACTION")) values[key] = value;
   }
   return values;
+}
+
+/** True when a form was submitted from a sheet (see SheetFormBridge): return instead of redirecting. */
+export function fromSheet(formData: FormData): boolean {
+  return formData.get("_sheet") === "1";
 }

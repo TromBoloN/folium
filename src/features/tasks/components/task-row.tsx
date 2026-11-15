@@ -1,41 +1,52 @@
 import { Flag } from "lucide-react";
 import Link from "next/link";
-import { ViewTransition } from "react";
 import { CourseStripe } from "@/components/ui/course-stripe";
 import { Pill } from "@/components/ui/pill";
+import { readableTextOn } from "@/lib/color";
 import { cn } from "@/lib/utils";
 import type { DueState } from "../due";
 import type { Task } from "../queries";
 import { PRIORITY_LABELS } from "../schema";
 import { DueLabel } from "./due-label";
 import { TaskCheckbox } from "./task-checkbox";
+import { TaskRowFrame } from "./task-row-frame";
 
 type Props = { task: Task; dueLabel: string | null; dueState: DueState };
 
 /**
  * One task: course stripe on the left, a checkbox ringed in the course colour,
- * the title, and one line of meta (course chip, due pill, priority only when high/urgent, steps progress). When it's checked off and the list re-renders
- * without it, the row collapses out and the rows below slide up (View
- * Transitions; browsers without them just drop the row).
+ * the title, and one line of meta (course chip, due pill, priority only when
+ * high/urgent, steps progress). The interactive parts (checkbox, menu, swipe,
+ * rename, quick reschedule) live in TaskRowFrame.
  */
 export function TaskRow({ task, dueLabel, dueState }: Props) {
   const done = task.status === "done";
   const stepsDone = task.subtasks.filter((s) => s.done).length;
   const steps = task.subtasks.length;
+  const color = task.course?.color;
+  const checkStyle = (
+    color
+      ? { "--tint": color, "--check": readableTextOn(color) }
+      : { "--tint": "var(--primary)", "--check": "var(--primary-foreground)" }
+  ) as React.CSSProperties;
+
   return (
-    <ViewTransition exit="task-out" update="task-row" default="none">
-      <li
-        className={cn(
-          "relative flex items-start gap-1.5 py-2 pr-3 pl-2.5 transition-opacity duration-(--dur-base) sm:pl-3.5",
-          // While the checkbox's form is saving, the row steps back.
-          "has-[[data-pending]]:opacity-55",
-        )}
-      >
-        {task.course ? <CourseStripe color={task.course.color} /> : null}
-        <TaskCheckbox id={task.id} title={task.title} done={done} color={task.course?.color} />
+    <TaskRowFrame
+      task={{
+        id: task.id,
+        title: task.title,
+        status: task.status,
+        priority: task.priority,
+        courseId: task.courseId,
+        dueAt: task.dueAt,
+      }}
+      overdue={dueState === "overdue"}
+      stripe={color ? <CourseStripe color={color} /> : null}
+      checkbox={<TaskCheckbox task={{ id: task.id, title: task.title, status: task.status }} style={checkStyle} />}
+      content={
         <Link
           href={`/tasks/${task.id}`}
-          className="flex min-w-0 flex-1 flex-col gap-1.5 rounded-md py-2 focus-visible:outline-2 focus-visible:outline-ring"
+          className="flex min-w-0 flex-col gap-1.5 rounded-md py-2 focus-visible:outline-2 focus-visible:outline-ring"
         >
           <span
             className={cn(
@@ -65,7 +76,7 @@ export function TaskRow({ task, dueLabel, dueState }: Props) {
                     className="block h-full w-full origin-left rounded-full bg-(--tint) transition-transform duration-(--dur-base)"
                     style={
                       {
-                        "--tint": task.course?.color ?? "var(--primary)",
+                        "--tint": color ?? "var(--primary)",
                         transform: `scaleX(${stepsDone / steps})`,
                       } as React.CSSProperties
                     }
@@ -77,7 +88,7 @@ export function TaskRow({ task, dueLabel, dueState }: Props) {
             ) : null}
           </span>
         </Link>
-      </li>
-    </ViewTransition>
+      }
+    />
   );
 }

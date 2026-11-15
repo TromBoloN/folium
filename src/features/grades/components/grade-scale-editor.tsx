@@ -1,7 +1,7 @@
 "use client";
 
 import { Plus, RotateCcw, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DEFAULT_GRADE_SCALE, type GradeBand } from "../scale";
@@ -16,7 +16,14 @@ const toRows = (scale: readonly GradeBand[]): Row[] =>
  * as one JSON field ("gradeScale"), so it round-trips through the form's
  * value echo like any other field.
  */
-export function GradeScaleEditor({ initial }: { initial: readonly GradeBand[] | string }) {
+export function GradeScaleEditor({
+  initial,
+  onEdit,
+}: {
+  initial: readonly GradeBand[] | string;
+  /** Called after any change to the table (typing, adding or removing a band, resetting). */
+  onEdit?: () => void;
+}) {
   const [rows, setRows] = useState<Row[]>(() => {
     if (typeof initial !== "string") return toRows(initial);
     try {
@@ -25,6 +32,15 @@ export function GradeScaleEditor({ initial }: { initial: readonly GradeBand[] | 
       return toRows(DEFAULT_GRADE_SCALE);
     }
   });
+  const first = useRef(true);
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs when the rows change, by design
+  useEffect(() => {
+    if (first.current) {
+      first.current = false;
+      return;
+    }
+    onEdit?.();
+  }, [rows]);
   const update = (i: number, patch: Partial<Row>) =>
     setRows((r) => r.map((row, j) => (j === i ? { ...row, ...patch } : row)));
 

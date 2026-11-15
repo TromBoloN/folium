@@ -141,3 +141,11 @@ export const listOpenTasks = cache(
       { now: new Date(0), timeZone: "UTC", weekStart: "monday" },
     ),
 );
+
+/** Whether the user has ever made a task (open or done): for the first-run checklist. */
+export const hasAnyTask = cache(async (): Promise<boolean> => {
+  const supabase = await createClient();
+  const { count, error } = await supabase.from("tasks").select("id", { count: "exact", head: true }).limit(1);
+  if (error) throw new Error(`Couldn't count tasks: ${error.message}`);
+  return (count ?? 0) > 0;
+});

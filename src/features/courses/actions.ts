@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { type FormState, fieldErrorsFrom, formValues } from "@/lib/action-result";
+import { type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/action-result";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
 import { courseInputSchema } from "./schema";
@@ -45,6 +45,7 @@ export async function createCourse(_prev: FormState, formData: FormData): Promis
   }
 
   revalidatePath("/courses", "layout");
+  if (fromSheet(formData)) return { ok: true, result: { id: data.id } };
   redirect(`/courses/${data.id}`);
 }
 

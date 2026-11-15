@@ -9,6 +9,7 @@ import { Tile } from "@/components/ui/tile";
 import { requireUser } from "@/features/auth/queries";
 import { DashboardEditor } from "@/features/dashboard/components/dashboard-editor";
 import { Greeting, GreetingSkeleton } from "@/features/dashboard/components/greeting";
+import { Onboarding } from "@/features/dashboard/components/onboarding";
 import { SIZE_CLASSES, WidgetFrame, WidgetSkeleton } from "@/features/dashboard/components/widget-frame";
 import { visibleWidgets } from "@/features/dashboard/layout";
 import { getDashboardLayout } from "@/features/dashboard/queries";
@@ -99,7 +100,12 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
   return (
     // A container, so the bento adapts to the space beside the sidebar: 1 column, 2 from @xl, 12 from @4xl.
     // Dense flow lets small tiles fill gaps; items-start keeps tiles at their content height.
-    <div className="@container">
+    <div className="@container flex flex-col gap-4">
+      <SectionErrorBoundary label="Setup checklist">
+        <Suspense fallback={null}>
+          <Onboarding />
+        </Suspense>
+      </SectionErrorBoundary>
       <div className="grid grid-flow-row-dense grid-cols-1 items-start gap-4 @xl:grid-cols-2 @4xl:grid-cols-12">
         {ids.map((id, index) => {
           const widget = WIDGETS[id];

@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { isoWeekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { Week } from "../week";
+import { AddSlotOverlay } from "./add-slot-overlay";
 import { OverlapWarning } from "./overlap-warning";
 
 const HOUR_REM = 3.5;
@@ -57,6 +59,13 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
               backgroundSize: `100% ${HOUR_REM}rem`,
             }}
           >
+            <AddSlotOverlay
+              weekday={isoWeekday(d.date)}
+              firstHour={week.firstHour}
+              hours={hours}
+              week={week.days[0].date}
+              dayLabel={d.fullLabel}
+            />
             {d.items.map((item) => (
               <Link
                 key={item.id}

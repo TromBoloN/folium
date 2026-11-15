@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
+import { CancelButton, SheetFormBridge } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -26,6 +26,7 @@ export function AssessmentForm({ courseId, id, defaults }: Props) {
 
   return (
     <form key={JSON.stringify(state)} action={action} className="flex flex-col gap-5" noValidate>
+      <SheetFormBridge state={state} message={id ? "Assessment saved" : "Assessment added"} />
       <input type="hidden" name="courseId" value={courseId} />
       {id ? <input type="hidden" name="id" value={id} /> : null}
 
@@ -69,9 +70,7 @@ export function AssessmentForm({ courseId, id, defaults }: Props) {
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : id ? "Save changes" : "Add assessment"}
         </Button>
-        <Button asChild variant="ghost">
-          <Link href={`/grades/${courseId}`}>Cancel</Link>
-        </Button>
+        <CancelButton href={`/grades/${courseId}`} />
       </div>
     </form>
   );

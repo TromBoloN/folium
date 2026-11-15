@@ -7,6 +7,7 @@ import { dueParts } from "../../tasks/due";
 import { deleteAssessment } from "../actions";
 import { formatPercent, percentOf } from "../logic";
 import type { AssessmentRecord } from "../queries";
+import { ScoreInput } from "./score-input";
 
 export function AssessmentList({ assessments, timeZone }: { assessments: AssessmentRecord[]; timeZone: string }) {
   return (
@@ -23,20 +24,13 @@ export function AssessmentList({ assessments, timeZone }: { assessments: Assessm
               <span className="text-muted-foreground text-xs">
                 {formatPercent(a.weight, a.weight % 1 === 0 ? 0 : 2)}% of grade
                 {date ? ` · ${date}` : ""}
+                {pct === null ? " · not graded" : <span className="sm:hidden"> · {formatPercent(pct)}%</span>}
               </span>
             </div>
-            <div className="text-right text-sm tabular-nums">
-              {pct === null ? (
-                <span className="text-muted-foreground">Not graded</span>
-              ) : (
-                <>
-                  <span className="font-medium">{formatPercent(pct)}%</span>
-                  <span className="block text-muted-foreground text-xs">
-                    {a.score} / {a.maxScore}
-                  </span>
-                </>
-              )}
-            </div>
+            <span className="hidden w-14 text-right font-medium text-sm tabular-nums sm:block">
+              {pct === null ? <span className="text-muted-foreground">–</span> : `${formatPercent(pct)}%`}
+            </span>
+            <ScoreInput id={a.id} name={a.name} score={a.score} maxScore={a.maxScore} />
             <div className="flex shrink-0 items-center gap-1">
               <Button asChild variant="ghost" size="icon">
                 <Link href={`/grades/${a.courseId}/assessments/${a.id}/edit`} aria-label={`Edit ${a.name}`}>

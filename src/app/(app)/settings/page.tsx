@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { PageHeader } from "@/components/page-header";
+import { InstallCard } from "@/components/pwa/install-card";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
@@ -26,9 +27,10 @@ export default function SettingsPage() {
 async function SettingsContent() {
   const [user, settings] = await Promise.all([requireUser(), getSettings()]);
   return (
-    <div data-wide className="flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
       <SettingsForm settings={settings} timeZones={listTimeZones(settings.preferences.timeZone)} />
-      <Card className="xl:mr-[19.5rem]">
+      <InstallCard />
+      <Card>
         <CardHeader>
           <CardTitle>Account</CardTitle>
         </CardHeader>

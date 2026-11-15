@@ -5,12 +5,14 @@ import { useEffect } from "react";
 /**
  * Page-wide motion plumbing, mounted once in the shell. Renders nothing.
  * - Marks <html data-tab-hidden> while the tab is hidden, so the ambient drift pauses.
+ * - Marks <html data-hydrated> once client code runs (e2e tests wait for it before clicking).
  * - One delegated pointermove handler feeds --mx/--my to the [data-spotlight]
  *   tile under the pointer (hover devices only), batched to one write per frame.
  */
 export function MotionRuntime() {
   useEffect(() => {
     const root = document.documentElement;
+    root.dataset.hydrated = "";
     const onVisibility = () => root.toggleAttribute("data-tab-hidden", document.hidden);
     onVisibility();
     document.addEventListener("visibilitychange", onVisibility);

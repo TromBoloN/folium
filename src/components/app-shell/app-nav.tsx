@@ -1,10 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import { ViewTransition } from "react";
 import { cn } from "@/lib/utils";
 import { isActive, NAV_ITEMS } from "./nav-items";
+import { usePagePath } from "./use-page-path";
 
 /**
  * The active-item pill. It's a named view transition, and only the active item
@@ -21,7 +21,7 @@ function ActivePill({ name, className }: { name: string; className: string }) {
 
 /** Desktop: vertical list in the sidebar. */
 export function SidebarNav() {
-  const pathname = usePathname();
+  const pathname = usePagePath();
   return (
     <nav aria-label="Main" className="flex flex-col gap-1">
       {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
@@ -53,7 +53,7 @@ export function SidebarNav() {
 
 /** Mobile: fixed tab bar at the bottom, clear of the home indicator. Solid surface (no backdrop blur on mobile). */
 export function BottomNav() {
-  const pathname = usePathname();
+  const pathname = usePagePath();
   return (
     <nav
       aria-label="Main"

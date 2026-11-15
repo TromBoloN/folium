@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
+import { CancelButton, SheetFormBridge } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
@@ -10,9 +10,19 @@ import { createSlot, updateSlot } from "../actions";
 import { WEEKDAYS } from "../logic";
 import type { TimetableSlot } from "../types";
 
-type Props = { courseId: string; slot?: TimetableSlot; defaultLocation?: string | null };
+type Props = {
+  /** The course the class time belongs to; omit to let the user pick one from `courses`. */
+  courseId?: string;
+  courses?: { id: string; name: string; code: string | null }[];
+  slot?: TimetableSlot;
+  defaultLocation?: string | null;
+  /** Prefill for a new class time (e.g. the timetable cell that was clicked). */
+  prefill?: { weekday?: number; startTime?: string; endTime?: string };
+  /** Where to go after saving on a full page (validated by the action); default: the course. */
+  returnTo?: string;
+};
 
-export function SlotForm({ courseId, slot, defaultLocation }: Props) {
+export function SlotForm({ courseId, courses, slot, defaultLocation, prefill, returnTo }: Props) {
   const [state, action, pending] = useActionState(slot ? updateSlot : createSlot, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const initial: Record<string, string> = slot
@@ -24,7 +34,12 @@ export function SlotForm({ courseId, slot, defaultLocation }: Props) {
         startsOn: slot.startsOn ?? "",
         endsOn: slot.endsOn ?? "",
       }
-    : { weekday: "1", startTime: "08:00", endTime: "09:40" };
+    : {
+        weekday: String(prefill?.weekday ?? 1),
+        startTime: prefill?.startTime ?? "08:00",
+        endTime: prefill?.endTime ?? "09:40",
+        courseId: courses?.[0]?.id ?? "",
+      };
   const value = (name: string) => state?.values?.[name] ?? initial[name] ?? "";
   const field = (name: string, hint?: string) => ({
     id: name,
@@ -40,7 +55,21 @@ export function SlotForm({ courseId, slot, defaultLocation }: Props) {
   return (
     // key: remount so selects pick up values the server sends back after an error.
     <form key={JSON.stringify(state?.values ?? {})} action={action} className="flex flex-col gap-5" noValidate>
-      <input type="hidden" name="courseId" value={courseId} />
+      <SheetFormBridge state={state} message={slot ? "Class time saved" : "Class time added"} />
+      {courseId ? (
+        <input type="hidden" name="courseId" value={courseId} />
+      ) : (
+        <Field id="courseId" label="Course" error={errors.courseId}>
+          <NativeSelect {...field("courseId")}>
+            {(courses ?? []).map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.code ? `${c.code} · ${c.name}` : c.name}
+              </option>
+            ))}
+          </NativeSelect>
+        </Field>
+      )}
+      {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
       {slot ? <input type="hidden" name="id" value={slot.id} /> : null}
 
       <Field id="weekday" label="Day" error={errors.weekday}>
@@ -101,9 +130,7 @@ export function SlotForm({ courseId, slot, defaultLocation }: Props) {
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : slot ? "Save changes" : "Add class time"}
         </Button>
-        <Button asChild variant="ghost">
-          <Link href={`/courses/${courseId}`}>Cancel</Link>
-        </Button>
+        <CancelButton href={returnTo ?? (courseId ? `/courses/${courseId}` : "/courses")} />
       </div>
     </form>
   );

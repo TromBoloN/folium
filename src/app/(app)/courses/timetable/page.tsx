@@ -49,9 +49,10 @@ async function Timetable({ searchParams }: Pick<PageProps<"/courses/timetable">,
     weekStart: preferences.weekStart,
     timeFormat: preferences.timeFormat,
   });
+  // The day agenda (mobile) opens on the day that was linked (e.g. from the week strip), else today.
   const todayIndex = Math.max(
     0,
-    week.days.findIndex((d) => d.isToday),
+    week.days.findIndex((d) => d.date === anchor),
   );
 
   return (

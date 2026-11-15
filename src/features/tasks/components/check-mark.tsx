@@ -1,17 +1,8 @@
-"use client";
-
 import { Check } from "lucide-react";
-import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
 
-/**
- * The visual part of the task checkbox. While its form is submitting it already
- * shows the state being saved (fills with the course colour when completing),
- * so the click feels instant. Without JavaScript the form simply posts.
- */
-export function CheckMark({ done }: { done: boolean }) {
-  const { pending } = useFormStatus();
-  const filled = pending ? !done : done;
+/** The visual part of the task checkbox: a ring in --tint that fills when done (or while completing). */
+export function CheckMark({ filled, pending = false }: { filled: boolean; pending?: boolean }) {
   return (
     <span
       aria-hidden

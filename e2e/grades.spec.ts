@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { signUp, waitForContent } from "./helpers";
+import { signUp, waitForContent, waitForHydration } from "./helpers";
 
 async function addCourse(page: Page, name: string, credits: string, semester: string) {
   await page.goto("/courses/new");
@@ -26,6 +26,8 @@ async function addAssessment(
 }
 
 test("grades: assessments → course grade → what I need → GPA → dashboard widget", async ({ page }) => {
+  // A long flow (two courses, four assessments, several pages); under parallel mobile runs it nears 30s.
+  test.setTimeout(60_000);
   await signUp(page);
 
   await page.goto("/grades");
@@ -78,9 +80,13 @@ test("grades: assessments → course grade → what I need → GPA → dashboard
 
   // Edit a score: Midterm 70 → 100: (1800 + 3000) / 50 = 96% → A.
   await page.goto(`/grades/${calc}`);
+  await waitForHydration(page);
   await page.getByRole("link", { name: "Edit Midterm" }).click();
-  await page.getByLabel("Score").fill("100");
-  await page.getByRole("button", { name: "Save changes" }).click();
+  // Opens as a sheet over the course page (whose list has inline score fields too).
+  const sheet = page.getByRole("dialog", { name: "Edit assessment" });
+  await sheet.getByLabel("Score").fill("100");
+  await sheet.getByRole("button", { name: "Save changes" }).click();
+  await expect(sheet).toHaveCount(0);
   await expect(page.getByRole("region", { name: "Current standing" })).toContainText("96.0%");
 
   // Delete it again: back to Quiz only → 90%.
@@ -100,14 +106,14 @@ test("grade scale is a preference; a bad scale is rejected and kept for fixing",
   await signUp(page);
   await page.goto("/settings");
   await waitForContent(page);
+  // Settings save as you change them, once the form has hydrated.
+  await expect(page.getByText("Changes save as you make them.")).toBeVisible();
   await page.getByLabel("Minimum percentage, row 1").fill("");
-  await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByText("Minimum must be a number.")).toBeVisible();
   await expect(page.getByLabel("Minimum percentage, row 1")).toHaveValue("");
 
   await page.getByRole("button", { name: "Use the Indonesian 4.0 scale" }).click();
   await page.getByLabel("Minimum percentage, row 1").fill("90");
-  await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByText("Saved.")).toBeVisible();
   await page.reload();
   await waitForContent(page);

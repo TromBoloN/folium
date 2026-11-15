@@ -47,11 +47,15 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
   ].filter((d): d is [string, string] => Boolean(d[1]));
 
   return (
-    <div className="flex flex-col gap-8" style={{ "--course": course.color } as React.CSSProperties}>
-      <header className="flex flex-col gap-4">
-        <div className="flex items-start gap-3">
-          <span aria-hidden className="mt-2 size-4 shrink-0 rounded-full bg-(--course)" />
-          <h1 className="font-semibold text-2xl tracking-tight">{course.name}</h1>
+    <div
+      className="grid gap-8 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] xl:items-start xl:gap-10"
+      style={{ "--course": course.color, "--tint": course.color } as React.CSSProperties}
+    >
+      <header className="tile tile-tinted flex flex-col gap-4 overflow-hidden p-5 xl:sticky xl:top-8">
+        <span aria-hidden className="leaf-veins pointer-events-none absolute -right-8 -bottom-10 size-52 opacity-15" />
+        <div className="relative flex flex-col gap-1">
+          {course.code ? <span className="font-medium text-muted-foreground text-sm">{course.code}</span> : null}
+          <h1 className="font-display font-medium text-3xl leading-tight tracking-tight">{course.name}</h1>
         </div>
         {course.archivedAt ? (
           <p className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-muted-foreground text-sm">
@@ -60,7 +64,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
           </p>
         ) : null}
         {details.length > 0 ? (
-          <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+          <dl className="relative grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
             {details.map(([label, value]) => (
               <div key={label} className="contents">
                 <dt className="text-muted-foreground">{label}</dt>
@@ -69,7 +73,9 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
             ))}
           </dl>
         ) : null}
-        <CourseActions course={course} />
+        <div className="relative">
+          <CourseActions course={course} />
+        </div>
       </header>
 
       <section className="flex flex-col gap-3" aria-labelledby="class-times">

@@ -1,8 +1,9 @@
 "use client";
 
-import { CalendarX2, MapPin } from "lucide-react";
+import { CalendarPlus, CalendarX2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { isoWeekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { WeekDay } from "../week";
 import { OverlapWarning } from "./overlap-warning";
@@ -89,6 +90,13 @@ export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialInde
             ))}
           </ul>
         )}
+        <Link
+          href={`/courses/timetable/new?weekday=${isoWeekday(day.date)}&week=${days[0].date}`}
+          className="inline-flex w-fit items-center gap-1.5 rounded-md py-1 text-muted-foreground text-sm hover:text-foreground"
+        >
+          <CalendarPlus aria-hidden className="size-4" />
+          Add a class on {day.shortLabel}
+        </Link>
       </section>
     </div>
   );

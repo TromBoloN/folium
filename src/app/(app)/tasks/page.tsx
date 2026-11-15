@@ -57,37 +57,47 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
   const filtered = filters.status !== "open" || filters.due !== "any" || filters.course;
 
   return (
-    <div className="flex flex-col gap-5">
-      <div className="grid grid-cols-3 gap-3">
-        <StatTile label="Overdue" value={summary.overdue} href="/tasks?due=overdue" tone="danger" reveal={0} />
-        <StatTile label="Due today" value={summary.today} href="/tasks?due=today" tone="warning" reveal={1} />
-        <StatTile label="This week" value={summary.week} href="/tasks?due=week" reveal={2} />
+    // Wide screens: the list on the left, summary and filters in a rail on the right.
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
+      <aside
+        aria-label="Summary and filters"
+        className="flex flex-col gap-5 xl:sticky xl:top-8 xl:col-start-2 xl:row-span-2 xl:row-start-1"
+      >
+        <div className="grid grid-cols-3 gap-3">
+          <StatTile label="Overdue" value={summary.overdue} href="/tasks?due=overdue" tone="danger" reveal={0} />
+          <StatTile label="Due today" value={summary.today} href="/tasks?due=today" tone="warning" reveal={1} />
+          <StatTile label="This week" value={summary.week} href="/tasks?due=week" reveal={2} />
+        </div>
+        <TaskFilters current={filters} courses={courses} />
+      </aside>
+      <div className="xl:col-start-1 xl:row-start-1">
+        <QuickAdd courseId={course?.id} courseName={course?.name} />
       </div>
-      <QuickAdd courseId={course?.id} courseName={course?.name} />
-      <TaskFilters current={filters} courses={courses} />
-      {tasks.length === 0 ? (
-        filtered ? (
-          <EmptyState icon={SearchX} title="Nothing here" description="No tasks match these filters.">
-            <Button asChild size="sm" variant="outline">
-              <Link href="/tasks">Show all open tasks</Link>
-            </Button>
-          </EmptyState>
+      <div className="min-w-0 xl:col-start-1 xl:row-start-2">
+        {tasks.length === 0 ? (
+          filtered ? (
+            <EmptyState icon={SearchX} title="Nothing here" description="No tasks match these filters.">
+              <Button asChild size="sm" variant="outline">
+                <Link href="/tasks">Show all open tasks</Link>
+              </Button>
+            </EmptyState>
+          ) : (
+            <EmptyState
+              icon={ListChecks}
+              title="No open tasks"
+              description="Type a task above and press Enter. Add a due date and course later if you need them."
+            />
+          )
         ) : (
-          <EmptyState
-            icon={ListChecks}
-            title="No open tasks"
-            description="Type a task above and press Enter. Add a due date and course later if you need them."
+          <TaskList
+            tasks={tasks}
+            now={now}
+            timeZone={preferences.timeZone}
+            timeFormat={preferences.timeFormat}
+            grouped={filters.status === "open"}
           />
-        )
-      ) : (
-        <TaskList
-          tasks={tasks}
-          now={now}
-          timeZone={preferences.timeZone}
-          timeFormat={preferences.timeFormat}
-          grouped={filters.status === "open"}
-        />
-      )}
+        )}
+      </div>
     </div>
   );
 }

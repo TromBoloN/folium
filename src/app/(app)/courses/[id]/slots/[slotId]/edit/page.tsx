@@ -12,9 +12,11 @@ export const metadata: Metadata = { title: "Edit class time" };
 
 export default function EditSlotPage({ params }: PageProps<"/courses/[id]/slots/[slotId]/edit">) {
   return (
-    <Suspense fallback={<FormSkeleton />}>
-      <EditSlot params={params} />
-    </Suspense>
+    <div className="mx-auto w-full max-w-2xl">
+      <Suspense fallback={<FormSkeleton />}>
+        <EditSlot params={params} />
+      </Suspense>
+    </div>
   );
 }
 

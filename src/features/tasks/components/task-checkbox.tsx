@@ -1,29 +1,51 @@
-import { ActionForm, SubmitButton } from "@/components/action-form";
-import { readableTextOn } from "@/lib/color";
-import { setTaskStatus } from "../actions";
-import { CheckMark } from "./check-mark";
+"use client";
 
-type Props = { id: string; title: string; done: boolean; color?: string | null };
+import { useActionState, useState } from "react";
+import { setTaskStatus } from "../actions";
+import type { TaskStatus } from "../schema";
+import { CheckMark } from "./check-mark";
+import { useTaskOps } from "./task-ops";
+
+type Props = {
+  task: { id: string; title: string; status: TaskStatus };
+  /** Course colour and a readable check colour on it (computed on the server). */
+  style: React.CSSProperties;
+};
 
 /**
- * A round checkbox, ringed in the course colour, that marks a task done or
- * reopens it. It's a real form posting to a server action, so it works without JavaScript.
+ * A round checkbox, ringed in the course colour, that completes or reopens a task.
+ * With JavaScript the click goes through the task controller: the circle fills,
+ * the row leaves at once and an "Undo" toast appears. Without JavaScript it's a
+ * plain form posting to the same server action.
  */
-export function TaskCheckbox({ id, title, done, color }: Props) {
-  const style = color
-    ? ({ "--tint": color, "--check": readableTextOn(color) } as React.CSSProperties)
-    : ({ "--tint": "var(--primary)", "--check": "var(--primary-foreground)" } as React.CSSProperties);
+export function TaskCheckbox({ task, style }: Props) {
+  const ops = useTaskOps();
+  const [state, formAction] = useActionState(setTaskStatus, null);
+  const [pending, setPending] = useState(false);
+  const done = task.status === "done";
   return (
-    <ActionForm action={setTaskStatus} fields={{ id, status: done ? "todo" : "done" }}>
-      <SubmitButton
-        variant="ghost"
-        size="icon"
-        aria-label={done ? `Reopen “${title}”` : `Mark “${title}” as done`}
-        className="group/check size-10 shrink-0 rounded-full hover:bg-[color-mix(in_oklab,var(--tint)_14%,transparent)] disabled:opacity-100"
+    <form action={formAction} className="flex flex-col gap-1">
+      <input type="hidden" name="id" value={task.id} />
+      <input type="hidden" name="status" value={done ? "todo" : "done"} />
+      <button
+        type="submit"
+        aria-label={done ? `Reopen “${task.title}”` : `Mark “${task.title}” as done`}
+        disabled={pending}
+        onClick={(event) => {
+          event.preventDefault();
+          setPending(true);
+          ops.setStatus(task, done ? "todo" : "done").finally(() => setPending(false));
+        }}
+        className="group/check flex size-10 shrink-0 items-center justify-center rounded-full outline-none transition-colors hover:bg-[color-mix(in_oklab,var(--tint)_14%,transparent)] focus-visible:ring-2 focus-visible:ring-ring"
         style={style}
       >
-        <CheckMark done={done} />
-      </SubmitButton>
-    </ActionForm>
+        <CheckMark filled={pending ? !done : done} pending={pending} />
+      </button>
+      {state && !state.ok ? (
+        <p role="alert" className="text-destructive text-xs">
+          {state.error}
+        </p>
+      ) : null}
+    </form>
   );
 }

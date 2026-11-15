@@ -44,52 +44,57 @@ async function CourseGrades({
   const weightOff = course.assessments.length > 0 && Math.abs(result.totalWeight - 100) > 0.001;
 
   return (
-    <div className="flex flex-col gap-6" style={{ "--course": course.color } as React.CSSProperties}>
-      <header className="flex flex-col gap-2">
-        <div className="flex items-start gap-3">
-          <span aria-hidden className="mt-2 size-4 shrink-0 rounded-full bg-(--course)" />
-          <h1 className="font-semibold text-2xl tracking-tight">{course.name}</h1>
-        </div>
-        <p className="text-muted-foreground text-sm">
-          {course.credits > 0 ? `${course.credits} SKS` : "0 SKS (not counted in your GPA)"}
-          {course.semester ? ` · ${course.semester}` : ""} ·{" "}
-          <Link href={`/courses/${course.id}/edit`} className="underline underline-offset-4">
-            Edit course
-          </Link>
-        </p>
-      </header>
+    <div
+      className="grid gap-6 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] xl:items-start xl:gap-10"
+      style={{ "--course": course.color, "--tint": course.color } as React.CSSProperties}
+    >
+      <div className="flex flex-col gap-6 xl:sticky xl:top-8">
+        <header className="flex flex-col gap-2">
+          <h1 className="flex items-center gap-3 font-display font-medium text-3xl tracking-tight">
+            <span aria-hidden className="size-3 shrink-0 rounded-full bg-(--course)" />
+            {course.name}
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            {course.credits > 0 ? `${course.credits} SKS` : "0 SKS (not counted in your GPA)"}
+            {course.semester ? ` · ${course.semester}` : ""} ·{" "}
+            <Link href={`/courses/${course.id}/edit`} className="underline underline-offset-4">
+              Edit course
+            </Link>
+          </p>
+        </header>
 
-      <section aria-labelledby="standing" className="grid grid-cols-3 gap-3">
-        <h2 id="standing" className="sr-only">
-          Current standing
-        </h2>
-        <div className="tile p-4">
-          <span className="text-muted-foreground text-xs">Grade so far</span>
-          <span className="block font-semibold text-2xl">{result.band?.letter ?? "–"}</span>
-        </div>
-        <div className="tile p-4">
-          <span className="text-muted-foreground text-xs">Percentage</span>
-          <span className="block font-semibold text-2xl tabular-nums">
-            {result.percent === null ? "–" : `${formatPercent(result.percent)}%`}
-          </span>
-        </div>
-        <div className="tile p-4">
-          <span className="text-muted-foreground text-xs">Graded</span>
-          <span className="block font-semibold text-2xl tabular-nums">
-            {result.totalWeight > 0 ? `${Math.round((result.gradedWeight / result.totalWeight) * 100)}%` : "–"}
-          </span>
-        </div>
-      </section>
+        <section aria-labelledby="standing" className="grid grid-cols-3 gap-3">
+          <h2 id="standing" className="sr-only">
+            Current standing
+          </h2>
+          <div className="tile p-4">
+            <span className="text-muted-foreground text-xs">Grade so far</span>
+            <span className="block font-display font-medium text-3xl">{result.band?.letter ?? "–"}</span>
+          </div>
+          <div className="tile p-4">
+            <span className="text-muted-foreground text-xs">Percentage</span>
+            <span className="block font-display font-medium text-3xl tabular-nums">
+              {result.percent === null ? "–" : `${formatPercent(result.percent)}%`}
+            </span>
+          </div>
+          <div className="tile p-4">
+            <span className="text-muted-foreground text-xs">Graded</span>
+            <span className="block font-display font-medium text-3xl tabular-nums">
+              {result.totalWeight > 0 ? `${Math.round((result.gradedWeight / result.totalWeight) * 100)}%` : "–"}
+            </span>
+          </div>
+        </section>
 
-      {weightOff ? (
-        <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm">
-          <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
-          Weights add up to {formatPercent(result.totalWeight, 0)}%, not 100%. Grades are scaled to the weights entered;
-          add the missing assessments for an accurate picture.
-        </p>
-      ) : null}
+        {weightOff ? (
+          <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm">
+            <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
+            Weights add up to {formatPercent(result.totalWeight, 0)}%, not 100%. Grades are scaled to the weights
+            entered; add the missing assessments for an accurate picture.
+          </p>
+        ) : null}
 
-      <NeededCalculator courseId={course.id} assessments={course.assessments} scale={scale} target={targetBand} />
+        <NeededCalculator courseId={course.id} assessments={course.assessments} scale={scale} target={targetBand} />
+      </div>
 
       <section aria-labelledby="assessments" className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">

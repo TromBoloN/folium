@@ -3,26 +3,17 @@ import { Suspense } from "react";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/skeletons";
-import { requireUser } from "@/features/auth/queries";
-import { CourseForm } from "@/features/courses/components/course-form";
-import { listCourses } from "@/features/courses/queries";
-import { nextCourseColor } from "@/features/courses/schema";
+import { NewCourseScreen } from "@/features/courses/components/course-screens";
 
 export const metadata: Metadata = { title: "Add course" };
 
 export default function NewCoursePage() {
   return (
-    <>
+    <div className="mx-auto w-full max-w-2xl">
       <PageHeader title="Add course" back={<BackLink href="/courses">Courses</BackLink>} />
       <Suspense fallback={<FormSkeleton />}>
-        <NewCourse />
+        <NewCourseScreen />
       </Suspense>
-    </>
+    </div>
   );
-}
-
-async function NewCourse() {
-  await requireUser();
-  const courses = await listCourses();
-  return <CourseForm mode="create" defaultColor={nextCourseColor(courses.map((c) => c.color))} />;
 }

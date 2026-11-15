@@ -7,18 +7,25 @@ import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import { nowOffset, timelinePosition, timelineRange } from "../now";
 import { classMoment } from "../today";
+import { DaySummary } from "./day-summary";
 import type { HeroClass } from "./next-up-hero";
 
 const HOUR_REM = 3;
 const GUTTER = "3rem";
 
-type Props = { initialNow: number; timeZone: string; timeFormat: "24h" | "12h"; classes: HeroClass[] };
+type Props = {
+  initialNow: number;
+  timeZone: string;
+  timeFormat: "24h" | "12h";
+  classes: HeroClass[];
+  tomorrow: HeroClass[];
+};
 
 /**
  * Today's classes on a vertical time axis. A "now" line moves down it once a
  * minute (transform only); the class on now gets a pulsing dot. Past classes are muted.
  */
-export function DayTimeline({ initialNow, timeZone, timeFormat, classes }: Props) {
+export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorrow }: Props) {
   const { minute } = useNow(initialNow, timeZone);
   const range = timelineRange(classes);
   if (!range) return null;
@@ -26,7 +33,10 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes }: Props
   const offset = nowOffset(minute, range);
   const hours = (range.end - range.start) / 60;
   const hourMarks = Array.from({ length: hours + 1 }, (_, i) => range.start / 60 + i);
-  const allOver = moment.current.length === 0 && moment.next === null;
+  // Once the day's classes are over, look ahead instead of showing an empty axis.
+  if (moment.current.length === 0 && moment.next === null) {
+    return <DaySummary past={classes} tomorrow={tomorrow} timeFormat={timeFormat} />;
+  }
 
   return (
     // Fills its tile: on wide screens the tile spans two grid rows, and the time axis stretches to match.
@@ -123,7 +133,6 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes }: Props
           </div>
         ) : null}
       </div>
-      {allOver ? <p className="text-muted-foreground text-xs">That&apos;s all your classes for today.</p> : null}
     </div>
   );
 }

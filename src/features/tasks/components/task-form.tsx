@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useActionState } from "react";
+import { CancelButton, SheetFormBridge } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { ChoiceGroup } from "@/components/ui/choice-group";
 import { describedBy, Field } from "@/components/ui/field";
@@ -36,6 +36,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
 
   return (
     <form key={JSON.stringify(state)} action={action} className="flex flex-col gap-5" noValidate>
+      <SheetFormBridge state={state} message={id ? "Task saved" : "Task added"} />
       {id ? <input type="hidden" name="id" value={id} /> : null}
 
       <Field id="title" label="Title" error={errors.title}>
@@ -134,9 +135,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : id ? "Save changes" : "Add task"}
         </Button>
-        <Button asChild variant="ghost">
-          <Link href={id ? `/tasks/${id}` : "/tasks"}>Cancel</Link>
-        </Button>
+        <CancelButton href={id ? `/tasks/${id}` : "/tasks"} />
       </div>
     </form>
   );

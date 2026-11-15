@@ -1,4 +1,4 @@
-import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { CalendarDays, CalendarPlus, ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
@@ -19,23 +19,31 @@ export function WeekView({ week, timeFormat, hasAnySlots, todayIndex }: Props) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-medium">{week.label}</h2>
-        <nav aria-label="Week" className="flex items-center gap-1">
-          <Button asChild variant="ghost" size="icon">
-            <Link href={`/courses/timetable?week=${week.previous}`} aria-label="Previous week">
-              <ChevronLeft aria-hidden />
+        <div className="flex items-center gap-2">
+          <Button asChild size="sm" variant="outline">
+            <Link href={`/courses/timetable/new?week=${week.days[0].date}`}>
+              <CalendarPlus aria-hidden />
+              Add class
             </Link>
           </Button>
-          {week.containsToday ? null : (
-            <Button asChild variant="outline" size="sm">
-              <Link href="/courses/timetable">This week</Link>
+          <nav aria-label="Week" className="flex items-center gap-1">
+            <Button asChild variant="ghost" size="icon">
+              <Link href={`/courses/timetable?week=${week.previous}`} aria-label="Previous week">
+                <ChevronLeft aria-hidden />
+              </Link>
             </Button>
-          )}
-          <Button asChild variant="ghost" size="icon">
-            <Link href={`/courses/timetable?week=${week.next}`} aria-label="Next week">
-              <ChevronRight aria-hidden />
-            </Link>
-          </Button>
-        </nav>
+            {week.containsToday ? null : (
+              <Button asChild variant="outline" size="sm">
+                <Link href="/courses/timetable">This week</Link>
+              </Button>
+            )}
+            <Button asChild variant="ghost" size="icon">
+              <Link href={`/courses/timetable?week=${week.next}`} aria-label="Next week">
+                <ChevronRight aria-hidden />
+              </Link>
+            </Button>
+          </nav>
+        </div>
       </div>
 
       {!hasAnySlots ? (

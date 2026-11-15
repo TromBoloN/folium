@@ -102,9 +102,9 @@ async function seedData(page: Page) {
 async function applyTheme(page: Page, mode: string, preset: string) {
   await page.goto("/settings");
   await waitForContent(page);
+  await expect(page.getByText("Changes save as you make them.")).toBeVisible();
   await page.locator(`label:has(input[name="mode"][value="${mode}"])`).click();
   await page.locator(`label:has(input[name="preset"][value="${preset}"])`).click();
-  await page.getByRole("button", { name: "Save settings" }).click();
   await expect(page.getByText("Saved.")).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("data-mode", mode);
 }

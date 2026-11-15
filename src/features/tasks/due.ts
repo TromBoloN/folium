@@ -145,3 +145,32 @@ export function dueSummary(
   }
   return { overdue, today, week };
 }
+
+export const RESCHEDULE_CHOICES = ["today", "tomorrow", "next-week"] as const;
+export type RescheduleChoice = (typeof RESCHEDULE_CHOICES)[number];
+
+/** The local date a quick reschedule moves a task to. "next-week" is the first day of next week. */
+export function rescheduleDate(choice: RescheduleChoice, today: CivilDate, weekStart: WeekStart): CivilDate {
+  if (choice === "today") return today;
+  if (choice === "tomorrow") return addDays(today, 1);
+  return addDays(weekDates(today, weekStart)[0], 7);
+}
+
+/**
+ * Moving a deadline to another day keeps its time of day, unless that time has
+ * already passed on the new day (moving an overdue 07:00 task to "today" in the
+ * afternoon would leave it overdue): then it becomes "by the end of the day".
+ */
+export function movedDue(
+  due: Due,
+  date: CivilDate,
+  now: Date,
+  timeZone: string,
+): { dueAt: string; dueHasTime: boolean } {
+  const time = due.dueAt && due.dueHasTime ? dueParts(due.dueAt, true, timeZone).time : null;
+  if (time) {
+    const at = dueAtFrom(date, time, timeZone);
+    if (new Date(at).getTime() > now.getTime()) return { dueAt: at, dueHasTime: true };
+  }
+  return { dueAt: dueAtFrom(date, null, timeZone), dueHasTime: false };
+}
