@@ -34,12 +34,14 @@ export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialInde
             tabIndex={i === index ? 0 : -1}
             onClick={() => setIndex(i)}
             className={cn(
-              "relative flex flex-col items-center gap-0.5 rounded-md py-2 text-xs transition-colors",
+              "relative flex flex-col items-center gap-0.5 rounded-xl py-2 text-xs transition-colors",
               i === index ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent",
             )}
           >
             <span>{d.shortLabel}</span>
-            <span className={cn("font-semibold text-base", i !== index && "text-foreground")}>{d.dayNumber}</span>
+            <span className={cn("font-display font-medium text-lg leading-tight", i !== index && "text-foreground")}>
+              {d.dayNumber}
+            </span>
             {d.items.length > 0 ? (
               <span
                 aria-hidden
@@ -58,7 +60,7 @@ export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialInde
           {day.isToday ? <span className="text-muted-foreground"> · Today</span> : null}
         </h2>
         {day.items.length === 0 ? (
-          <p className="flex items-center gap-2 rounded-lg border border-dashed px-4 py-6 text-muted-foreground text-sm">
+          <p className="flex items-center gap-2 rounded-tile border border-dashed px-4 py-6 text-muted-foreground text-sm">
             <CalendarX2 aria-hidden className="size-4" />
             No classes.
           </p>
@@ -69,7 +71,7 @@ export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialInde
                 <Link
                   href={`/courses/${item.courseId}`}
                   style={{ "--course": item.color } as React.CSSProperties}
-                  className="flex flex-col gap-1 rounded-lg border border-l-(--course) border-l-4 bg-[color-mix(in_oklab,var(--course)_10%,var(--card))] px-4 py-3 transition-colors hover:bg-[color-mix(in_oklab,var(--course)_18%,var(--card))]"
+                  className="tile flex flex-col gap-1 border-l-(--course) border-l-4 bg-[color-mix(in_oklab,var(--course)_13%,var(--card))] px-4 py-3 transition-colors hover:bg-[color-mix(in_oklab,var(--course)_20%,var(--card))]"
                 >
                   <span className="flex items-center justify-between gap-2">
                     <span className="font-medium">{item.courseName}</span>

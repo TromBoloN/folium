@@ -18,6 +18,7 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
       accent: formData.get("useAccent") === "on" ? formData.get("accent") : null,
       font: formData.get("font"),
       density: formData.get("density"),
+      motion: formData.get("motion"),
     },
     preferences: {
       weekStart: formData.get("weekStart"),

@@ -1,10 +1,11 @@
 import Link from "next/link";
+import { ProgressRing } from "@/components/ui/progress-ring";
 import { courseResult, formatGpa, formatPercent, gpaBySemester } from "@/features/grades/logic";
 import { listGradebook } from "@/features/grades/queries";
 import { getSettings } from "@/features/settings/queries";
 import { WidgetEmpty } from "../components/widget-frame";
 
-/** This semester's GPA and the grade so far in each active course. */
+/** This semester's GPA (with a ring against the top of the scale) and a bar per active course. */
 export async function GradesWidget() {
   const [courses, { preferences }] = await Promise.all([listGradebook(), getSettings()]);
   const active = courses
@@ -32,27 +33,45 @@ export async function GradesWidget() {
     })),
   );
   const current = semesters[0];
+  const maxPoints = Math.max(...preferences.gradeScale.map((b) => b.points));
+  const gpa = current?.gpa ?? null;
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="flex items-baseline gap-2">
-        <span className="font-semibold text-2xl tabular-nums">
-          {current?.gpa === null ? "–" : formatGpa(current.gpa)}
-        </span>
-        <span className="text-muted-foreground text-sm">GPA so far{current?.label ? ` · ${current.label}` : ""}</span>
-      </p>
-      <ul className="flex flex-col gap-1.5">
-        {active.slice(0, 5).map(({ course, result }) => (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-4">
+        <ProgressRing
+          value={gpa === null ? 0 : gpa / maxPoints}
+          label={gpa === null ? "No GPA yet" : `GPA ${formatGpa(gpa)} of ${maxPoints.toFixed(2)}`}
+          size={64}
+        >
+          <span className="font-display font-medium text-lg tabular-nums">{gpa === null ? "–" : formatGpa(gpa)}</span>
+        </ProgressRing>
+        <p className="flex flex-col">
+          <span className="font-medium">GPA so far</span>
+          <span className="text-muted-foreground text-sm">{current?.label ?? "This semester"}</span>
+        </p>
+      </div>
+      <ul className="flex flex-col gap-2.5">
+        {active.slice(0, 5).map(({ course, result }, i) => (
           <li key={course.id}>
             <Link
               href={`/grades/${course.id}`}
-              style={{ "--course": course.color } as React.CSSProperties}
-              className="flex items-center gap-2 rounded-md px-1 py-1 text-sm hover:bg-accent/50"
+              style={{ "--tint": course.color, "--i": i } as React.CSSProperties}
+              className="group/grade flex flex-col gap-1 rounded-md text-sm"
             >
-              <span aria-hidden className="size-2 shrink-0 rounded-full bg-(--course)" />
-              <span className="min-w-0 flex-1 truncate">{course.name}</span>
-              <span className="text-muted-foreground text-xs tabular-nums">{formatPercent(result.percent ?? 0)}%</span>
-              <span className="w-7 text-right font-medium">{result.band?.letter}</span>
+              <span className="flex items-baseline gap-2">
+                <span className="min-w-0 flex-1 truncate group-hover/grade:underline">{course.name}</span>
+                <span className="text-muted-foreground text-xs tabular-nums">
+                  {formatPercent(result.percent ?? 0)}%
+                </span>
+                <span className="w-6 text-right font-semibold">{result.band?.letter}</span>
+              </span>
+              <span aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
+                <span
+                  className="grow-x block h-full w-full rounded-full bg-(--tint)"
+                  style={{ transform: `scaleX(${Math.min(100, result.percent ?? 0) / 100})` }}
+                />
+              </span>
             </Link>
           </li>
         ))}

@@ -26,9 +26,9 @@ export default function SettingsPage() {
 async function SettingsContent() {
   const [user, settings] = await Promise.all([requireUser(), getSettings()]);
   return (
-    <div className="flex flex-col gap-6">
+    <div data-wide className="flex flex-col gap-6">
       <SettingsForm settings={settings} timeZones={listTimeZones(settings.preferences.timeZone)} />
-      <Card>
+      <Card className="xl:mr-[19.5rem]">
         <CardHeader>
           <CardTitle>Account</CardTitle>
         </CardHeader>

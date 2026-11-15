@@ -1,29 +1,28 @@
-import { Check } from "lucide-react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
-import { cn } from "@/lib/utils";
+import { readableTextOn } from "@/lib/color";
 import { setTaskStatus } from "../actions";
+import { CheckMark } from "./check-mark";
 
-/** A round checkbox that marks a task done or reopens it. It's a real form, so it works without JavaScript. */
-export function TaskCheckbox({ id, title, done }: { id: string; title: string; done: boolean }) {
+type Props = { id: string; title: string; done: boolean; color?: string | null };
+
+/**
+ * A round checkbox, ringed in the course colour, that marks a task done or
+ * reopens it. It's a real form posting to a server action, so it works without JavaScript.
+ */
+export function TaskCheckbox({ id, title, done, color }: Props) {
+  const style = color
+    ? ({ "--tint": color, "--check": readableTextOn(color) } as React.CSSProperties)
+    : ({ "--tint": "var(--primary)", "--check": "var(--primary-foreground)" } as React.CSSProperties);
   return (
     <ActionForm action={setTaskStatus} fields={{ id, status: done ? "todo" : "done" }}>
       <SubmitButton
         variant="ghost"
         size="icon"
         aria-label={done ? `Reopen “${title}”` : `Mark “${title}” as done`}
-        className="size-8 shrink-0 rounded-full"
+        className="group/check size-10 shrink-0 rounded-full hover:bg-[color-mix(in_oklab,var(--tint)_14%,transparent)] disabled:opacity-100"
+        style={style}
       >
-        <span
-          aria-hidden
-          className={cn(
-            "flex size-5 items-center justify-center rounded-full border-2 transition-colors",
-            done
-              ? "border-primary bg-primary text-primary-foreground"
-              : "border-muted-foreground/50 hover:border-primary",
-          )}
-        >
-          {done ? <Check className="size-3" strokeWidth={3} /> : null}
-        </span>
+        <CheckMark done={done} />
       </SubmitButton>
     </ActionForm>
   );

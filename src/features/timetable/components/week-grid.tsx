@@ -16,20 +16,20 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
   const toRem = (minute: number) => ((minute - week.firstHour * 60) / 60) * HOUR_REM;
 
   return (
-    <div className="overflow-x-auto rounded-lg border bg-card">
+    <div className="tile overflow-x-auto">
       {/* pb-3 leaves room for the last hour label, which is centred on the bottom line. */}
       <div className="grid min-w-[44rem] grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] pb-3">
-        <div className="border-b" />
+        <div className="border-border-soft border-b" />
         {week.days.map((d) => (
           <div
             key={d.date}
             className={cn(
-              "border-b border-l px-2 py-2 text-center text-xs",
+              "border-border-soft border-b border-l px-2 py-2.5 text-center text-xs",
               d.isToday && "bg-accent text-accent-foreground",
             )}
           >
             <span className="block text-muted-foreground">{d.shortLabel}</span>
-            <span className="font-semibold text-sm">{d.dayNumber}</span>
+            <span className="font-display font-medium text-lg leading-none">{d.dayNumber}</span>
             {d.isToday ? <span className="sr-only"> (today)</span> : null}
           </div>
         ))}
@@ -50,10 +50,10 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
           <section
             key={d.date}
             aria-label={d.fullLabel}
-            className={cn("relative border-l", d.isToday && "bg-accent/30")}
+            className={cn("relative border-border-soft border-l", d.isToday && "bg-accent/40")}
             style={{
               height: `${hours * HOUR_REM}rem`,
-              backgroundImage: "linear-gradient(to bottom, var(--border) 1px, transparent 1px)",
+              backgroundImage: "linear-gradient(to bottom, var(--border-soft) 1px, transparent 1px)",
               backgroundSize: `100% ${HOUR_REM}rem`,
             }}
           >
@@ -74,7 +74,7 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
                     zIndex: item.lane + 1,
                   } as React.CSSProperties
                 }
-                className="absolute flex flex-col gap-0.5 overflow-hidden rounded-md border-l-(--course) border-l-4 ring-1 ring-card bg-[color-mix(in_oklab,var(--course)_16%,var(--card))] px-1.5 py-1 text-xs leading-tight transition-colors hover:bg-[color-mix(in_oklab,var(--course)_26%,var(--card))]"
+                className="absolute flex flex-col gap-0.5 overflow-hidden rounded-lg border-l-(--course) border-l-4 bg-[color-mix(in_oklab,var(--course)_18%,var(--card))] px-1.5 py-1 text-xs leading-tight shadow-tile ring-1 ring-card transition-colors hover:bg-[color-mix(in_oklab,var(--course)_28%,var(--card))]"
               >
                 <span className="flex items-start justify-between gap-1">
                   <span className="truncate font-medium">{item.title}</span>

@@ -17,6 +17,8 @@ export const MODES = ["system", "light", "dark"] as const;
 export const PRESETS = ["green", "blue", "violet", "orange", "rose"] as const;
 export const FONTS = ["geist", "inter", "system"] as const;
 export const DENSITIES = ["comfortable", "compact"] as const;
+/** "off" (or the OS reduced-motion setting) turns every animation off; "subtle" keeps fades, drops movement and loops. */
+export const MOTIONS = ["full", "subtle", "off"] as const;
 export const WEEK_STARTS = ["monday", "sunday", "saturday"] as const;
 export const TIME_FORMATS = ["24h", "12h"] as const;
 export const LANGUAGES = ["en", "id"] as const;
@@ -34,6 +36,7 @@ export const themeSchema = z.object({
   accent: hexColor.nullable(),
   font: z.enum(FONTS),
   density: z.enum(DENSITIES),
+  motion: z.enum(MOTIONS),
 });
 
 export const preferencesSchema = z.object({
@@ -56,6 +59,7 @@ export const DEFAULT_THEME: Theme = {
   accent: null,
   font: "geist",
   density: "comfortable",
+  motion: "full",
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {

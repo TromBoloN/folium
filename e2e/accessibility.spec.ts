@@ -15,6 +15,8 @@ const MODES = ["light", "dark"] as const;
 type Finding = { page: string; rule: string; impact: string; nodes: string[] };
 
 async function scan(page: Page, label: string, findings: Finding[]) {
+  // Check final states, not frames of an entrance fade (reduced motion renders everything settled).
+  await page.emulateMedia({ reducedMotion: "reduce" });
   await waitForContent(page);
   const { violations } = await new AxeBuilder({ page }).withTags(WCAG).analyze();
   for (const v of violations) {

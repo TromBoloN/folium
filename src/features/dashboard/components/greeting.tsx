@@ -11,9 +11,16 @@ export async function Greeting() {
   const hello = greeting(minutesNowIn(preferences.timeZone, now));
   const date = formatDate(todayIn(preferences.timeZone, now), { weekday: "long", day: "numeric", month: "long" });
   return (
-    <div className="flex flex-col gap-1">
-      <h1 className="font-semibold text-2xl tracking-tight">{name ? `${hello}, ${name}` : hello}</h1>
-      <p className="text-muted-foreground text-sm">{date}</p>
+    <div className="reveal flex flex-col gap-1.5">
+      <p className="font-medium text-muted-foreground text-sm">{date}</p>
+      <h1 className="font-display font-medium text-4xl leading-[1.05] tracking-tight md:text-[2.5rem]">
+        {hello}
+        {name ? (
+          <>
+            , <span className="text-[color-mix(in_oklab,var(--primary)_50%,var(--foreground))] italic">{name}</span>
+          </>
+        ) : null}
+      </h1>
     </div>
   );
 }
@@ -21,8 +28,8 @@ export async function Greeting() {
 export function GreetingSkeleton() {
   return (
     <div role="status" aria-label="Loading" className="flex flex-col gap-2">
-      <div className="h-8 w-56 animate-pulse rounded bg-muted" />
       <div className="h-4 w-40 animate-pulse rounded bg-muted" />
+      <div className="h-10 w-72 max-w-full animate-pulse rounded bg-muted" />
     </div>
   );
 }

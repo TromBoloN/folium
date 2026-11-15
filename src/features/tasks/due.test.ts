@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { compareTasks, dayBounds, dueAtFrom, dueParts, dueState, dueWindowRange, formatDue } from "./due";
+import { compareTasks, dayBounds, dueAtFrom, dueParts, dueState, dueSummary, dueWindowRange, formatDue } from "./due";
 
 const MKS = "Asia/Makassar"; // UTC+8, no DST
 const AMS = "Europe/Amsterdam"; // UTC+1 / +2 in summer
@@ -131,5 +131,35 @@ describe("compareTasks", () => {
       t("none-old", null, "urgent", "2026-10-01"),
     ];
     expect(tasks.sort(compareTasks).map((x) => x.id)).toEqual(["early", "late-high", "late-low", "none-old", "none"]);
+  });
+});
+
+describe("dueSummary", () => {
+  const TZ = "Asia/Makassar";
+  // Wed 18 Nov 2026, 10:00 in Makassar; the Monday-start week ends Sun 22 Nov.
+  const now = new Date("2026-11-18T02:00:00Z");
+  const task = (date: string | null, time: string | null = null, status = "todo") => ({
+    dueAt: date ? dueAtFrom(date, time, TZ) : null,
+    dueHasTime: time !== null,
+    status,
+  });
+
+  it("counts overdue, due today and due this week", () => {
+    const tasks = [
+      task("2026-11-17"), // overdue
+      task("2026-11-18", "08:00"), // overdue: earlier today
+      task("2026-11-18", "16:00"), // today
+      task("2026-11-18"), // today, date only
+      task("2026-11-22"), // Sunday: still this week
+      task("2026-11-23"), // next week
+      task("2026-11-18", null, "done"), // done: ignored
+      task(null), // no deadline
+    ];
+    expect(dueSummary(tasks, now, TZ, "monday")).toEqual({ overdue: 2, today: 2, week: 3 });
+  });
+
+  it("uses the user's week start", () => {
+    // With Sunday starts, the week containing Wed 18 Nov ends Sat 21 Nov.
+    expect(dueSummary([task("2026-11-22")], now, TZ, "sunday").week).toBe(0);
   });
 });

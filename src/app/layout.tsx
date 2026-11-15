@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Inter } from "next/font/google";
+import { Fraunces, Geist, Inter } from "next/font/google";
 import { getSettings } from "@/features/settings/queries";
 import { themeAttributes } from "@/features/settings/theme";
 import "./globals.css";
@@ -26,6 +26,8 @@ export const instant = false;
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"], display: "swap" });
 // Only some users pick Inter, so don't preload it for everyone.
 const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "swap", preload: false });
+// Display serif for page titles, the greeting and big numerals. Variable, with the optical-size axis.
+const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap", axes: ["opsz"] });
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   // preferences.language is saved but not applied yet: lang must match the
@@ -33,7 +35,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   const { theme } = await getSettings();
 
   return (
-    <html lang="en" className={`${geist.variable} ${inter.variable}`} {...themeAttributes(theme)}>
+    <html lang="en" className={`${geist.variable} ${inter.variable} ${fraunces.variable}`} {...themeAttributes(theme)}>
       <body>{children}</body>
     </html>
   );

@@ -5,12 +5,19 @@
  * Theme tokens
  *
  * Every colour is derived from one hue (--hue) and chroma (--chroma), so a
- * preset is just two numbers and the neutrals pick up a faint tint of it.
+ * preset is just two numbers and the neutrals pick up a tint of it. Light mode
+ * is warm paper (neutrals mixed with a warm base), dark mode a deep tinted black.
  * Each token holds its light and dark value via light-dark(); which one shows
  * is decided by `color-scheme`, set from the user's mode on <html>:
  *   data-mode="light" | "dark" | "system"   (system follows the OS, no JS)
- *   data-preset, data-font, data-density     (see src/features/settings/theme.ts)
- * A custom accent colour is applied as an inline --primary override.
+ *   data-preset, data-font, data-density, data-motion  (see src/features/settings/theme.ts)
+ * A custom accent colour is applied as an inline --primary override, and its
+ * hue as --hue, so the neutrals and the ambient glow follow it too.
+ *
+ * Tokens are declared on :root AND on any element carrying data-preset, so a
+ * nested element (the settings preview, preset cards) can show another preset
+ * or mode: custom properties built from var(--hue) are resolved where they're
+ * declared, so they have to be re-declared under the nested --hue.
  */
 
 :root {
@@ -20,46 +27,92 @@
 
   --radius: 0.625rem;
 
-  --background: light-dark(oklch(0.99 0.004 var(--hue)), oklch(0.17 0.012 var(--hue)));
-  --foreground: light-dark(oklch(0.22 0.02 var(--hue)), oklch(0.96 0.008 var(--hue)));
+  color-scheme: light dark;
+}
 
-  --card: light-dark(oklch(1 0.002 var(--hue)), oklch(0.205 0.014 var(--hue)));
+:root,
+[data-preset] {
+  /* Warm paper base for light mode: neutrals lean towards it, then towards the accent. */
+  --paper-0: color-mix(in oklab, oklch(0.962 0.018 85), oklch(0.962 0.022 var(--hue)) 38%);
+  --paper-1: color-mix(in oklab, oklch(0.993 0.008 88), oklch(0.993 0.01 var(--hue)) 30%);
+  --paper-2: color-mix(in oklab, oklch(0.999 0.004 88), oklch(0.999 0.006 var(--hue)) 30%);
+
+  /* Layered surfaces: page, tile, raised (popovers, focused cards). */
+  --surface-0: light-dark(var(--paper-0), oklch(0.165 0.02 var(--hue)));
+  --surface-1: light-dark(var(--paper-1), oklch(0.205 0.022 var(--hue)));
+  --surface-2: light-dark(var(--paper-2), oklch(0.245 0.024 var(--hue)));
+
+  --background: var(--surface-0);
+  --foreground: light-dark(oklch(0.23 0.03 var(--hue)), oklch(0.95 0.014 var(--hue)));
+
+  --card: var(--surface-1);
   --card-foreground: var(--foreground);
-  --popover: var(--card);
+  --popover: var(--surface-2);
   --popover-foreground: var(--foreground);
 
-  --primary: light-dark(oklch(0.52 var(--chroma) var(--hue)), oklch(0.74 var(--chroma) var(--hue)));
-  --primary-foreground: light-dark(oklch(0.985 0.01 var(--hue)), oklch(0.2 0.04 var(--hue)));
+  --primary: light-dark(oklch(0.5 var(--chroma) var(--hue)), oklch(0.76 var(--chroma) var(--hue)));
+  --primary-foreground: light-dark(oklch(0.985 0.01 var(--hue)), oklch(0.18 0.04 var(--hue)));
 
-  --secondary: light-dark(oklch(0.955 0.02 var(--hue)), oklch(0.27 0.02 var(--hue)));
-  --secondary-foreground: light-dark(oklch(0.3 0.04 var(--hue)), oklch(0.94 0.01 var(--hue)));
+  --secondary: light-dark(oklch(0.93 0.025 var(--hue)), oklch(0.27 0.025 var(--hue)));
+  --secondary-foreground: light-dark(oklch(0.3 0.045 var(--hue)), oklch(0.94 0.012 var(--hue)));
 
-  --muted: light-dark(oklch(0.96 0.008 var(--hue)), oklch(0.245 0.012 var(--hue)));
-  --muted-foreground: light-dark(oklch(0.5 0.02 var(--hue)), oklch(0.71 0.02 var(--hue)));
+  --muted: light-dark(oklch(0.935 0.016 var(--hue)), oklch(0.25 0.02 var(--hue)));
+  --muted-foreground: light-dark(oklch(0.47 0.03 var(--hue)), oklch(0.74 0.025 var(--hue)));
 
   /* shadcn's "accent" = hover/active surface, not the user's accent colour */
-  --accent: light-dark(oklch(0.94 0.03 var(--hue)), oklch(0.29 0.03 var(--hue)));
-  --accent-foreground: light-dark(oklch(0.28 0.05 var(--hue)), oklch(0.95 0.01 var(--hue)));
+  --accent: light-dark(oklch(0.92 0.04 var(--hue)), oklch(0.29 0.04 var(--hue)));
+  --accent-foreground: light-dark(oklch(0.27 0.06 var(--hue)), oklch(0.95 0.012 var(--hue)));
 
-  --destructive: light-dark(oklch(0.56 0.21 27), oklch(0.68 0.19 22));
+  --destructive: light-dark(oklch(0.53 0.2 27), oklch(0.7 0.18 22));
   --destructive-foreground: oklch(0.985 0 0);
 
-  /* Light value is dark enough for 4.5:1 text contrast on card and muted surfaces (axe-checked). */
-  --warning: light-dark(oklch(0.53 0.13 65), oklch(0.8 0.14 80));
+  /* Light value is dark enough for 4.5:1 text contrast on tiles and tinted pills (axe-checked). */
+  --warning: light-dark(oklch(0.5 0.12 65), oklch(0.82 0.14 80));
 
-  --border: light-dark(oklch(0.91 0.01 var(--hue)), oklch(0.3 0.015 var(--hue)));
+  /* Soft borders: a little foreground over the surface. */
+  --border: light-dark(oklch(0.875 0.02 var(--hue)), oklch(0.3 0.025 var(--hue)));
+  --border-soft: light-dark(oklch(0.9 0.016 var(--hue)), oklch(0.27 0.022 var(--hue)));
   --input: var(--border);
-  --ring: light-dark(oklch(0.62 var(--chroma) var(--hue)), oklch(0.6 var(--chroma) var(--hue)));
+  --ring: light-dark(oklch(0.58 var(--chroma) var(--hue)), oklch(0.68 var(--chroma) var(--hue)));
 
-  --sidebar: light-dark(oklch(0.975 0.008 var(--hue)), oklch(0.19 0.013 var(--hue)));
+  --sidebar: light-dark(color-mix(in oklab, var(--paper-0) 82%, transparent), oklch(0.15 0.02 var(--hue) / 0.82));
   --sidebar-foreground: var(--foreground);
-  --sidebar-border: var(--border);
-  --sidebar-active: var(--accent);
-  --sidebar-active-foreground: var(--accent-foreground);
+  --sidebar-border: var(--border-soft);
+  --sidebar-active: var(--surface-1);
+  --sidebar-active-foreground: var(--foreground);
 
+  /* Elevation: soft shadows in light mode, a faint top highlight in dark mode. */
+  --shadow-color: light-dark(oklch(0.4 0.05 var(--hue) / 0.1), oklch(0.05 0.01 var(--hue) / 0.45));
+  --highlight: light-dark(oklch(1 0 0 / 0.65), oklch(1 0 0 / 0.055));
+  --shadow-tile: 0 1px 2px var(--shadow-color), 0 8px 24px -14px var(--shadow-color), inset 0 1px 0 var(--highlight);
+  --shadow-raised: 0 2px 6px var(--shadow-color), 0 18px 40px -18px var(--shadow-color), inset 0 1px 0 var(--highlight);
+
+  /* Ambient glow: stronger in dark, faint in light. */
+  --glow-a: light-dark(oklch(0.86 0.09 var(--hue) / 0.45), oklch(0.55 0.13 var(--hue) / 0.2));
+  --glow-b: light-dark(oklch(0.88 0.07 calc(var(--hue) + 50) / 0.35), oklch(0.5 0.1 calc(var(--hue) + 40) / 0.16));
+  --grain-opacity: 0.035;
+
+  /* Intensity scale for load shading (week strip): 0 = surface, 4 = strong accent tint. */
+  --load-1: color-mix(in oklab, var(--primary) 9%, var(--surface-1));
+  --load-2: color-mix(in oklab, var(--primary) 17%, var(--surface-1));
+  --load-3: color-mix(in oklab, var(--primary) 27%, var(--surface-1));
+  --load-4: color-mix(in oklab, var(--primary) 38%, var(--surface-1));
+}
+
+:root {
   --font-app: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  /* Serif for page titles, the greeting and big numerals. */
+  --font-display-stack: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
 
-  color-scheme: light dark;
+  /* Motion */
+  --dur-fast: 150ms;
+  --dur-base: 250ms;
+  --dur-enter: 500ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* How far things travel when they enter; "subtle" motion keeps fades but drops movement. */
+  --rise: 10px;
+  --stagger: 40ms;
 }
 
 /* Mode */
@@ -68,9 +121,15 @@
 }
 [data-mode="dark"] {
   color-scheme: dark;
+  --grain-opacity: 0.05;
 }
 [data-mode="system"] {
   color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  [data-mode="system"] {
+    --grain-opacity: 0.05;
+  }
 }
 
 /* Presets: hue and chroma only */
@@ -111,6 +170,11 @@
   --spacing: 0.21rem;
 }
 
+/* Motion preference. "off" and the OS reduced-motion setting turn everything off. */
+[data-motion="subtle"] {
+  --rise: 0px;
+}
+
 /* `dark:` utilities follow the same rules as the tokens */
 @custom-variant dark {
   &:where([data-mode="dark"], [data-mode="dark"] *) {
@@ -142,6 +206,7 @@
   --color-destructive-foreground: var(--destructive-foreground);
   --color-warning: var(--warning);
   --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
   --color-input: var(--input);
   --color-ring: var(--ring);
   --color-sidebar: var(--sidebar);
@@ -149,13 +214,27 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-active: var(--sidebar-active);
   --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --radius-tile: 1rem;
+
+  --shadow-tile: var(--shadow-tile);
+  --shadow-raised: var(--shadow-raised);
 
   --font-sans: var(--font-app);
+  --font-display: var(--font-display-stack);
+
+  /* Body copy at 15px; metadata (text-xs) stays at 12px. */
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.45;
+
+  --ease-out: var(--ease-out);
 }
 
 @layer base {
@@ -167,10 +246,274 @@
   }
   body {
     @apply bg-background font-sans text-foreground antialiased;
+    font-feature-settings: "cv11", "ss01";
   }
 }
 
 /* Preset swatch: an element with data-preset shows that preset's colour */
 @utility swatch {
   background: light-dark(oklch(0.58 var(--chroma) var(--hue)), oklch(0.72 var(--chroma) var(--hue)));
+}
+
+/* ---------------------------------------------------------------------------
+ * Tiles
+ * ------------------------------------------------------------------------- */
+
+@utility tile {
+  position: relative;
+  border-radius: var(--radius-tile);
+  border: 1px solid var(--border-soft);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-tile);
+}
+
+/* A tile tinted with a course colour (set --tint on the element). */
+@utility tile-tinted {
+  background: color-mix(in oklab, var(--tint) 13%, var(--surface-1));
+  border-color: color-mix(in oklab, var(--tint) 28%, var(--border-soft));
+}
+
+/*
+ * Spotlight: a soft glow on the tile border that follows the pointer. --mx/--my
+ * are set by one delegated pointermove handler (MotionRuntime), on hover devices only.
+ */
+@media (hover: hover) {
+  [data-spotlight]::after {
+    content: "";
+    position: absolute;
+    inset: -1px;
+    border-radius: inherit;
+    padding: 1px;
+    pointer-events: none;
+    background: radial-gradient(
+      220px circle at var(--mx, 50%) var(--my, 0%),
+      color-mix(in oklab, var(--primary) 75%, transparent),
+      transparent 70%
+    );
+    mask:
+      linear-gradient(#000 0 0) content-box,
+      linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+  }
+  [data-spotlight]:hover::after {
+    opacity: 1;
+  }
+}
+
+/* A soft accent glow around a field group while anything inside has focus (fades in; opacity only). */
+@utility focus-glow {
+  position: relative;
+  isolation: isolate;
+  &::before {
+    content: "";
+    position: absolute;
+    inset: -6px;
+    z-index: -1;
+    border-radius: calc(var(--radius) + 6px);
+    background: color-mix(in oklab, var(--ring) 22%, transparent);
+    box-shadow: 0 0 22px color-mix(in oklab, var(--ring) 30%, transparent);
+    opacity: 0;
+    transition: opacity var(--dur-base) var(--ease-out);
+    pointer-events: none;
+  }
+  &:focus-within::before {
+    opacity: 1;
+  }
+}
+
+/* Leaf-vein line pattern, drawn in the current tint. Put it on an absolutely-positioned, aria-hidden element. */
+@utility leaf-veins {
+  background: var(--tint, var(--primary));
+  mask:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200' fill='none' stroke='%23000' stroke-width='1.4' stroke-linecap='round'%3E%3Cpath d='M8 196C70 140 128 82 196 4'/%3E%3Cpath d='M40 168C30 142 28 122 31 100M40 168C68 173 90 171 112 165M70 141C60 112 62 90 68 70M70 141C99 146 124 141 146 132M100 112C95 86 100 66 108 46M100 112C128 115 150 108 170 98M130 82C128 61 133 46 140 30M130 82C152 82 168 76 182 66M55 155C48 140 47 128 49 118M55 155C70 158 82 158 93 155M86 126C80 108 81 96 85 84M86 126C104 129 118 126 131 120M115 97C112 80 115 69 121 58M115 97C133 98 146 94 157 87'/%3E%3C/svg%3E")
+    center / contain no-repeat;
+}
+
+/* ---------------------------------------------------------------------------
+ * Ambient background: one fixed element, two slow-drifting accent glows + grain.
+ * The drift pauses while the tab is hidden (MotionRuntime sets data-tab-hidden).
+ * ------------------------------------------------------------------------- */
+
+.ambient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  contain: strict;
+}
+.ambient::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background:
+    radial-gradient(38% 32% at 22% 12%, var(--glow-a), transparent 72%),
+    radial-gradient(34% 40% at 86% 78%, var(--glow-b), transparent 72%);
+  animation: ambient-drift 52s var(--ease-in-out) infinite alternate;
+  will-change: transform;
+}
+.ambient::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: var(--foreground);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity);
+}
+[data-tab-hidden] .ambient::before,
+[data-motion="subtle"] .ambient::before {
+  animation-play-state: paused;
+}
+
+@keyframes ambient-drift {
+  from {
+    transform: translate3d(-4%, -3%, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(5%, 4%, 0) rotate(7deg);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Entrances and loops
+ * ------------------------------------------------------------------------- */
+
+/* Staggered fade-up on mount. Set --i (0, 1, 2…) for the stagger. */
+@utility reveal {
+  animation: reveal var(--dur-enter) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger));
+}
+@keyframes reveal {
+  /* 0.01, not 0: an element at opacity 0 isn't "painted" for Largest Contentful Paint, so a fade
+     from 0 would hold back LCP until it ends. 0.01 looks the same and counts from the first frame. */
+  from {
+    opacity: 0.01;
+    transform: translate3d(0, var(--rise), 0);
+  }
+}
+
+/* The pulsing "Now" dot: the only looping element besides the ambient background. */
+@utility now-dot {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: inherit;
+    animation: now-pulse 2.4s var(--ease-out) infinite;
+  }
+}
+@keyframes now-pulse {
+  0% {
+    transform: scale(1);
+    opacity: 0.55;
+  }
+  70%,
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+[data-motion="subtle"] .now-dot::after {
+  animation: none;
+}
+
+/* Ring draw-in: the arc sweeps into place (rotation + fade; transform and opacity only). */
+@keyframes ring-in {
+  from {
+    opacity: 0;
+    transform: rotate(-110deg);
+  }
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes grow-y {
+  from {
+    transform: scaleY(0);
+  }
+}
+@utility grow-x {
+  transform-origin: left center;
+  animation: grow-x var(--dur-enter) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger) + 120ms);
+}
+@utility grow-y {
+  transform-origin: center bottom;
+  animation: grow-y var(--dur-enter) var(--ease-out) both;
+  animation-delay: calc(var(--i, 0) * var(--stagger) + 120ms);
+}
+
+/* ---------------------------------------------------------------------------
+ * Page navigation: a short crossfade where the View Transitions API exists.
+ * ------------------------------------------------------------------------- */
+
+::view-transition-old(*.page-out) {
+  animation: vt-fade-out var(--dur-fast) var(--ease-out) both;
+}
+::view-transition-new(*.page-in) {
+  animation: vt-fade-in var(--dur-base) var(--ease-out) both;
+}
+::view-transition-group(nav-pill),
+::view-transition-group(nav-pill-mobile) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-group(*.task-row) {
+  animation-duration: var(--dur-base);
+  animation-timing-function: var(--ease-out);
+}
+::view-transition-old(*.task-out) {
+  animation: vt-collapse var(--dur-base) var(--ease-out) both;
+}
+@keyframes vt-fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes vt-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes vt-collapse {
+  to {
+    opacity: 0;
+    transform: translateX(12px) scaleY(0.6);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Motion off: the user's "off" setting, or the OS asking for reduced motion.
+ * Everything renders in its final state; nothing loops.
+ * ------------------------------------------------------------------------- */
+
+[data-motion="off"] *,
+[data-motion="off"] *::before,
+[data-motion="off"] *::after {
+  animation: none !important;
+  transition-duration: 0s !important;
+}
+[data-motion="off"]::view-transition-group(*),
+[data-motion="off"]::view-transition-old(*),
+[data-motion="off"]::view-transition-new(*) {
+  animation: none !important;
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition-duration: 0s !important;
+  }
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
 }

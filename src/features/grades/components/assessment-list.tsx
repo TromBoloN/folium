@@ -10,7 +10,7 @@ import type { AssessmentRecord } from "../queries";
 
 export function AssessmentList({ assessments, timeZone }: { assessments: AssessmentRecord[]; timeZone: string }) {
   return (
-    <ul className="divide-y rounded-lg border bg-card">
+    <ul className="tile divide-y divide-border-soft overflow-hidden">
       {assessments.map((a) => {
         const pct = percentOf(a);
         const date = a.dueAt

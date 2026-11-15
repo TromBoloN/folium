@@ -54,6 +54,7 @@ async function Grades() {
     })),
   );
   const current = semesters[0];
+  const maxPoints = Math.max(...preferences.gradeScale.map((b) => b.points));
 
   return (
     <div className="flex flex-col gap-6">
@@ -62,8 +63,16 @@ async function Grades() {
           label={current?.label ? `GPA · ${current.label}` : "GPA · this semester"}
           gpa={current?.gpa ?? null}
           credits={current?.credits ?? 0}
+          maxPoints={maxPoints}
+          reveal={0}
         />
-        <GpaStat label="GPA · all semesters" gpa={overall.gpa} credits={overall.credits} />
+        <GpaStat
+          label="GPA · all semesters"
+          gpa={overall.gpa}
+          credits={overall.credits}
+          maxPoints={maxPoints}
+          reveal={1}
+        />
       </div>
       <p className="text-muted-foreground text-xs">
         GPA counts courses with credits and at least one graded assessment, weighted by credits. Grades in progress use
@@ -75,13 +84,13 @@ async function Grades() {
         const id = `semester-${s.label ?? "none"}`.replace(/\s+/g, "-");
         return (
           <section key={s.label ?? "none"} aria-labelledby={id} className="flex flex-col gap-2">
-            <h2 id={id} className="flex items-baseline justify-between gap-2 font-medium">
+            <h2 id={id} className="flex items-baseline justify-between gap-2 px-1 font-display font-medium text-lg">
               {s.label ?? "No semester"}
-              <span className="font-normal text-muted-foreground text-sm tabular-nums">
+              <span className="font-normal font-sans text-muted-foreground text-sm tabular-nums">
                 {s.gpa === null ? "No GPA yet" : `GPA ${formatGpa(s.gpa)}`}
               </span>
             </h2>
-            <ul className="divide-y rounded-lg border bg-card">
+            <ul className="tile reveal divide-y divide-border-soft overflow-hidden">
               {list.map(({ course, result }) => (
                 <CourseGradeRow key={course.id} course={course} result={result} />
               ))}

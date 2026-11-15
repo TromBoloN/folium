@@ -20,7 +20,7 @@ async function TasksIn({ states, empty, moreHref }: { states: DueState[]; empty:
 
   return (
     <div className="flex flex-col gap-2">
-      <ul className="-mx-2 divide-y">
+      <ul className="-mx-4 divide-y divide-border-soft border-border-soft border-y sm:-mx-5">
         {rows.slice(0, LIMIT).map(({ task, state }) => (
           <TaskRow
             key={task.id}
@@ -31,8 +31,8 @@ async function TasksIn({ states, empty, moreHref }: { states: DueState[]; empty:
         ))}
       </ul>
       {rows.length > LIMIT ? (
-        <Link href={moreHref} className="text-muted-foreground text-sm hover:text-foreground">
-          {rows.length - LIMIT} more
+        <Link href={moreHref} className="w-fit text-muted-foreground text-sm hover:text-foreground">
+          + {rows.length - LIMIT} more
         </Link>
       ) : null}
     </div>

@@ -1,3 +1,4 @@
+import { Pill } from "@/components/ui/pill";
 import { type DueState, dueState, formatDue } from "../due";
 import type { Task } from "../queries";
 import { TaskRow } from "./task-row";
@@ -21,7 +22,7 @@ export function TaskList({ tasks, now, timeZone, timeFormat, grouped }: Props) {
 
   if (!grouped) {
     return (
-      <ul className="divide-y rounded-lg border bg-card">
+      <ul className="tile reveal divide-y divide-border-soft overflow-hidden">
         {rows.map((r) => (
           <TaskRow key={r.task.id} task={r.task} dueLabel={r.label} dueState={r.state} />
         ))}
@@ -31,18 +32,22 @@ export function TaskList({ tasks, now, timeZone, timeFormat, grouped }: Props) {
 
   return (
     <div className="flex flex-col gap-6">
-      {GROUPS.map(({ state, title }) => {
+      {GROUPS.filter(({ state }) => rows.some((r) => r.state === state)).map(({ state, title }, i) => {
         const group = rows.filter((r) => r.state === state);
-        if (group.length === 0) return null;
         return (
-          <section key={state} aria-labelledby={`group-${state}`} className="flex flex-col gap-2">
-            <h2
-              id={`group-${state}`}
-              className={`font-medium text-sm ${state === "overdue" ? "text-destructive" : "text-muted-foreground"}`}
-            >
-              {title} <span className="font-normal">({group.length})</span>
+          <section
+            key={state}
+            aria-labelledby={`group-${state}`}
+            className="reveal flex flex-col gap-2"
+            style={{ "--i": i + 3 } as React.CSSProperties}
+          >
+            <h2 id={`group-${state}`} className="flex items-center gap-2 px-1 font-medium text-sm">
+              {title}{" "}
+              <Pill tone={state === "overdue" ? "danger" : state === "today" ? "warning" : "neutral"}>
+                {group.length}
+              </Pill>
             </h2>
-            <ul className="divide-y rounded-lg border bg-card">
+            <ul className="tile divide-y divide-border-soft overflow-hidden">
               {group.map((r) => (
                 <TaskRow key={r.task.id} task={r.task} dueLabel={r.label} dueState={r.state} />
               ))}

@@ -2,6 +2,36 @@
 
 Short records of real choices, newest first. Each says what was decided, why, and what it costs.
 
+## 2026-11-15: Visual redesign uses CSS and View Transitions, no animation library
+
+**Decision.** The "rich and alive" redesign (bento Today page, layered surfaces, serif display font, motion) is built with CSS animations on `transform`/`opacity` and React's `<ViewTransition>` (the browser View Transitions API). Motion (Framer Motion) was not added. The only new download is Fraunces via `next/font`.
+
+**Why.** Every animation we need is either an entrance (CSS keyframes, staggered by a `--i` variable), a loop (two allowed: the "now" dot and the ambient glow), or a layout change between two React states: the nav pill sliding between items and a checked-off task collapsing while the rows below close up. View Transitions animate those last ones as snapshots on the compositor, with no layout measuring and no extra JS bundle. Where they're unsupported the UI just switches instantly.
+
+**Cost.** Layout animations only run in browsers with View Transitions (Chromium, recent Safari and Firefox). Rows only collapse when the list re-renders after the server action, so there's a short pending state first (the checkbox fills and the row dims while saving).
+
+## 2026-11-15: Motion is a theme setting; the OS reduced-motion setting always wins
+
+**Decision.** `theme.motion` is `full | subtle | off` (default `full`, no migration: settings merge over defaults). It's applied as `data-motion` on `<html>`. `subtle` keeps fades and drops movement, loops and count-ups; `off` and `prefers-reduced-motion: reduce` turn every animation and view transition off in CSS. Client code reads the same rule from `motionLevel()`.
+
+**Why.** Some people find motion distracting without having turned on the OS setting; others want it everywhere but on one device. Animations are entrances and feedback, never information, so turning them off loses nothing.
+
+## 2026-11-15: Today is a bento grid with fixed size hints per widget
+
+**Decision.** Each registry entry has a fixed `size` (`hero`, `wide`, `tall`, `small`) and `frame` (`tile` or `bare`). The grid is a container query grid (1 column, 2 from `@xl`, 12 from `@4xl`) with `grid-auto-flow: dense`; tiles keep their content height, except the day timeline, which stretches to fill its two-row slot because a time axis can be any height. Sizes aren't user-resizable; order and visibility still come from the saved layout.
+
+**Why.** Varied tile sizes give the page hierarchy, and fixed sizes keep the layout predictable and the default order balanced (rows add up to 12 columns). Container queries rather than viewport breakpoints, because the space next to the sidebar is what matters.
+
+**Also.** The existing `classes` widget became the day timeline, keeping its id and title so saved layouts and links keep working, instead of adding a second "today's classes" widget. New ids (`next-up`, `stats`, `week`) are appended for users who saved a layout before they existed.
+
+## 2026-11-15: Theme tokens are re-declared on any `[data-preset]` element
+
+**Decision.** The token block in `globals.css` applies to `:root, [data-preset]`, not just `:root`. A custom accent also sets `--hue` (its OKLCH hue) inline on `<html>`.
+
+**Why.** Custom properties built from `var(--hue)` resolve where they're declared, so a nested element with another `data-preset` didn't re-theme its contents. Re-declaring makes the settings preview and the preset cards real miniatures of each theme. Setting `--hue` from a custom accent tints the neutrals and the ambient glow to match, instead of keeping the preset's hue under a different accent.
+
+**Cost.** The handful of nested `[data-preset]` elements each recompute the token set (negligible).
+
 ## 2026-11-15: Course grades normalise by the weights entered
 
 **Decision.** A course's grade so far is Σ(weight × %) / Σ(graded weight). Weights are percentages of the course grade but are **not** forced to sum to 100; the course page warns when they don't. "What do I need?" solves for the average on ungraded work over the total weight entered.

@@ -44,7 +44,7 @@ export function NeededCalculator({ courseId, assessments, scale, target }: Props
   }
 
   return (
-    <section aria-labelledby="needed" className="flex flex-col gap-3 rounded-xl border bg-card p-4">
+    <section aria-labelledby="needed" className="flex flex-col gap-3 tile p-4">
       <h2 id="needed" className="flex items-center gap-2 font-medium">
         <Target aria-hidden className="size-4 text-primary" />
         What do I need?

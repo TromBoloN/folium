@@ -9,12 +9,18 @@ export function CourseGradeRow({ course, result }: { course: GradebookCourse; re
     <li>
       <Link
         href={`/grades/${course.id}`}
-        style={{ "--course": course.color } as React.CSSProperties}
-        className="flex items-center gap-3 px-4 py-3 transition-colors hover:bg-accent/50"
+        style={{ "--tint": course.color } as React.CSSProperties}
+        className="relative flex items-center gap-3 py-3 pr-4 pl-5 transition-colors hover:bg-[color-mix(in_oklab,var(--tint)_8%,transparent)]"
       >
-        <span aria-hidden className="size-3 shrink-0 rounded-full bg-(--course)" />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
+        <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate font-medium">{course.name}</span>
+          <span aria-hidden className="h-1.5 max-w-sm overflow-hidden rounded-full bg-muted">
+            <span
+              className="grow-x block h-full w-full rounded-full bg-(--tint)"
+              style={{ transform: `scaleX(${Math.min(100, result.percent ?? 0) / 100})` }}
+            />
+          </span>
           <span className="text-muted-foreground text-xs">
             {course.credits > 0 ? `${course.credits} SKS` : "Not counted (0 SKS)"}
             {result.totalWeight > 0 ? ` · ${graded}% graded` : " · No assessments"}
@@ -23,7 +29,7 @@ export function CourseGradeRow({ course, result }: { course: GradebookCourse; re
         <span className="text-right tabular-nums">
           {result.band ? (
             <>
-              <span className="font-semibold">{result.band.letter}</span>
+              <span className="font-display font-medium text-xl">{result.band.letter}</span>
               <span className="block text-muted-foreground text-xs">
                 {formatPercent(result.percent ?? 0)}% · {result.band.points.toFixed(2)}
               </span>

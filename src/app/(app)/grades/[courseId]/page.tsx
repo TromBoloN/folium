@@ -63,17 +63,17 @@ async function CourseGrades({
         <h2 id="standing" className="sr-only">
           Current standing
         </h2>
-        <div className="rounded-xl border bg-card p-4">
+        <div className="tile p-4">
           <span className="text-muted-foreground text-xs">Grade so far</span>
           <span className="block font-semibold text-2xl">{result.band?.letter ?? "–"}</span>
         </div>
-        <div className="rounded-xl border bg-card p-4">
+        <div className="tile p-4">
           <span className="text-muted-foreground text-xs">Percentage</span>
           <span className="block font-semibold text-2xl tabular-nums">
             {result.percent === null ? "–" : `${formatPercent(result.percent)}%`}
           </span>
         </div>
-        <div className="rounded-xl border bg-card p-4">
+        <div className="tile p-4">
           <span className="text-muted-foreground text-xs">Graded</span>
           <span className="block font-semibold text-2xl tabular-nums">
             {result.totalWeight > 0 ? `${Math.round((result.gradedWeight / result.totalWeight) * 100)}%` : "–"}

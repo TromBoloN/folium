@@ -19,7 +19,7 @@ export function SubtaskList({ taskId, subtasks }: { taskId: string; subtasks: Su
         ) : null}
       </h2>
       {subtasks.length > 0 ? (
-        <ul className="divide-y rounded-lg border bg-card">
+        <ul className="tile divide-y divide-border-soft overflow-hidden">
           {subtasks.map((s) => (
             <li key={s.id} className="flex items-center gap-2 px-2 py-1.5">
               <ActionForm action={toggleSubtask} fields={{ id: s.id, done: String(!s.done) }}>

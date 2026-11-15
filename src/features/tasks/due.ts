@@ -120,3 +120,28 @@ export function compareTasks(
   }
   return PRIORITY_RANK[b.priority] - PRIORITY_RANK[a.priority] || a.createdAt.localeCompare(b.createdAt);
 }
+
+/**
+ * Counts for the tasks summary strip, over open tasks: overdue now, due today
+ * (still ahead), and due from now through the end of this week (today included).
+ */
+export function dueSummary(
+  tasks: readonly (Due & { status: string })[],
+  now: Date,
+  timeZone: string,
+  weekStart: WeekStart,
+): { overdue: number; today: number; week: number } {
+  const lastDay = weekDates(todayIn(timeZone, now), weekStart)[6];
+  let overdue = 0;
+  let today = 0;
+  let week = 0;
+  for (const t of tasks) {
+    const state = dueState(t, now, timeZone);
+    if (state === "overdue") overdue++;
+    if (state === "today") today++;
+    if ((state === "today" || state === "soon" || state === "later") && t.dueAt) {
+      if (dueParts(t.dueAt, t.dueHasTime, timeZone).date <= lastDay) week++;
+    }
+  }
+  return { overdue, today, week };
+}

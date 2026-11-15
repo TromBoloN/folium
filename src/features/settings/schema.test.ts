@@ -35,6 +35,12 @@ describe("mergeOverDefaults", () => {
     expect(merged).toEqual({ ...DEFAULT_THEME, mode: "dark", density: "compact" });
   });
 
+  it("defaults motion to full for rows saved before the setting existed, and keeps a stored choice", () => {
+    expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { mode: "dark" }).motion).toBe("full");
+    expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { motion: "subtle" }).motion).toBe("subtle");
+    expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { motion: "wild" }).motion).toBe("full");
+  });
+
   it("ignores unknown keys", () => {
     expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { removedSetting: true })).toEqual(DEFAULT_THEME);
   });

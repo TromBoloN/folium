@@ -158,7 +158,7 @@ function SortableRow({ widget, visible, first, last, onToggle, onMove }: RowProp
       ref={setNodeRef}
       style={{ transform: CSS.Transform.toString(transform), transition }}
       className={cn(
-        "flex items-center gap-2 rounded-lg border bg-card p-2 pr-3",
+        "tile flex items-center gap-2 p-2 pr-3",
         isDragging && "relative z-10 shadow-lg ring-2 ring-ring",
         !visible && "bg-muted/60",
       )}

@@ -13,7 +13,7 @@ export function QuickAdd({ courseId, courseName }: { courseId?: string; courseNa
   return (
     <form key={JSON.stringify(state)} action={action} className="flex flex-col gap-1">
       {courseId ? <input type="hidden" name="courseId" value={courseId} /> : null}
-      <div className="flex gap-2">
+      <div className="focus-glow flex gap-2">
         <Input
           name="title"
           defaultValue={kept}

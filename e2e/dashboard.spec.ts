@@ -2,6 +2,16 @@ import { expect, type Page, test } from "@playwright/test";
 import { localDate, signUp, waitForContent } from "./helpers";
 
 const TZ = "Asia/Makassar";
+const DEFAULT_TITLES = [
+  "Next up",
+  "At a glance",
+  "Today's classes",
+  "This week",
+  "Due soon",
+  "Overdue",
+  "Grades",
+  "Quick add",
+];
 
 /** Current local time in the default zone, shifted by some minutes, as "HH:MM". */
 function localTime(offsetMinutes: number) {
@@ -81,7 +91,7 @@ test("today's classes highlight what's on now and next", async ({ page }) => {
 test("customize: hide and reorder widgets, saved across reloads", async ({ page }) => {
   await signUp(page);
   await waitForContent(page);
-  expect(await widgetTitles(page)).toEqual(["Today's classes", "Due soon", "Overdue", "Quick add", "Grades"]);
+  expect(await widgetTitles(page)).toEqual(DEFAULT_TITLES);
 
   await page.getByRole("link", { name: "Customize" }).click();
   await expect(page.getByRole("heading", { name: "Customize your dashboard" })).toBeVisible();
@@ -90,7 +100,7 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
 
   // Hide "Overdue", move "Quick add" to the top with the buttons.
   await page.getByLabel("Show Overdue").uncheck();
-  for (let i = 0; i < 3; i++) await page.getByRole("button", { name: "Move Quick add up" }).click();
+  for (let i = 0; i < 7; i++) await page.getByRole("button", { name: "Move Quick add up" }).click();
   await expect(page.getByRole("button", { name: "Move Quick add up" })).toBeDisabled();
 
   // Keyboard drag: pick up "Due soon", move it up one place, drop.
@@ -98,17 +108,17 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
   await page.getByRole("button", { name: "Reorder Due soon" }).focus();
   await page.keyboard.press("Space");
   // The live region keeps only the latest message; picking up reports the starting position.
-  await expect(page.getByText("Due soon is now at position 3 of 5.")).toBeAttached();
+  await expect(page.getByText("Due soon is now at position 6 of 8.")).toBeAttached();
   await page.keyboard.press("ArrowUp");
-  await expect(page.getByText("Due soon is now at position 2 of 5.")).toBeAttached();
+  await expect(page.getByText("Due soon is now at position 5 of 8.")).toBeAttached();
   await page.keyboard.press("Space");
-  await expect(page.getByText("Due soon dropped at position 2.")).toBeAttached();
+  await expect(page.getByText("Due soon dropped at position 5.")).toBeAttached();
   const rows = page.locator("form ul > li");
-  await expect(rows.nth(1)).toContainText("Due soon");
+  await expect(rows.nth(4)).toContainText("Due soon");
 
   await page.getByRole("button", { name: "Save layout" }).click();
   await expect(page).toHaveURL(/\/$/);
-  const expected = ["Quick add", "Due soon", "Today's classes", "Grades"];
+  const expected = ["Quick add", "Next up", "At a glance", "Today's classes", "Due soon", "This week", "Grades"];
   await expect.poll(() => widgetTitles(page)).toEqual(expected);
 
   await page.reload();
@@ -118,7 +128,5 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
   await page.getByRole("link", { name: "Customize" }).click();
   await page.getByRole("button", { name: "Reset to default" }).click();
   await page.getByRole("button", { name: "Save layout" }).click();
-  await expect
-    .poll(() => widgetTitles(page))
-    .toEqual(["Today's classes", "Due soon", "Overdue", "Quick add", "Grades"]);
+  await expect.poll(() => widgetTitles(page)).toEqual(DEFAULT_TITLES);
 });

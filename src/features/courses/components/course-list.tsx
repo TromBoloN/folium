@@ -1,5 +1,7 @@
-import { Archive, ChevronRight } from "lucide-react";
+import { Archive, ChevronRight, Clock, MapPin, User } from "lucide-react";
 import Link from "next/link";
+import { Pill } from "@/components/ui/pill";
+import { cn } from "@/lib/utils";
 import { OverlapWarning } from "../../timetable/components/overlap-warning";
 import { findConflicts, formatTime, sortSlots, weekdayLabel } from "../../timetable/logic";
 import type { TimetableSlot } from "../../timetable/types";
@@ -15,9 +17,9 @@ export function CourseList({ courses, timeFormat }: Props) {
   return (
     <div className="flex flex-col gap-6">
       {active.length > 0 ? (
-        <ul className="flex flex-col gap-2">
-          {active.map((c) => (
-            <CourseRow key={c.id} course={c} timeFormat={timeFormat} conflicts={conflicts} />
+        <ul className="grid gap-3 sm:grid-cols-2">
+          {active.map((c, i) => (
+            <CourseTile key={c.id} course={c} timeFormat={timeFormat} conflicts={conflicts} index={i} />
           ))}
         </ul>
       ) : (
@@ -26,14 +28,14 @@ export function CourseList({ courses, timeFormat }: Props) {
 
       {archived.length > 0 ? (
         <details className="group">
-          <summary className="flex cursor-pointer list-none items-center gap-2 text-muted-foreground text-sm hover:text-foreground">
+          <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-md text-muted-foreground text-sm hover:text-foreground">
             <Archive aria-hidden className="size-4" />
             Archived ({archived.length})
             <ChevronRight aria-hidden className="size-4 transition-transform group-open:rotate-90" />
           </summary>
-          <ul className="mt-3 flex flex-col gap-2 opacity-80">
+          <ul className="mt-3 grid gap-3 sm:grid-cols-2">
             {archived.map((c) => (
-              <CourseRow key={c.id} course={c} timeFormat={timeFormat} />
+              <CourseTile key={c.id} course={c} timeFormat={timeFormat} muted />
             ))}
           </ul>
         </details>
@@ -42,38 +44,79 @@ export function CourseList({ courses, timeFormat }: Props) {
   );
 }
 
-function CourseRow({
+function CourseTile({
   course,
   timeFormat,
   conflicts,
+  index,
+  muted = false,
 }: {
   course: CourseWithSlots;
   timeFormat: "24h" | "12h";
   conflicts?: Map<string, TimetableSlot[]>;
+  index?: number;
+  muted?: boolean;
 }) {
-  const meta = [course.code, course.lecturer, course.room].filter(Boolean).join(" · ");
-  const schedule = sortSlots(course.slots)
-    .map((s) => `${weekdayLabel(s.weekday, "short")} ${formatTime(s.startTime, timeFormat)}`)
-    .join(", ");
+  const slots = sortSlots(course.slots);
   const clashing = conflicts
     ? [...new Set(course.slots.flatMap((s) => conflicts.get(s.id) ?? []).map((o) => o.course.code ?? o.course.name))]
     : [];
 
   return (
-    <li>
+    <li className={index === undefined ? undefined : "reveal"} style={{ "--i": index } as React.CSSProperties}>
       <Link
         href={`/courses/${course.id}`}
-        style={{ "--course": course.color } as React.CSSProperties}
-        className="flex items-center gap-3 rounded-lg border bg-card px-4 py-3 transition-colors hover:bg-accent/50"
+        data-spotlight
+        style={{ "--tint": course.color } as React.CSSProperties}
+        className={cn(
+          "tile group/course flex h-full flex-col gap-3 overflow-hidden p-4 pl-5 transition-transform duration-(--dur-fast) hover:-translate-y-0.5",
+          !muted && "tile-tinted",
+        )}
       >
-        <span aria-hidden className="size-3 shrink-0 rounded-full bg-(--course)" />
-        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="truncate font-medium">{course.name}</span>
-          {meta ? <span className="truncate text-muted-foreground text-sm">{meta}</span> : null}
-          <span className="truncate text-muted-foreground text-xs">{schedule || "No class times yet"}</span>
-          <OverlapWarning withNames={clashing} />
+        <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
+        <span className="flex items-start justify-between gap-2">
+          <span className="flex min-w-0 flex-col gap-1">
+            {course.code ? (
+              <Pill tone="course" className="w-fit">
+                {course.code}
+              </Pill>
+            ) : null}
+            <span className="font-display font-medium text-xl leading-tight">{course.name}</span>
+          </span>
+          <ChevronRight
+            aria-hidden
+            className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-(--dur-fast) group-hover/course:translate-x-0.5"
+          />
         </span>
-        <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+        {course.lecturer || course.room ? (
+          <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground text-sm">
+            {course.lecturer ? (
+              <span className="inline-flex items-center gap-1">
+                <User aria-hidden className="size-3.5" />
+                {course.lecturer}
+              </span>
+            ) : null}
+            {course.room ? (
+              <span className="inline-flex items-center gap-1">
+                <MapPin aria-hidden className="size-3.5" />
+                {course.room}
+              </span>
+            ) : null}
+          </span>
+        ) : null}
+        <span className="mt-auto flex flex-wrap gap-1.5">
+          {slots.length > 0 ? (
+            slots.map((s) => (
+              <Pill key={s.id} tone="neutral" className="bg-surface-1/70 text-foreground">
+                <Clock aria-hidden />
+                {weekdayLabel(s.weekday, "short")} {formatTime(s.startTime, timeFormat)}
+              </Pill>
+            ))
+          ) : (
+            <span className="text-muted-foreground text-xs">No class times yet</span>
+          )}
+        </span>
+        <OverlapWarning withNames={clashing} />
       </Link>
     </li>
   );

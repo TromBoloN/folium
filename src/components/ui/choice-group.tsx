@@ -1,6 +1,12 @@
 import { cn } from "@/lib/utils";
 
-type Option<V extends string> = { value: V; label: string; swatch?: string };
+type Option<V extends string> = {
+  value: V;
+  label: string;
+  swatch?: string;
+  /** Custom content for the option (replaces the label; the label stays the accessible name). */
+  render?: React.ReactNode;
+};
 
 type Props<V extends string> = {
   name: string;
@@ -26,7 +32,7 @@ export function ChoiceGroup<V extends string>({ name, legend, options, defaultVa
         {options.map((option) => (
           <label
             key={option.value}
-            className="flex cursor-pointer items-center justify-center gap-2 rounded-md border px-3 py-2 text-sm transition-colors hover:bg-accent/60 has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50"
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-border-soft bg-surface-1 px-3 py-2 text-sm transition-colors duration-(--dur-fast) hover:bg-accent/60 has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-checked:shadow-tile has-focus-visible:ring-[3px] has-focus-visible:ring-ring/50"
           >
             <input
               type="radio"
@@ -35,10 +41,14 @@ export function ChoiceGroup<V extends string>({ name, legend, options, defaultVa
               defaultChecked={option.value === defaultValue}
               className="sr-only"
             />
-            {option.swatch ? (
-              <span aria-hidden data-preset={option.swatch} className="swatch size-4 shrink-0 rounded-full" />
-            ) : null}
-            {option.label}
+            {option.render ?? (
+              <>
+                {option.swatch ? (
+                  <span aria-hidden data-preset={option.swatch} className="swatch size-4 shrink-0 rounded-full" />
+                ) : null}
+                {option.label}
+              </>
+            )}
           </label>
         ))}
       </div>

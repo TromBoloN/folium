@@ -5,10 +5,11 @@ import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { Button } from "@/components/ui/button";
+import { Tile } from "@/components/ui/tile";
 import { requireUser } from "@/features/auth/queries";
 import { DashboardEditor } from "@/features/dashboard/components/dashboard-editor";
 import { Greeting, GreetingSkeleton } from "@/features/dashboard/components/greeting";
-import { WidgetFrame, WidgetSkeleton } from "@/features/dashboard/components/widget-frame";
+import { SIZE_CLASSES, WidgetFrame, WidgetSkeleton } from "@/features/dashboard/components/widget-frame";
 import { visibleWidgets } from "@/features/dashboard/layout";
 import { getDashboardLayout } from "@/features/dashboard/queries";
 import { WIDGETS } from "@/features/dashboard/registry";
@@ -18,8 +19,8 @@ export const metadata: Metadata = { title: "Today" };
 
 export default function TodayPage({ searchParams }: PageProps<"/">) {
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-wrap items-start justify-between gap-3">
+    <div data-wide className="flex flex-col gap-6 md:gap-8">
+      <div className="flex flex-wrap items-end justify-between gap-3">
         <Suspense fallback={<GreetingSkeleton />}>
           <Greeting />
         </Suspense>
@@ -27,7 +28,18 @@ export default function TodayPage({ searchParams }: PageProps<"/">) {
           <EditToggle searchParams={searchParams} />
         </Suspense>
       </div>
-      <Suspense fallback={<WidgetSkeleton rows={4} label="Loading your dashboard" />}>
+      <Suspense
+        fallback={
+          <div className="@container">
+            <div className="grid grid-cols-1 gap-4 @xl:grid-cols-2 @4xl:grid-cols-12">
+              <Tile className={`h-56 p-5 ${SIZE_CLASSES.hero}`}>
+                <WidgetSkeleton rows={3} label="Loading your dashboard" />
+              </Tile>
+              <Tile className={`h-56 ${SIZE_CLASSES.small}`} />
+            </div>
+          </div>
+        }
+      >
         <Dashboard searchParams={searchParams} />
       </Suspense>
     </div>
@@ -53,7 +65,7 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
 
   if (edit === "1") {
     return (
-      <section aria-labelledby="customize" className="flex flex-col gap-3">
+      <section aria-labelledby="customize" className="flex max-w-2xl flex-col gap-3">
         <div>
           <h2 id="customize" className="font-medium">
             Customize your dashboard
@@ -85,26 +97,47 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
   }
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      {ids.map((id) => {
-        const widget = WIDGETS[id];
-        return (
-          <WidgetFrame
-            key={id}
-            id={id}
-            title={widget.title}
-            icon={widget.icon}
-            href={widget.href}
-            hrefLabel={widget.hrefLabel}
-          >
+    // A container, so the bento adapts to the space beside the sidebar: 1 column, 2 from @xl, 12 from @4xl.
+    // Dense flow lets small tiles fill gaps; items-start keeps tiles at their content height.
+    <div className="@container">
+      <div className="grid grid-flow-row-dense grid-cols-1 items-start gap-4 @xl:grid-cols-2 @4xl:grid-cols-12">
+        {ids.map((id, index) => {
+          const widget = WIDGETS[id];
+          const content = (
             <SectionErrorBoundary label={widget.title}>
-              <Suspense fallback={<WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />}>
+              <Suspense
+                fallback={
+                  widget.frame === "bare" ? (
+                    <Tile className="p-5">
+                      <WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />
+                    </Tile>
+                  ) : (
+                    <WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />
+                  )
+                }
+              >
                 <widget.Component />
               </Suspense>
             </SectionErrorBoundary>
-          </WidgetFrame>
-        );
-      })}
+          );
+          return (
+            <WidgetFrame
+              key={id}
+              id={id}
+              title={widget.title}
+              icon={widget.icon}
+              size={widget.size}
+              frame={widget.frame}
+              stretch={widget.stretch}
+              href={widget.href}
+              hrefLabel={widget.hrefLabel}
+              index={index}
+            >
+              {content}
+            </WidgetFrame>
+          );
+        })}
+      </div>
     </div>
   );
 }

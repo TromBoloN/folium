@@ -17,7 +17,7 @@ type Props = {
 
 export function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
   return (
-    <ul className="flex flex-col divide-y rounded-lg border bg-card">
+    <ul className="flex flex-col tile divide-y divide-border-soft overflow-hidden">
       {sortSlots(slots).map((slot) => {
         const location = slot.location ?? courseRoom;
         const range = formatDateRange(slot.startsOn, slot.endsOn);

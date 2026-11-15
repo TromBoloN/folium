@@ -1,4 +1,4 @@
-import { readableTextOn } from "@/lib/color";
+import { readableTextOn, toOklch } from "@/lib/color";
 import type { Theme } from "./schema";
 
 /**
@@ -11,12 +11,17 @@ export function themeAttributes(theme: Theme) {
     style["--primary"] = theme.accent;
     style["--ring"] = theme.accent;
     style["--primary-foreground"] = readableTextOn(theme.accent);
+    // Tint the neutrals and the ambient glow towards the accent too. A near-grey
+    // accent has no meaningful hue, so it keeps the preset's.
+    const { c, h } = toOklch(theme.accent);
+    if (c >= 0.03) style["--hue"] = String(Math.round(h));
   }
   return {
     "data-mode": theme.mode,
     "data-preset": theme.preset,
     "data-font": theme.font,
     "data-density": theme.density,
+    "data-motion": theme.motion,
     style: style as React.CSSProperties,
   };
 }

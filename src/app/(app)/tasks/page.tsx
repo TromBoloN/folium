@@ -7,13 +7,15 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { ListSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
+import { StatTile } from "@/components/ui/stat-tile";
 import { requireUser } from "@/features/auth/queries";
 import { listCourseOptions } from "@/features/courses/queries";
 import { getSettings } from "@/features/settings/queries";
 import { QuickAdd } from "@/features/tasks/components/quick-add";
 import { TaskFilters } from "@/features/tasks/components/task-filters";
 import { TaskList } from "@/features/tasks/components/task-list";
-import { listTasks } from "@/features/tasks/queries";
+import { dueSummary } from "@/features/tasks/due";
+import { listOpenTasks, listTasks } from "@/features/tasks/queries";
 import { taskFiltersSchema } from "@/features/tasks/schema";
 
 export const metadata: Metadata = { title: "Tasks" };
@@ -46,12 +48,21 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
   const filters = taskFiltersSchema.parse(params);
   await io(); // "now" must be read per request
   const now = new Date();
-  const tasks = await listTasks(filters, { now, timeZone: preferences.timeZone, weekStart: preferences.weekStart });
+  const [tasks, open] = await Promise.all([
+    listTasks(filters, { now, timeZone: preferences.timeZone, weekStart: preferences.weekStart }),
+    listOpenTasks(),
+  ]);
+  const summary = dueSummary(open, now, preferences.timeZone, preferences.weekStart);
   const course = courses.find((c) => c.id === filters.course);
   const filtered = filters.status !== "open" || filters.due !== "any" || filters.course;
 
   return (
     <div className="flex flex-col gap-5">
+      <div className="grid grid-cols-3 gap-3">
+        <StatTile label="Overdue" value={summary.overdue} href="/tasks?due=overdue" tone="danger" reveal={0} />
+        <StatTile label="Due today" value={summary.today} href="/tasks?due=today" tone="warning" reveal={1} />
+        <StatTile label="This week" value={summary.week} href="/tasks?due=week" reveal={2} />
+      </div>
       <QuickAdd courseId={course?.id} courseName={course?.name} />
       <TaskFilters current={filters} courses={courses} />
       {tasks.length === 0 ? (

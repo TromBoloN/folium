@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { readableTextOn, relativeLuminance } from "@/lib/color";
+import { readableTextOn, relativeLuminance, toOklch } from "@/lib/color";
 import { DEFAULT_THEME } from "./schema";
 import { themeAttributes } from "./theme";
 
@@ -10,6 +10,7 @@ describe("themeAttributes", () => {
       "data-preset": "green",
       "data-font": "geist",
       "data-density": "comfortable",
+      "data-motion": "full",
       style: {},
     });
   });
@@ -20,7 +21,28 @@ describe("themeAttributes", () => {
       "--primary": "#ffd43b",
       "--ring": "#ffd43b",
       "--primary-foreground": "oklch(0.2 0 0)",
+      "--hue": "92",
     });
+  });
+
+  it("keeps the preset hue for a near-grey accent", () => {
+    const { style } = themeAttributes({ ...DEFAULT_THEME, accent: "#808080" });
+    expect(style).not.toHaveProperty("--hue");
+  });
+
+  it("passes the motion preference through", () => {
+    expect(themeAttributes({ ...DEFAULT_THEME, motion: "off" })["data-motion"]).toBe("off");
+  });
+});
+
+describe("toOklch", () => {
+  it("matches reference OKLCH values", () => {
+    const red = toOklch("#ff0000");
+    expect(red.l).toBeCloseTo(0.628, 2);
+    expect(red.c).toBeCloseTo(0.258, 2);
+    expect(red.h).toBeCloseTo(29.2, 0);
+    expect(toOklch("#0000ff").h).toBeCloseTo(264.1, 0);
+    expect(toOklch("#ffffff").c).toBeLessThan(0.001);
   });
 });
 
