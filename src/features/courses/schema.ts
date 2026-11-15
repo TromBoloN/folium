@@ -101,3 +101,23 @@ export function nextSemesterName(label: string): string {
   if (!m) return "";
   return m[2].toLowerCase() === "ganjil" ? `${m[1]} Genap` : `${Number(m[1]) + 1} Ganjil`;
 }
+
+/**
+ * Use the existing spelling when a typed semester matches one already used,
+ * ignoring case and extra spaces: "2026  ganjil" -> "2026 Ganjil". Otherwise the
+ * typed label, tidied. Stops one semester from splitting into two.
+ */
+export function canonicalSemester(input: string | null, existing: readonly (string | null)[]): string | null {
+  if (input === null) return null;
+  const tidy = input.trim().replace(/\s+/g, " ");
+  if (!tidy) return null;
+  const key = tidy.toLowerCase();
+  return existing.find((e) => e !== null && e.trim().replace(/\s+/g, " ").toLowerCase() === key) ?? tidy;
+}
+
+/** Distinct semester labels, most courses first (usually the current one). */
+export function semesterLabels(courses: readonly { semester: string | null }[]): string[] {
+  const counts = new Map<string, number>();
+  for (const c of courses) if (c.semester) counts.set(c.semester, (counts.get(c.semester) ?? 0) + 1);
+  return [...counts].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0])).map(([label]) => label);
+}

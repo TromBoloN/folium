@@ -36,12 +36,13 @@ type ChangeRow = {
     code: string | null;
     color: string;
     room: string | null;
+    lecturer: string | null;
     archived_at: string | null;
   } | null;
 };
 
 const CHANGE_COLUMNS =
-  "id, kind, course_id, slot_id, original_date, new_date, start_time, end_time, location, label, note, courses(id, name, code, color, room, archived_at)";
+  "id, kind, course_id, slot_id, original_date, new_date, start_time, end_time, location, label, note, courses(id, name, code, color, room, lecturer, archived_at)";
 
 function toChange(row: ChangeRow): ClassChange {
   const c = row.courses;
@@ -58,7 +59,10 @@ function toChange(row: ChangeRow): ClassChange {
     label: row.label,
     note: row.note,
     // Archived courses are out of the timetable, extras included.
-    course: c && !c.archived_at ? { id: c.id, name: c.name, code: c.code, color: c.color, room: c.room } : null,
+    course:
+      c && !c.archived_at
+        ? { id: c.id, name: c.name, code: c.code, color: c.color, room: c.room, lecturer: c.lecturer }
+        : null,
   };
 }
 

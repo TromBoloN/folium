@@ -1,5 +1,5 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
-import { type Chip, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
+import { type Chip, durationLabel, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
 import {
   buildSchedule,
   type DateRange,
@@ -9,6 +9,7 @@ import {
   type OccurrenceStatus,
   type ScheduleInput,
 } from "../schedule/occurrences";
+import type { AttendanceStatus } from "../schedule/schema";
 import { findConflicts, layoutDay, toMinutes, type WeekStart, weekDates } from "./logic";
 
 export type WeekItem = {
@@ -31,6 +32,12 @@ export type WeekItem = {
   meetingUrl: string | null;
   /** Finished by the time the page was rendered. */
   past: boolean;
+  code: string | null;
+  lecturer: string | null;
+  durationLabel: string;
+  /** Took place and is over: can be marked attended or missed. */
+  canMark: boolean;
+  attendance: AttendanceStatus | null;
 };
 
 export type Ghost = {
@@ -79,6 +86,8 @@ export type WeekOptions = {
   timeFormat: "24h" | "12h";
   /** Minutes since midnight now (for dimming past classes); defaults to the start of the day. */
   nowMinute?: number;
+  /** Attendance marks by occurrence key, for the quick attended/missed control. */
+  marks?: ReadonlyMap<string, AttendanceStatus>;
 };
 
 /** The dates the week containing `anchor` covers: what to load before `buildWeek`. */
@@ -123,7 +132,14 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
     }
     const items = layoutDay(listed).map(({ slot: o, lane, lanes }): WeekItem => {
       const others = conflicts.get(o.key) ?? [];
+      const past = date < options.today || (date === options.today && toMinutes(o.endTime) <= nowMinute);
+      const canMark = past && isLive(o);
       return {
+        code: o.course.code,
+        lecturer: o.course.lecturer ?? null,
+        durationLabel: durationLabel(o),
+        canMark,
+        attendance: canMark ? (options.marks?.get(o.key) ?? null) : null,
         id: o.key,
         courseId: o.courseId,
         title: courseTitle(o),
@@ -140,7 +156,7 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
         chips: occurrenceChips(o, options.timeFormat),
         note: o.note,
         meetingUrl: o.meetingUrl,
-        past: date < options.today || (date === options.today && toMinutes(o.endTime) <= nowMinute),
+        past,
       };
     });
     const ghosts = todays

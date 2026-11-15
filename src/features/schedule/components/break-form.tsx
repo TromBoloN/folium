@@ -1,6 +1,9 @@
 "use client";
 
-import { useActionState } from "react";
+import { CalendarOff } from "lucide-react";
+import { useActionState, useRef } from "react";
+import { FormFooter } from "@/components/form/form-footer";
+import { FormSection } from "@/components/form/form-section";
 import { CancelButton, SheetFormBridge } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
@@ -20,39 +23,46 @@ export function BreakForm({ prefill }: { prefill: { startsOn: string; endsOn: st
     "aria-invalid": errors[name] ? true : undefined,
     "aria-describedby": describedBy(name, errors[name], hint),
   });
+  const labelRef = useRef<HTMLInputElement>(null);
   return (
-    <form key={JSON.stringify(state?.values ?? {})} action={action} className="flex flex-col gap-5" noValidate>
+    <form key={JSON.stringify(state?.values ?? {})} action={action} className="flex flex-col gap-6" noValidate>
       <SheetFormBridge state={state} message="Break added" />
-      <Field id="label" label="Name" error={errors.label}>
-        <Input
-          required
-          placeholder="Mid-semester break, exam week, public holiday"
-          maxLength={60}
-          {...field("label")}
-        />
-      </Field>
-      <div className="grid grid-cols-2 gap-4 sm:w-fit">
-        <Field id="startsOn" label="First day" error={errors.startsOn}>
-          <Input type="date" required {...field("startsOn")} />
+      <FormSection title="No classes" icon={CalendarOff}>
+        <Field id="label" label="Name" error={errors.label} requiredMessage="Give the break a name.">
+          <Input ref={labelRef} required autoFocus placeholder="e.g. Midterm week" maxLength={60} {...field("label")} />
         </Field>
-        <Field id="endsOn" label="Last day" error={errors.endsOn}>
-          <Input type="date" required {...field("endsOn")} />
-        </Field>
-      </div>
-      <p className="text-muted-foreground text-sm">
-        Every regular class in these days shows as cancelled. Extra sessions (an exam in exam week) still happen.
-      </p>
-      {state && !state.ok && !state.fieldErrors ? (
-        <p role="alert" className="text-destructive text-sm">
-          {state.error}
+        <div className="-mt-2 flex flex-wrap gap-1.5">
+          {["Public holiday", "Midterm week", "Final exams", "Semester break"].map((l) => (
+            <button
+              key={l}
+              type="button"
+              onClick={() => {
+                if (labelRef.current) labelRef.current.value = l;
+              }}
+              className="h-9 rounded-full border border-border bg-surface-1 px-3 text-sm transition-colors hover:border-foreground/25"
+            >
+              {l}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-2 gap-4 sm:w-fit">
+          <Field id="startsOn" label="First day" error={errors.startsOn}>
+            <Input type="date" required {...field("startsOn")} />
+          </Field>
+          <Field id="endsOn" label="Last day" error={errors.endsOn}>
+            <Input type="date" required {...field("endsOn")} />
+          </Field>
+        </div>
+        <p className="text-muted-foreground text-sm">
+          Every regular class in these days shows as cancelled. Extra sessions (an exam in exam week) still happen.
         </p>
-      ) : null}
-      <div className="flex flex-wrap gap-3">
+      </FormSection>
+      <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : "Add break"}
         </Button>
         <CancelButton href={`/courses?view=day&week=${prefill.startsOn}`} />
-      </div>
+      </FormFooter>
     </form>
   );
 }

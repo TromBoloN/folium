@@ -1,4 +1,15 @@
-import { CalendarClock, ExternalLink, Mail, MapPin, MessageCircle, Pencil, Video } from "lucide-react";
+import {
+  BookOpen,
+  CalendarClock,
+  ChevronRight,
+  ExternalLink,
+  ListTodo,
+  Mail,
+  MapPin,
+  MessageCircle,
+  Pencil,
+  Video,
+} from "lucide-react";
 import { io } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -10,11 +21,13 @@ import { requireUser } from "@/features/auth/queries";
 import { listCourses } from "@/features/courses/queries";
 import { whatsappLink } from "@/features/courses/schema";
 import { getSettings } from "@/features/settings/queries";
+import { formatDue } from "@/features/tasks/due";
+import { listOpenTasks } from "@/features/tasks/queries";
 import { formatDate, minutesNowIn, todayIn } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import { formatTime, toMinutes } from "../../timetable/logic";
+import { formatTime } from "../../timetable/logic";
 import { occurrenceChips, placementLabel, timeRange } from "../format";
-import { isLive } from "../occurrences";
+import { isLive, isPast } from "../occurrences";
 import { getOccurrence, listAttendanceMarks } from "../queries";
 import { ChangeChips } from "./change-chips";
 import { ClassActions } from "./class-actions";
@@ -38,8 +51,8 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
   const fmt = preferences.timeFormat;
   const course = courses.find((c) => c.id === occurrence.courseId);
   const marks = await listAttendanceMarks(occurrence.courseId);
-  const started =
-    occurrence.date < today || (occurrence.date === today && toMinutes(occurrence.startTime) <= nowMinute);
+  const ended = isPast(occurrence, { date: today, minute: nowMinute });
+  const tasks = (await listOpenTasks()).filter((t) => t.courseId === occurrence.courseId).slice(0, 4);
   const cancelled = occurrence.status === "cancelled";
   const back = `/courses?view=day&week=${occurrence.date}`;
 
@@ -102,41 +115,100 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
         location={occurrence.location}
         usualRoom={occurrence.room?.from ?? occurrence.location}
         note={occurrence.note}
-        canMark={started && isLive(occurrence)}
+        canMark={ended && isLive(occurrence)}
         attendance={marks.get(occurrence.key) ?? null}
         backHref={back}
         label={`${occurrence.course.code ?? occurrence.course.name}, ${placementLabel(occurrence, fmt)}`}
       />
 
-      <footer className="flex flex-wrap gap-2 border-border-soft border-t pt-4">
-        <Button asChild variant="outline" size="sm">
-          <Link href={`/courses/${occurrence.courseId}`}>Open course</Link>
-        </Button>
+      {tasks.length > 0 ? (
+        <section aria-labelledby="class-tasks-h" className="flex flex-col gap-2">
+          <h3 id="class-tasks-h" className="flex items-center gap-2 font-medium text-sm">
+            <ListTodo aria-hidden className="size-4 text-muted-foreground" />
+            Open tasks for {occurrence.course.code ?? occurrence.course.name}
+          </h3>
+          <ul className="flex flex-col divide-y divide-border-soft rounded-xl border border-border-soft">
+            {tasks.map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/tasks/${t.id}`}
+                  className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-accent/50"
+                >
+                  <span className="min-w-0 truncate">{t.title}</span>
+                  <span className="shrink-0 text-muted-foreground text-xs">
+                    {formatDue(t, now, preferences.timeZone, fmt) ?? "No date"}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
+
+      <nav
+        aria-label="More for this class"
+        className="flex flex-col divide-y divide-border-soft rounded-xl border border-border-soft"
+      >
+        <LinkRow href={`/courses/${occurrence.courseId}`} icon={BookOpen} label="Open course" />
         {occurrence.slotId ? (
-          <Button asChild variant="ghost" size="sm">
-            <Link href={`/courses/${occurrence.courseId}/slots/${occurrence.slotId}/edit`}>
-              <Pencil aria-hidden />
-              Edit weekly time
-            </Link>
-          </Button>
+          <LinkRow
+            href={`/courses/${occurrence.courseId}/slots/${occurrence.slotId}/edit`}
+            icon={Pencil}
+            label="Edit the weekly time"
+          />
         ) : null}
         {course?.lecturerPhone ? (
-          <Button asChild variant="ghost" size="sm">
-            <a href={whatsappLink(course.lecturerPhone)} target="_blank" rel="noopener noreferrer">
-              <MessageCircle aria-hidden />
-              WhatsApp {course.lecturer ? course.lecturer.split(",")[0] : "lecturer"}
-            </a>
-          </Button>
+          <LinkRow
+            href={whatsappLink(course.lecturerPhone)}
+            icon={MessageCircle}
+            label={`WhatsApp ${course.lecturer ? course.lecturer.split(",")[0] : "the lecturer"}`}
+            external
+          />
         ) : null}
         {course?.lecturerEmail ? (
-          <Button asChild variant="ghost" size="sm">
-            <a href={`mailto:${course.lecturerEmail}`}>
-              <Mail aria-hidden />
-              Email
-            </a>
-          </Button>
+          <LinkRow
+            href={`mailto:${course.lecturerEmail}`}
+            icon={Mail}
+            label={`Email ${course.lecturerEmail}`}
+            external
+          />
         ) : null}
-      </footer>
+      </nav>
     </div>
+  );
+}
+
+function LinkRow({
+  href,
+  icon: Icon,
+  label,
+  external = false,
+}: {
+  href: string;
+  icon: typeof BookOpen;
+  label: string;
+  external?: boolean;
+}) {
+  const content = (
+    <>
+      <Icon aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+      <span className="min-w-0 flex-1 truncate">{label}</span>
+      <ChevronRight aria-hidden className="size-4 shrink-0 text-muted-foreground" />
+    </>
+  );
+  const className = "flex min-h-11 items-center gap-3 px-4 py-2 text-sm hover:bg-accent/50";
+  return external ? (
+    <a
+      href={href}
+      target={href.startsWith("http") ? "_blank" : undefined}
+      rel="noopener noreferrer"
+      className={className}
+    >
+      {content}
+    </a>
+  ) : (
+    <Link href={href} className={className}>
+      {content}
+    </Link>
   );
 }

@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 import {
+  addMinutes,
   appliesOn,
+  commonStartTimes,
   dateRangesIntersect,
   findConflicts,
   formatTime,
@@ -8,6 +10,7 @@ import {
   type SlotTiming,
   slotsConflict,
   sortSlots,
+  suggestedDuration,
   weekDates,
 } from "./logic";
 
@@ -169,5 +172,23 @@ describe("formatTime", () => {
     expect(formatTime("00:15", "12h")).toBe("12:15 AM");
     expect(formatTime("12:00", "12h")).toBe("12:00 PM");
     expect(formatTime("14:30", "12h")).toBe("2:30 PM");
+  });
+});
+
+describe("new class time helpers", () => {
+  it("suggests 50 minutes per SKS, else 100, at most 4 hours", () => {
+    expect(suggestedDuration(3)).toBe(150);
+    expect(suggestedDuration(2)).toBe(100);
+    expect(suggestedDuration(0)).toBe(100);
+    expect(suggestedDuration(6)).toBe(240);
+  });
+  it("adds minutes, capped before midnight", () => {
+    expect(addMinutes("07:30", 100)).toBe("09:10");
+    expect(addMinutes("23:00", 120)).toBe("23:55");
+  });
+  it("offers the most used start times, then common ones, in time order", () => {
+    const slots = ["10:00", "10:00", "08:00", "13:30"].map((startTime) => ({ startTime }));
+    expect(commonStartTimes(slots)).toEqual(["07:30", "08:00", "10:00", "13:30"]);
+    expect(commonStartTimes([])).toEqual(["07:30", "09:20", "13:00", "15:30"]);
   });
 });

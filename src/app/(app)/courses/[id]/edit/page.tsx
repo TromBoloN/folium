@@ -6,7 +6,8 @@ import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/skeletons";
 import { requireUser } from "@/features/auth/queries";
 import { CourseForm } from "@/features/courses/components/course-form";
-import { getCourse } from "@/features/courses/queries";
+import { getCourse, listCourses } from "@/features/courses/queries";
+import { semesterLabels } from "@/features/courses/schema";
 
 export const metadata: Metadata = { title: "Edit course" };
 
@@ -23,12 +24,12 @@ export default function EditCoursePage({ params }: PageProps<"/courses/[id]/edit
 async function EditCourse({ params }: Pick<PageProps<"/courses/[id]/edit">, "params">) {
   await requireUser();
   const { id } = await params;
-  const course = await getCourse(id);
+  const [course, courses] = await Promise.all([getCourse(id), listCourses()]);
   if (!course) notFound();
   return (
     <>
       <PageHeader title="Edit course" back={<BackLink href={`/courses/${course.id}`}>{course.name}</BackLink>} />
-      <CourseForm mode="edit" course={course} />
+      <CourseForm mode="edit" course={course} semesters={semesterLabels(courses)} />
     </>
   );
 }

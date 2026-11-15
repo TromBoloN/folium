@@ -7,6 +7,7 @@ import { FormSkeleton } from "@/components/skeletons";
 import { requireUser } from "@/features/auth/queries";
 import { getCourse } from "@/features/courses/queries";
 import { SlotForm } from "@/features/timetable/components/slot-form";
+import { slotFormContext } from "@/features/timetable/components/slot-screens";
 
 export const metadata: Metadata = { title: "Edit class time" };
 
@@ -23,13 +24,13 @@ export default function EditSlotPage({ params }: PageProps<"/courses/[id]/slots/
 async function EditSlot({ params }: Pick<PageProps<"/courses/[id]/slots/[slotId]/edit">, "params">) {
   await requireUser();
   const { id, slotId } = await params;
-  const course = await getCourse(id);
+  const [course, context] = await Promise.all([getCourse(id), slotFormContext(slotId)]);
   const slot = course?.slots.find((s) => s.id === slotId);
   if (!course || !slot) notFound();
   return (
     <>
       <PageHeader title="Edit class time" back={<BackLink href={`/courses/${course.id}`}>{course.name}</BackLink>} />
-      <SlotForm courseId={course.id} slot={slot} defaultLocation={course.room} />
+      <SlotForm courseId={course.id} credits={course.credits} slot={slot} defaultLocation={course.room} {...context} />
     </>
   );
 }

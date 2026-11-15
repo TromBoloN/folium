@@ -7,6 +7,7 @@ import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { Button } from "@/components/ui/button";
 import { Tile } from "@/components/ui/tile";
 import { requireUser } from "@/features/auth/queries";
+import { AttendancePrompt } from "@/features/dashboard/components/attendance-prompt";
 import { DashboardEditor } from "@/features/dashboard/components/dashboard-editor";
 import { Greeting, GreetingSkeleton } from "@/features/dashboard/components/greeting";
 import { Onboarding } from "@/features/dashboard/components/onboarding";
@@ -104,6 +105,11 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
       <SectionErrorBoundary label="Setup checklist">
         <Suspense fallback={null}>
           <Onboarding />
+        </Suspense>
+      </SectionErrorBoundary>
+      <SectionErrorBoundary label="Attendance">
+        <Suspense fallback={null}>
+          <AttendancePrompt />
         </Suspense>
       </SectionErrorBoundary>
       <div className="grid grid-flow-row-dense grid-cols-1 items-start gap-4 @xl:grid-cols-2 @4xl:grid-cols-12">

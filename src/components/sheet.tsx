@@ -7,8 +7,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import type { FormState } from "@/lib/action-result";
+import { cn } from "@/lib/utils";
 
-type SheetApi = { close: (options?: { refresh?: boolean }) => void };
+type SheetApi = {
+  close: (options?: { refresh?: boolean }) => void;
+  /** Tint the header (e.g. with the course colour being picked); null for none. */
+  setTint: (color: string | null) => void;
+};
 const SheetContext = createContext<SheetApi | null>(null);
 
 /** The sheet this component is in, or null on a full page. */
@@ -34,12 +39,13 @@ export function Sheet({ title, children }: { title: string; children: React.Reac
   // moves on, e.g. after following a link out of it.
   const pathname = usePathname();
   const [openedAt] = useState(pathname);
+  const [tint, setTint] = useState<string | null>(null);
 
   const close = useCallback<SheetApi["close"]>((options) => {
     refreshAfterClose.current = Boolean(options?.refresh);
     dialog.current?.close();
   }, []);
-  const api = useMemo(() => ({ close }), [close]);
+  const api = useMemo(() => ({ close, setTint }), [close]);
 
   if (pathname !== openedAt) return null;
 
@@ -62,7 +68,13 @@ export function Sheet({ title, children }: { title: string; children: React.Reac
         className="sheet m-0 mt-auto w-full max-w-none overflow-hidden rounded-t-tile border border-border-soft bg-popover p-0 text-popover-foreground shadow-raised backdrop:bg-foreground/35 md:mt-0 md:mr-0 md:ml-auto md:h-dvh md:max-h-dvh md:w-[min(38rem,100vw)] md:rounded-none md:rounded-l-tile"
       >
         <div className="flex max-h-[92dvh] flex-col md:h-full md:max-h-none">
-          <header className="flex items-center justify-between gap-3 border-border-soft border-b px-5 py-3">
+          <header
+            style={tint ? ({ "--tint": tint } as React.CSSProperties) : undefined}
+            className={cn(
+              "flex items-center justify-between gap-3 border-border-soft border-b px-5 py-3 transition-colors duration-(--dur-base)",
+              tint && "border-b-(--tint)/40 bg-[color-mix(in_oklab,var(--tint)_16%,var(--popover))]",
+            )}
+          >
             <h2 id="sheet-title" className="font-display font-medium text-xl">
               {title}
             </h2>
@@ -95,7 +107,7 @@ export function SheetFormBridge({ state, message }: { state: FormState; message:
   useEffect(() => {
     if (!sheet || !state?.ok || handled.current === state) return;
     handled.current = state;
-    toast({ message });
+    toast({ message: state.result?.message ?? message });
     sheet.close({ refresh: true });
   }, [sheet, state, message, toast]);
   return sheet ? <input type="hidden" name={SHEET_FIELD} value="1" /> : null;

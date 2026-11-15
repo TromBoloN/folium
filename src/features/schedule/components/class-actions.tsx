@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRightLeft, Check, CircleSlash, MapPin, RotateCcw, TriangleAlert, X } from "lucide-react";
+import { ArrowRightLeft, type Check, CircleSlash, MapPin, RotateCcw, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useState, useTransition } from "react";
 import { useSheet } from "@/components/sheet";
@@ -16,12 +16,12 @@ import {
   cancelOccurrence,
   restoreOccurrence,
   scheduleConflicts,
-  setAttendance,
   undoChange,
   updateOccurrence,
 } from "../actions";
 import type { OccurrenceStatus } from "../occurrences";
 import type { AttendanceStatus, Scope } from "../schema";
+import { AttendanceQuick } from "./attendance-quick";
 
 type Props = {
   occurrenceKey: string;
@@ -107,49 +107,67 @@ export function ClassActions(props: Props) {
   const cancelled = props.status === "cancelled";
   const extra = props.status === "extra";
 
+  const changed = cancelled ? (
+    <section className="flex flex-col gap-2">
+      <p className="text-sm">
+        {props.breakLabel && !props.changed
+          ? `No class: it falls in “${props.breakLabel}”. Remove the break on the schedule to bring classes back.`
+          : "This class is cancelled."}
+      </p>
+      {props.changed ? (
+        <Button variant="outline" size="sm" className="w-fit" onClick={restore} disabled={pending}>
+          <RotateCcw aria-hidden />
+          It's on after all
+        </Button>
+      ) : null}
+      {props.changed && !extra ? <NoteField {...props} /> : null}
+    </section>
+  ) : (
+    <section aria-labelledby="changed-h" className="flex flex-col gap-2">
+      <h3 id="changed-h" className="font-medium text-sm">
+        {props.canMark ? "Something changed?" : "Changed?"}
+      </h3>
+      <div className="grid grid-cols-3 gap-2">
+        <ChoiceButton icon={CircleSlash} tone="danger" onClick={cancel} disabled={pending}>
+          {extra ? "Delete" : "Cancelled"}
+        </ChoiceButton>
+        <ChoiceButton icon={ArrowRightLeft} tone="warning" onClick={() => setStep("move")} disabled={pending}>
+          Moved
+        </ChoiceButton>
+        <ChoiceButton icon={MapPin} onClick={() => setStep("room")} disabled={pending}>
+          Room only
+        </ChoiceButton>
+      </div>
+      {props.changed && props.weekly ? (
+        <Button variant="ghost" size="sm" className="w-fit" onClick={restore} disabled={pending}>
+          <RotateCcw aria-hidden />
+          Back to the usual time and room
+        </Button>
+      ) : null}
+    </section>
+  );
+
   return (
     <div className="flex flex-col gap-5">
-      {cancelled ? (
-        <section className="flex flex-col gap-2">
-          <p className="text-sm">
-            {props.breakLabel && !props.changed
-              ? `No class: it falls in “${props.breakLabel}”. Remove the break on the schedule to bring classes back.`
-              : "This class is cancelled."}
-          </p>
-          {props.changed ? (
-            <Button variant="outline" size="sm" className="w-fit" onClick={restore} disabled={pending}>
-              <RotateCcw aria-hidden />
-              It's on after all
-            </Button>
-          ) : null}
-          {props.changed && !extra ? <NoteField {...props} /> : null}
-        </section>
+      {props.canMark ? (
+        // Over: the useful question is whether you went. Changes are still possible, folded away.
+        <>
+          <section aria-labelledby="attendance-h" className="flex flex-col gap-2">
+            <h3 id="attendance-h" className="font-medium text-sm">
+              Did you attend?
+            </h3>
+            <AttendanceQuick occurrenceKey={props.occurrenceKey} initial={props.attendance} label={props.label} />
+          </section>
+          <details className="group rounded-xl border border-border-soft">
+            <summary className="cursor-pointer list-none rounded-xl px-4 py-3 text-muted-foreground text-sm hover:bg-accent/50">
+              Something changed? Cancelled, moved or another room
+            </summary>
+            <div className="px-4 pb-4">{changed}</div>
+          </details>
+        </>
       ) : (
-        <section aria-labelledby="changed-h" className="flex flex-col gap-2">
-          <h3 id="changed-h" className="font-medium text-sm">
-            Changed?
-          </h3>
-          <div className="grid grid-cols-3 gap-2">
-            <ChoiceButton icon={CircleSlash} tone="danger" onClick={cancel} disabled={pending}>
-              {extra ? "Delete" : "Cancelled"}
-            </ChoiceButton>
-            <ChoiceButton icon={ArrowRightLeft} tone="warning" onClick={() => setStep("move")} disabled={pending}>
-              Moved
-            </ChoiceButton>
-            <ChoiceButton icon={MapPin} onClick={() => setStep("room")} disabled={pending}>
-              Room only
-            </ChoiceButton>
-          </div>
-          {props.changed && props.weekly ? (
-            <Button variant="ghost" size="sm" className="w-fit" onClick={restore} disabled={pending}>
-              <RotateCcw aria-hidden />
-              Back to the usual time and room
-            </Button>
-          ) : null}
-        </section>
+        changed
       )}
-
-      {props.canMark ? <AttendanceToggle occurrenceKey={props.occurrenceKey} initial={props.attendance} /> : null}
 
       {error ? (
         <p role="alert" className="text-destructive text-sm">
@@ -222,52 +240,6 @@ function NoteField({ occurrenceKey, note }: Props) {
         {pending ? "Saving…" : value.trim() !== saved.trim() ? "Press Enter to save" : saved ? "Saved" : ""}
       </p>
     </div>
-  );
-}
-
-function AttendanceToggle({ occurrenceKey, initial }: { occurrenceKey: string; initial: AttendanceStatus | null }) {
-  const [status, setStatus] = useState(initial);
-  const [pending, start] = useTransition();
-  const toast = useToast();
-  const set = (next: AttendanceStatus) => {
-    const value = status === next ? null : next;
-    const before = status;
-    setStatus(value);
-    start(async () => {
-      const result = await setAttendance({ key: occurrenceKey, status: value });
-      if (!result.ok) {
-        setStatus(before);
-        toast({ message: result.error, tone: "error" });
-      }
-    });
-  };
-  return (
-    <section aria-labelledby="attendance-h" className="flex flex-col gap-2">
-      <h3 id="attendance-h" className="font-medium text-sm">
-        Attendance
-      </h3>
-      <div className="flex gap-2">
-        {(
-          [
-            ["attended", "Attended", Check],
-            ["missed", "Missed", X],
-          ] as const
-        ).map(([value, text, Icon]) => (
-          <Button
-            key={value}
-            type="button"
-            size="sm"
-            variant={status === value ? "default" : "outline"}
-            aria-pressed={status === value}
-            disabled={pending}
-            onClick={() => set(value)}
-          >
-            <Icon aria-hidden />
-            {text}
-          </Button>
-        ))}
-      </div>
-    </section>
   );
 }
 

@@ -7,7 +7,7 @@ import { type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/ac
 import { isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
-import { courseInputSchema, courseRow } from "./schema";
+import { type CourseInput, canonicalSemester, courseInputSchema, courseRow } from "./schema";
 
 const idSchema = z.uuid();
 
@@ -27,6 +27,19 @@ function parseCourse(formData: FormData) {
 
 const SAVE_FAILED = "Couldn't save the course. Please try again.";
 
+/** The row to save, with the semester spelled like an existing one if it matches. */
+async function rowFor(input: CourseInput) {
+  const supabase = await createClient();
+  const { data } = await supabase.from("courses").select("semester");
+  return courseRow({
+    ...input,
+    semester: canonicalSemester(
+      input.semester,
+      (data ?? []).map((c) => c.semester),
+    ),
+  });
+}
+
 export async function createCourse(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
   const values = formValues(formData);
@@ -41,7 +54,11 @@ export async function createCourse(_prev: FormState, formData: FormData): Promis
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("courses").insert(courseRow(parsed.data)).select("id").single();
+  const { data, error } = await supabase
+    .from("courses")
+    .insert(await rowFor(parsed.data))
+    .select("id")
+    .single();
   if (error) {
     console.error("[courses] create", error.code, error.message);
     return { ok: false, error: SAVE_FAILED, values };
@@ -68,7 +85,11 @@ export async function updateCourse(_prev: FormState, formData: FormData): Promis
   }
 
   const supabase = await createClient();
-  const { data, error } = await supabase.from("courses").update(courseRow(parsed.data)).eq("id", id.data).select("id");
+  const { data, error } = await supabase
+    .from("courses")
+    .update(await rowFor(parsed.data))
+    .eq("id", id.data)
+    .select("id");
   if (error) {
     console.error("[courses] update", error.code, error.message);
     return { ok: false, error: SAVE_FAILED, values };
@@ -158,8 +179,17 @@ export async function startNewSemester(_prev: FormState, formData: FormData): Pr
       values,
     };
   }
-  const r = parsed.data;
   const supabase = await createClient();
+  const { data: labels } = await supabase.from("courses").select("semester");
+  // "2026 genap" joins an existing "2026 Genap" instead of starting a second semester.
+  const r = {
+    ...parsed.data,
+    to:
+      canonicalSemester(
+        parsed.data.to,
+        (labels ?? []).map((c) => c.semester),
+      ) ?? parsed.data.to,
+  };
   let query = supabase
     .from("courses")
     .select(

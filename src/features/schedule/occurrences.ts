@@ -24,7 +24,14 @@ import { appliesOn, compareSlots, type SlotTiming, toMinutes } from "../timetabl
  * lanes, conflicts, "now/next") work on occurrences unchanged.
  */
 
-export type ScheduleCourse = { id: string; name: string; code: string | null; color: string; room: string | null };
+export type ScheduleCourse = {
+  id: string;
+  name: string;
+  code: string | null;
+  color: string;
+  room: string | null;
+  lecturer?: string | null;
+};
 
 export type ScheduleSlot = SlotTiming & {
   courseId: string;

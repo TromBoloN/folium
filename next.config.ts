@@ -1,6 +1,6 @@
 import type { NextConfig } from "next";
 
-/** Sent with every response. See docs/documentation/security-review.md. */
+/** Sent with every response. See docs/security-review.md. */
 const securityHeaders = [
   // Nobody may frame the app (clickjacking). frame-ancestors is the modern form; X-Frame-Options covers old browsers.
   { key: "Content-Security-Policy", value: "frame-ancestors 'none'" },

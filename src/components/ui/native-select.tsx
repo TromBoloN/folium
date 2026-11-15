@@ -1,6 +1,7 @@
 import { ChevronDown } from "lucide-react";
 import type * as React from "react";
 import { cn } from "@/lib/utils";
+import { CONTROL, CONTROL_HEIGHT } from "./control";
 
 /**
  * A styled native <select>: best on phones, accessible by default. Where the
@@ -12,10 +13,7 @@ export function NativeSelect({ className, children, ...props }: React.ComponentP
     <div className="relative">
       <select
         data-slot="select"
-        className={cn(
-          "h-9 w-full appearance-none rounded-md border border-input bg-surface-1/60 py-1 pr-9 pl-3 text-base shadow-xs transition-[color,box-shadow] focus-visible:border-ring focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/50 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm",
-          className,
-        )}
+        className={cn(CONTROL, CONTROL_HEIGHT, "appearance-none py-1 pr-9 pl-3", className)}
         {...props}
       >
         {children}

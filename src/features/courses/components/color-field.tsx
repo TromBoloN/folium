@@ -10,11 +10,23 @@ import { COURSE_COLORS } from "../schema";
  * Suggested colours plus a free picker. The native colour input carries the
  * value, so the form still works without JavaScript.
  */
-export function ColorField({ defaultValue, error }: { defaultValue: string; error?: string }) {
-  const [color, setColor] = useState(defaultValue.toLowerCase());
+export function ColorField({
+  defaultValue,
+  error,
+  onChange,
+}: {
+  defaultValue: string;
+  error?: string;
+  onChange?: (color: string) => void;
+}) {
+  const [color, setColorState] = useState(defaultValue.toLowerCase());
+  const setColor = (c: string) => {
+    setColorState(c);
+    onChange?.(c);
+  };
   return (
     <fieldset className="grid gap-2" aria-describedby={error ? "color-error" : undefined}>
-      <legend className="mb-2 font-medium text-sm">Colour</legend>
+      <legend className="mb-1.5 font-medium text-sm">Colour</legend>
       <div className="flex flex-wrap items-center gap-2">
         {COURSE_COLORS.map((c) => (
           <button
@@ -25,7 +37,7 @@ export function ColorField({ defaultValue, error }: { defaultValue: string; erro
             aria-pressed={color === c}
             style={{ "--course": c, color: readableTextOn(c) } as React.CSSProperties}
             className={cn(
-              "flex size-8 items-center justify-center rounded-full bg-(--course) ring-offset-2 ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
+              "flex size-10 items-center justify-center rounded-full md:size-8 bg-(--course) ring-offset-2 ring-offset-background transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
               color === c && "ring-2 ring-foreground",
             )}
           >

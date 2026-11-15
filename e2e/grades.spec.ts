@@ -4,8 +4,10 @@ import { signUp, waitForContent, waitForHydration } from "./helpers";
 async function addCourse(page: Page, name: string, credits: string, semester: string) {
   await page.goto("/courses/new");
   await page.getByLabel("Name").fill(name);
+  await page.getByLabel("Credits").fill(credits);
+  // Semester is one of the optional fields under "More details".
+  await page.getByText("More details").click();
   await page.getByLabel("Semester").fill(semester);
-  await page.getByLabel("Credits (SKS)").fill(credits);
   await page.getByRole("button", { name: "Add course" }).click();
   await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}$/);
   return page.url().split("/").pop() as string;

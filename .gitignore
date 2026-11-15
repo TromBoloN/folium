@@ -55,3 +55,6 @@ Thumbs.db
 CLAUDE.local.md
 
 /playwright/.auth/
+
+# design-review captures (scripts/visual-check.mjs)
+/screenshots/

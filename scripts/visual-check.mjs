@@ -2,7 +2,7 @@
 //
 //   bun run db:seed && node scripts/visual-check.mjs <phase>
 //
-// Saves docs/screenshots/<phase>/<page>-<preset>-<mode>-<width>.png for
+// Saves screenshots/<phase>/<page>-<preset>-<mode>-<width>.png for
 // {light, dark} x {1440, 390} x {green, violet}, signed in as the demo account.
 // The theme is set straight in the database (and restored at the end), so the
 // run doesn't depend on the settings form. Needs the app running (BASE_URL,
@@ -17,12 +17,13 @@ if (!phase) {
   process.exit(1);
 }
 const BASE = process.env.BASE_URL ?? "http://127.0.0.1:3100";
-const OUT = new URL(`../docs/screenshots/${phase}/`, import.meta.url).pathname;
+// screenshots/ is git-ignored: these are for looking at, not for committing.
+const OUT = new URL(`../screenshots/${phase}/`, import.meta.url).pathname;
 const DEMO = { email: "demo@folium.test", password: "folium-demo-2026" };
 const PAGES = [
   { name: "today", path: "/" },
   { name: "courses", path: "/courses" },
-  { name: "timetable", path: "/courses/timetable" },
+  { name: "timetable", path: "/courses?view=week" },
   { name: "tasks", path: "/tasks" },
   { name: "grades", path: "/grades" },
   { name: "settings", path: "/settings" },

@@ -1,15 +1,16 @@
 "use client";
 
-import { Check, CheckCheck, TriangleAlert, X } from "lucide-react";
+import { CheckCheck, TriangleAlert } from "lucide-react";
 import Link from "next/link";
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { cn } from "@/lib/utils";
-import { clearAttendance, markUnmarkedAttended, setAttendance } from "../actions";
+import { clearAttendance, markUnmarkedAttended } from "../actions";
 import type { AttendanceStats } from "../attendance";
 import type { AttendanceStatus } from "../schema";
+import { AttendanceQuick } from "./attendance-quick";
 
 export type RecentClass = { key: string; label: string; status: AttendanceStatus | null };
 
@@ -24,6 +25,7 @@ type Props = {
 export function AttendancePanel({ courseId, stats, target, recent }: Props) {
   const toast = useToast();
   const [pending, start] = useTransition();
+  const [confirming, setConfirming] = useState(false);
   const percent = stats.percent;
 
   const markRest = () =>
@@ -90,10 +92,29 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
 
       <div className="flex flex-wrap items-center justify-between gap-2">
         {stats.unmarked > 0 ? (
-          <Button size="sm" variant="outline" onClick={markRest} disabled={pending}>
-            <CheckCheck aria-hidden />
-            Mark {stats.unmarked} unmarked as attended
-          </Button>
+          confirming ? (
+            <span className="flex flex-wrap items-center gap-2 text-sm">
+              Mark all {stats.unmarked} unmarked classes as attended?
+              <Button
+                size="sm"
+                onClick={() => {
+                  setConfirming(false);
+                  markRest();
+                }}
+                disabled={pending}
+              >
+                Yes, mark {stats.unmarked}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
+                Cancel
+              </Button>
+            </span>
+          ) : (
+            <Button size="sm" variant="outline" onClick={() => setConfirming(true)} disabled={pending}>
+              <CheckCheck aria-hidden />
+              Mark {stats.unmarked} unmarked as attended…
+            </Button>
+          )
         ) : (
           <span />
         )}
@@ -109,53 +130,12 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
 }
 
 function RecentRow({ item }: { item: RecentClass }) {
-  const [status, setStatus] = useState(item.status);
-  const [pending, start] = useTransition();
-  const toast = useToast();
-  const set = (next: AttendanceStatus) => {
-    const value = status === next ? null : next;
-    const before = status;
-    setStatus(value);
-    start(async () => {
-      const result = await setAttendance({ key: item.key, status: value });
-      if (!result.ok) {
-        setStatus(before);
-        toast({ message: result.error, tone: "error" });
-      }
-    });
-  };
   return (
     <li className="flex items-center justify-between gap-2 py-2 text-sm">
       <Link href={`/courses/class/${item.key}`} className="min-w-0 truncate tabular-nums hover:underline">
         {item.label}
       </Link>
-      <span className="flex gap-1">
-        {(
-          [
-            ["attended", "Attended", Check],
-            ["missed", "Missed", X],
-          ] as const
-        ).map(([value, text, Icon]) => (
-          <button
-            key={value}
-            type="button"
-            aria-pressed={status === value}
-            aria-label={`${text}: ${item.label}`}
-            disabled={pending}
-            onClick={() => set(value)}
-            className={cn(
-              "flex size-8 items-center justify-center rounded-full border border-border-soft transition-colors disabled:opacity-60",
-              status === value
-                ? value === "attended"
-                  ? "border-primary bg-primary text-primary-foreground"
-                  : "border-destructive bg-destructive text-destructive-foreground"
-                : "text-muted-foreground hover:bg-accent hover:text-foreground",
-            )}
-          >
-            <Icon aria-hidden className="size-4" />
-          </button>
-        ))}
-      </span>
+      <AttendanceQuick occurrenceKey={item.key} initial={item.status} label={item.label} />
     </li>
   );
 }

@@ -144,3 +144,26 @@ export function layoutDay<T extends SlotTiming>(slots: readonly T[]): PlacedSlot
   closeCluster();
   return placed;
 }
+
+/** Minutes of class per credit (SKS). Common in Indonesia (1 SKS ≈ 50 minutes of class); check your campus. */
+export const MINUTES_PER_CREDIT = 50;
+
+/** A sensible length for a new class time: 50 min per SKS, else 100 min; at most 4 hours. */
+export function suggestedDuration(credits: number): number {
+  return credits > 0 ? Math.min(Math.round(credits * MINUTES_PER_CREDIT), 240) : 100;
+}
+
+/** "08:30" + 100 -> "10:10", capped at 23:55. */
+export function addMinutes(time: string, minutes: number): string {
+  const total = Math.min(toMinutes(time) + minutes, 23 * 60 + 55);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/** The start times used most in the timetable (for one-tap chips), padded with common campus times. */
+export function commonStartTimes(slots: readonly { startTime: string }[], count = 4): string[] {
+  const freq = new Map<string, number>();
+  for (const s of slots) freq.set(s.startTime, (freq.get(s.startTime) ?? 0) + 1);
+  const used = [...freq].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([t]) => t);
+  const fallback = ["07:30", "09:20", "13:00", "15:30"];
+  return [...new Set([...used, ...fallback])].slice(0, count).sort();
+}

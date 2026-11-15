@@ -10,10 +10,10 @@ import { slotInputSchema } from "./schema";
 
 const idSchema = z.uuid();
 
-function parseSlot(formData: FormData) {
+function parseSlot(formData: FormData, weekday: FormDataEntryValue | null = formData.get("weekday")) {
   return slotInputSchema.safeParse({
     courseId: formData.get("courseId"),
-    weekday: formData.get("weekday"),
+    weekday,
     startTime: formData.get("startTime") ?? "",
     endTime: formData.get("endTime") ?? "",
     location: formData.get("location") ?? "",
@@ -53,21 +53,37 @@ const SAVE_FAILED = "Couldn't save the class time. Please try again.";
  * classes, or a timetable may be provisional). The timetable shows a warning
  * icon on overlaps instead of blocking the save.
  */
+/**
+ * One or more class times: the form's weekday chips allow several days
+ * ("Mon and Wed, 07:30–09:10") and each becomes its own weekly slot.
+ */
 export async function createSlot(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
-  const values = formValues(formData);
-  const parsed = parseSlot(formData);
-  if (!parsed.success) {
+  const days = [...new Set(formData.getAll("weekday").map(String))];
+  // Several weekdays share one name; keep them all for refilling the chips.
+  const values = { ...formValues(formData), weekday: days.join(",") };
+  if (days.length === 0) {
     return {
       ok: false,
       error: "Check the highlighted fields.",
-      fieldErrors: fieldErrorsFrom(parsed.error.issues),
+      fieldErrors: { weekday: "Choose at least one day." },
       values,
     };
   }
+  const parsed = days.map((day) => parseSlot(formData, day));
+  const failed = parsed.find((p) => !p.success);
+  if (failed && !failed.success) {
+    return {
+      ok: false,
+      error: "Check the highlighted fields.",
+      fieldErrors: fieldErrorsFrom(failed.error.issues),
+      values,
+    };
+  }
+  const rows = parsed.flatMap((p) => (p.success ? [toRow(p.data)] : []));
 
   const supabase = await createClient();
-  const { error } = await supabase.from("timetable_slots").insert(toRow(parsed.data));
+  const { error } = await supabase.from("timetable_slots").insert(rows);
   if (error) {
     console.error("[timetable] create", error.code, error.message);
     // 23503: the course isn't the user's or was deleted (composite foreign key).
@@ -77,8 +93,9 @@ export async function createSlot(_prev: FormState, formData: FormData): Promise<
 
   revalidatePath("/courses", "layout");
   revalidatePath("/");
-  if (fromSheet(formData)) return { ok: true };
-  redirect(safeReturnTo(formData.get("returnTo")) ?? `/courses/${parsed.data.courseId}`);
+  const message = rows.length === 1 ? "Class time added" : `${rows.length} class times added`;
+  if (fromSheet(formData)) return { ok: true, result: { message } };
+  redirect(safeReturnTo(formData.get("returnTo")) ?? `/courses/${rows[0].course_id}`);
 }
 
 export async function updateSlot(_prev: FormState, formData: FormData): Promise<FormState> {

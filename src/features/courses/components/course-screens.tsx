@@ -2,7 +2,7 @@ import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
 import { listCourses } from "../queries";
-import { nextCourseColor, nextSemesterName } from "../schema";
+import { nextCourseColor, nextSemesterName, semesterLabels } from "../schema";
 import { CourseForm } from "./course-form";
 import { RolloverForm } from "./rollover-form";
 
@@ -10,7 +10,13 @@ import { RolloverForm } from "./rollover-form";
 export async function NewCourseScreen() {
   await requireUser();
   const courses = await listCourses();
-  return <CourseForm mode="create" defaultColor={nextCourseColor(courses.map((c) => c.color))} />;
+  return (
+    <CourseForm
+      mode="create"
+      defaultColor={nextCourseColor(courses.map((c) => c.color))}
+      semesters={semesterLabels(courses)}
+    />
+  );
 }
 
 /** Semester rollover: pick last semester, name the new one. */

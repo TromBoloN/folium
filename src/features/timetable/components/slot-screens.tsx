@@ -4,22 +4,35 @@ import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
-import { getCourse, listCourseOptions } from "@/features/courses/queries";
-import { toMinutes } from "../logic";
-import { SlotForm } from "./slot-form";
+import { getCourse, listActiveSlots, listCourseOptions } from "@/features/courses/queries";
+import { getSettings } from "@/features/settings/queries";
+import { commonStartTimes } from "../logic";
+import { type ExistingSlot, SlotForm } from "./slot-form";
+
+/** What the slot form needs from the rest of the timetable: other class times and the usual start times. */
+export async function slotFormContext(excludeId?: string) {
+  const [slots, { preferences }] = await Promise.all([listActiveSlots(), getSettings()]);
+  const existing: ExistingSlot[] = slots
+    .filter((s) => s.id !== excludeId)
+    .map((s) => ({
+      id: s.id,
+      weekday: s.weekday,
+      startTime: s.startTime,
+      endTime: s.endTime,
+      startsOn: s.startsOn,
+      endsOn: s.endsOn,
+      title: s.course.code ?? s.course.name,
+      color: s.course.color,
+    }));
+  return { existing, startTimes: commonStartTimes(slots), timeFormat: preferences.timeFormat };
+}
 
 type Variant = { variant: "page" | "sheet" };
-
-/** "HH:MM" plus minutes, capped at 23:55. */
-function plusMinutes(time: string, minutes: number) {
-  const total = Math.min(toMinutes(time) + minutes, 23 * 60 + 55);
-  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-}
 
 /** Add a class time to a known course (from the course page). */
 export async function NewSlotForCourseScreen({ courseId, variant }: { courseId: string } & Variant) {
   await requireUser();
-  const course = await getCourse(courseId);
+  const [course, context] = await Promise.all([getCourse(courseId), slotFormContext()]);
   if (!course) notFound();
   return (
     <>
@@ -28,7 +41,7 @@ export async function NewSlotForCourseScreen({ courseId, variant }: { courseId: 
       ) : (
         <p className="mb-4 text-muted-foreground text-sm">For {course.name}</p>
       )}
-      <SlotForm courseId={course.id} defaultLocation={course.room} />
+      <SlotForm courseId={course.id} credits={course.credits} defaultLocation={course.room} {...context} />
     </>
   );
 }
@@ -44,7 +57,8 @@ export async function NewSlotScreen({
   variant,
 }: { weekday?: number; start?: string; returnTo: string } & Variant) {
   await requireUser();
-  const courses = (await listCourseOptions()).filter((c) => !c.archived);
+  const [options, context] = await Promise.all([listCourseOptions(), slotFormContext()]);
+  const courses = options.filter((c) => !c.archived);
   const valid = start && /^([01]\d|2[0-3]):[0-5]\d$/.test(start) ? start : undefined;
   return (
     <>
@@ -64,9 +78,9 @@ export async function NewSlotScreen({
           prefill={{
             weekday: weekday && weekday >= 1 && weekday <= 7 ? weekday : undefined,
             startTime: valid,
-            endTime: valid ? plusMinutes(valid, 100) : undefined,
           }}
           returnTo={returnTo}
+          {...context}
         />
       )}
     </>

@@ -1,6 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { slotInputSchema } from "../timetable/schema";
-import { COURSE_COLORS, courseInputSchema, nextCourseColor, nextSemesterName, whatsappLink } from "./schema";
+import {
+  COURSE_COLORS,
+  canonicalSemester,
+  courseInputSchema,
+  nextCourseColor,
+  nextSemesterName,
+  semesterLabels,
+  whatsappLink,
+} from "./schema";
 
 describe("courseInputSchema", () => {
   it("trims text and turns empty optional fields into null", () => {
@@ -121,5 +129,24 @@ describe("nextSemesterName and whatsappLink", () => {
     expect(whatsappLink("0812-3456-7890")).toBe("https://wa.me/6281234567890");
     expect(whatsappLink("+62 812 3456 7890")).toBe("https://wa.me/6281234567890");
     expect(whatsappLink("+44 20 7946 0958")).toBe("https://wa.me/442079460958");
+  });
+});
+
+describe("semesters", () => {
+  it("reuses an existing spelling, ignoring case and spaces", () => {
+    expect(canonicalSemester("2026  ganjil ", ["2026 Ganjil", null])).toBe("2026 Ganjil");
+    expect(canonicalSemester(" 2027 Genap ", ["2026 Ganjil"])).toBe("2027 Genap");
+    expect(canonicalSemester("   ", ["2026 Ganjil"])).toBeNull();
+    expect(canonicalSemester(null, ["2026 Ganjil"])).toBeNull();
+  });
+  it("lists labels by how many courses use them", () => {
+    expect(
+      semesterLabels([
+        { semester: "2026 Genap" },
+        { semester: "2026 Ganjil" },
+        { semester: "2026 Ganjil" },
+        { semester: null },
+      ]),
+    ).toEqual(["2026 Ganjil", "2026 Genap"]);
   });
 });

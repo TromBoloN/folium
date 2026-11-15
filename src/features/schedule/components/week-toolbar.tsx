@@ -47,24 +47,18 @@ export function WeekToolbar({ view, label, previous, next, containsToday, weekSt
             <ChevronRight aria-hidden />
           </Link>
         </Button>
-        {containsToday ? null : (
-          <Button asChild variant="outline" size="sm">
-            <Link href={href()}>Today</Link>
-          </Button>
-        )}
+        <Button asChild variant="outline" size="sm" className="ml-1">
+          <Link href={href()} aria-current={containsToday ? "date" : undefined}>
+            Today
+          </Link>
+        </Button>
       </div>
       <div className="flex items-center gap-2">
-        <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-          <a href="/courses/calendar.ics" download>
-            <Download aria-hidden />
-            Export .ics
-          </a>
-        </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button size="sm" variant="outline">
               <Plus aria-hidden />
-              Add
+              Add to schedule
               <ChevronDown aria-hidden className="opacity-60" />
             </Button>
           </DropdownMenuTrigger>
@@ -87,8 +81,8 @@ export function WeekToolbar({ view, label, previous, next, containsToday, weekSt
                 Break (no classes)
               </Link>
             </DropdownMenuItem>
-            <DropdownMenuSeparator className="sm:hidden" />
-            <DropdownMenuItem asChild className="sm:hidden">
+            <DropdownMenuSeparator className="xl:hidden" />
+            <DropdownMenuItem asChild className="xl:hidden">
               <a href="/courses/calendar.ics" download>
                 <Download aria-hidden />
                 Export to calendar (.ics)

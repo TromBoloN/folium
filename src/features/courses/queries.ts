@@ -95,12 +95,29 @@ export async function listActiveSlots(): Promise<TimetableSlot[]> {
   return courses.filter((c) => !c.archivedAt).flatMap((c) => c.slots);
 }
 
-export type CourseOption = { id: string; name: string; code: string | null; color: string; archived: boolean };
+export type CourseOption = {
+  id: string;
+  name: string;
+  code: string | null;
+  color: string;
+  archived: boolean;
+  credits: number;
+};
 
 /** Lightweight course list for pickers and filters. */
 export async function listCourseOptions(): Promise<CourseOption[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase.from("courses").select("id, name, code, color, archived_at").order("name");
+  const { data, error } = await supabase
+    .from("courses")
+    .select("id, name, code, color, archived_at, credits")
+    .order("name");
   if (error) throw new Error(`Couldn't load courses: ${error.message}`);
-  return data.map((c) => ({ id: c.id, name: c.name, code: c.code, color: c.color, archived: c.archived_at !== null }));
+  return data.map((c) => ({
+    id: c.id,
+    name: c.name,
+    code: c.code,
+    color: c.color,
+    archived: c.archived_at !== null,
+    credits: Number(c.credits),
+  }));
 }

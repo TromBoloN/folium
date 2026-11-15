@@ -9,7 +9,9 @@ import { ListSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { type CourseCardStats, CourseList } from "@/features/courses/components/course-list";
+import { SemesterSwitch } from "@/features/courses/components/semester-switch";
 import { listCourses } from "@/features/courses/queries";
+import { semesterLabels } from "@/features/courses/schema";
 import { courseResult, formatPercent } from "@/features/grades/logic";
 import { listGradebook } from "@/features/grades/queries";
 import { ByDayView } from "@/features/schedule/components/by-day-view";
@@ -18,7 +20,7 @@ import { WeekRail } from "@/features/schedule/components/week-rail";
 import { WeekToolbar } from "@/features/schedule/components/week-toolbar";
 import { nextLabel, occurrenceChips } from "@/features/schedule/format";
 import { buildSchedule, changesByCourse, nextOccurrence } from "@/features/schedule/occurrences";
-import { getScheduleInput, listUpcomingBreaks } from "@/features/schedule/queries";
+import { getScheduleInput, listAttendanceMarks, listUpcomingBreaks } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { COURSES_VIEWS, type CoursesView, type Preferences } from "@/features/settings/schema";
 import { listOpenTasks } from "@/features/tasks/queries";
@@ -36,7 +38,7 @@ export default function CoursesPage({ searchParams }: PageProps<"/courses">) {
         description="Your courses, and when they really meet."
         action={
           <div className="flex items-center gap-2">
-            <Button asChild size="sm" variant="ghost">
+            <Button asChild size="sm" variant="outline">
               <Link href="/courses/rollover">
                 <CalendarRange aria-hidden />
                 New semester
@@ -90,19 +92,33 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
   }
 
   if (view === "cards") {
+    // Semester: ?semester=, else the one most active courses are in.
+    const semesters = semesterLabels(courses);
+    const fallback = semesterLabels(courses.filter((c) => !c.archivedAt))[0] ?? "all";
+    const wanted = typeof params.semester === "string" ? params.semester : fallback;
+    const semester = wanted === "all" || semesters.includes(wanted) ? wanted : fallback;
+    const shown = semester === "all" ? courses : courses.filter((c) => c.semester === semester);
     const stats = await cardStats(today, nowMinute, preferences);
     return (
       <div className="flex flex-col gap-5">
-        {switcher}
-        <CourseList courses={courses} stats={stats} />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          {switcher}
+          {semesters.length > 0 ? <SemesterSwitch semesters={semesters} current={semester} /> : null}
+        </div>
+        {shown.length > 0 ? (
+          <CourseList courses={shown} stats={stats} />
+        ) : (
+          <p className="text-muted-foreground text-sm">No courses in {semester}.</p>
+        )}
       </div>
     );
   }
 
   const anchor = weekParam ?? today;
   const range = weekRange(anchor, preferences.weekStart);
-  const input = await getScheduleInput(range.from, range.to);
+  const [input, marks] = await Promise.all([getScheduleInput(range.from, range.to), listAttendanceMarks()]);
   const week = buildWeek(input, {
+    marks,
     anchor,
     today,
     weekStart: preferences.weekStart,

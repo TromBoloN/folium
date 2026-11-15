@@ -65,6 +65,7 @@ test("today's classes highlight what's on now and next", async ({ page }) => {
 
   await signUp(page);
   await page.goto("/courses/new");
+  await waitForHydration(page);
   await page.getByLabel("Name").fill("Calculus");
   await page.getByRole("button", { name: "Add course" }).click();
   await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}$/);
@@ -76,7 +77,11 @@ test("today's classes highlight what's on now and next", async ({ page }) => {
     [localTime(90), localTime(150)],
   ]) {
     await page.goto(`${courseUrl}/slots/new`);
-    await page.getByLabel("Day").selectOption({ label: weekday });
+    // Weekday chips (Monday is picked by default); each chip's label carries the full day name.
+    if (weekday !== "Monday") {
+      await page.getByTitle("Monday").click();
+      await page.getByTitle(weekday).click();
+    }
     await page.getByLabel("Starts").fill(start);
     await page.getByLabel("Ends").fill(end);
     await page.getByRole("button", { name: "Add class time" }).click();

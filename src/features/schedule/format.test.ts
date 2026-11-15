@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeOccurrence, nextLabel, occurrenceChips, placementLabel } from "./format";
+import { describeOccurrence, durationLabel, nextLabel, occurrenceChips, placementLabel } from "./format";
 import { buildSchedule, type ClassChange, type ScheduleSlot } from "./occurrences";
 
 const COURSE = { id: "c", name: "Calculus I", code: "MAT101", color: "#1c7ed6", room: "B2.04" };
@@ -50,7 +50,7 @@ describe("occurrenceChips", () => {
   });
   it("room and extra", () => {
     expect(occurrenceChips(one({ ...base, location: "B2.05" }), "24h")).toEqual([
-      { kind: "room", text: "Room → B2.05" },
+      { kind: "room", text: "Room changed · was B2.04" },
     ]);
     const extra = buildSchedule(
       {
@@ -96,5 +96,13 @@ describe("labels", () => {
     expect(describeOccurrence(one({ ...base, kind: "cancelled", note: "Dr. Siti unwell" }), "24h")).toBe(
       "Calculus I, Wed 18 Nov 07:30–09:10, B2.04, cancelled: Dr. Siti unwell",
     );
+  });
+});
+
+describe("durationLabel", () => {
+  it("reads naturally", () => {
+    expect(durationLabel({ startTime: "07:30", endTime: "08:20" })).toBe("50 min");
+    expect(durationLabel({ startTime: "07:30", endTime: "09:10" })).toBe("1 h 40 min");
+    expect(durationLabel({ startTime: "08:00", endTime: "10:00" })).toBe("2 h");
   });
 });

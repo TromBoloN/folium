@@ -1,122 +1,189 @@
 "use client";
 
-import { useActionState } from "react";
-import { CancelButton, SheetFormBridge } from "@/components/sheet";
+import { BookOpen, CalendarRange, ListTodo, MapPin, User } from "lucide-react";
+import { useActionState, useEffect, useState } from "react";
+import { FormFooter } from "@/components/form/form-footer";
+import { FormSection, MoreDetails } from "@/components/form/form-section";
+import { Stepper } from "@/components/form/stepper";
+import { CancelButton, SheetFormBridge, useSheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Pill } from "@/components/ui/pill";
 import { createCourse, updateCourse } from "../actions";
 import type { Course } from "../schema";
 import { ColorField } from "./color-field";
 
-type Props =
+type Props = { semesters: string[] } & (
   | { mode: "create"; defaultColor: string; course?: undefined }
-  | { mode: "edit"; course: Course; defaultColor?: undefined };
+  | { mode: "edit"; course: Course; defaultColor?: undefined }
+);
 
-const TEXT_FIELDS = [
-  { name: "name", label: "Name", autoComplete: "off", placeholder: "Calculus I", required: true },
-  { name: "code", label: "Code", placeholder: "MAT101" },
-  { name: "lecturer", label: "Lecturer", placeholder: "Dr. Siti Rahma" },
-  {
-    name: "lecturerEmail",
-    label: "Lecturer email",
-    placeholder: "siti.rahma@campus.ac.id",
-    type: "email",
-    inputMode: "email",
-  },
-  {
-    name: "lecturerPhone",
-    label: "Lecturer WhatsApp",
-    placeholder: "+62 812 3456 7890",
-    type: "tel",
-    inputMode: "tel",
-    hint: "Adds a WhatsApp button on the course.",
-  },
-  {
-    name: "room",
-    label: "Room",
-    placeholder: "Building B, 2.04",
-    hint: "Used for class times without their own location.",
-  },
-  { name: "semester", label: "Semester", placeholder: "2026 Ganjil" },
-] as const;
-
+/**
+ * Basics first (name, code, credits, colour), the rest under "More details".
+ * A live preview of the course card sits on top and the sheet takes the colour.
+ */
 export function CourseForm(props: Props) {
   const [state, action, pending] = useActionState(props.mode === "create" ? createCourse : updateCourse, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const initial: Record<string, string | null | undefined> = props.course
     ? { ...props.course, credits: String(props.course.credits) }
-    : {};
+    : { semester: props.semesters[0] ?? "" };
   const value = (name: string) => state?.values?.[name] ?? initial[name] ?? "";
   const cancelHref = props.mode === "edit" ? `/courses/${props.course.id}` : "/courses";
 
+  // Live preview state (the inputs stay uncontrolled, so the form works without JavaScript).
+  const [preview, setPreview] = useState({
+    name: value("name"),
+    code: value("code"),
+    credits: value("credits") || "0",
+    room: value("room"),
+    color: (state?.values?.color ?? props.course?.color ?? props.defaultColor ?? "").toLowerCase(),
+  });
+  const sheet = useSheet();
+  useEffect(() => {
+    sheet?.setTint(preview.color || null);
+    return () => sheet?.setTint(null);
+  }, [sheet, preview.color]);
+
+  const details = ["lecturer", "lecturerEmail", "lecturerPhone", "room", "semester"];
+  const detailsOpen = details.some((f) => errors[f]) || (props.mode === "edit" && details.some((f) => value(f)));
+
+  const text = (
+    name: string,
+    label: string,
+    extra: Partial<React.ComponentProps<"input">> & { hint?: string } = {},
+  ) => {
+    const { hint, ...input } = extra;
+    return (
+      <Field id={name} label={label} optional={!input.required} error={errors[name]} hint={hint}>
+        <Input
+          id={name}
+          name={name}
+          defaultValue={value(name)}
+          aria-invalid={errors[name] ? true : undefined}
+          aria-describedby={describedBy(name, errors[name], hint)}
+          {...input}
+        />
+      </Field>
+    );
+  };
+
   return (
-    <form action={action} className="flex flex-col gap-5" noValidate>
+    <form
+      action={action}
+      className="flex flex-col gap-6"
+      noValidate
+      onInput={(e) => {
+        const el = e.target as HTMLInputElement;
+        if (["name", "code", "credits", "room"].includes(el.name)) setPreview((p) => ({ ...p, [el.name]: el.value }));
+      }}
+    >
       <SheetFormBridge state={state} message={props.mode === "create" ? "Course added" : "Course saved"} />
       {props.mode === "edit" ? <input type="hidden" name="id" value={props.course.id} /> : null}
 
-      {TEXT_FIELDS.map((f) => {
-        const required = "required" in f && f.required;
-        const hint = "hint" in f ? f.hint : undefined;
-        return (
-          <Field key={f.name} id={f.name} label={f.label} optional={!required} error={errors[f.name]} hint={hint}>
-            <Input
-              id={f.name}
-              name={f.name}
-              defaultValue={value(f.name)}
-              placeholder={f.placeholder}
-              required={required}
-              autoComplete={"autoComplete" in f ? f.autoComplete : "type" in f ? "off" : undefined}
-              type={"type" in f ? f.type : undefined}
-              inputMode={"inputMode" in f ? f.inputMode : undefined}
-              aria-invalid={errors[f.name] ? true : undefined}
-              aria-describedby={describedBy(f.name, errors[f.name], hint)}
+      <CoursePreview {...preview} />
+
+      <FormSection title="Basics" icon={BookOpen}>
+        {text("name", "Name", { required: true, autoFocus: true, autoComplete: "off", placeholder: "e.g. Calculus I" })}
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
+          {text("code", "Code", { placeholder: "e.g. MAT101", autoComplete: "off" })}
+          <Field id="credits" label="Credits" optional error={errors.credits} hint="0 for things that aren't graded.">
+            <Stepper
+              id="credits"
+              name="credits"
+              unit="SKS"
+              min={0}
+              max={24}
+              step={0.5}
+              defaultValue={value("credits") || "0"}
+              aria-invalid={errors.credits ? true : undefined}
+              aria-describedby={describedBy("credits", errors.credits, "hint")}
             />
           </Field>
-        );
-      })}
-
-      <Field
-        id="credits"
-        label="Credits (SKS)"
-        optional
-        error={errors.credits}
-        hint="Used to weight your GPA. Leave 0 for things that aren't graded."
-      >
-        <Input
-          id="credits"
-          name="credits"
-          type="number"
-          inputMode="decimal"
-          min={0}
-          max={24}
-          step="0.5"
-          defaultValue={value("credits") || "0"}
-          className="w-28"
-          aria-invalid={errors.credits ? true : undefined}
-          aria-describedby={describedBy("credits", errors.credits, "hint")}
+        </div>
+        <ColorField
+          // Remount with the submitted colour if the server sends the form back.
+          key={state?.values?.color ?? "initial"}
+          defaultValue={preview.color}
+          error={errors.color}
+          onChange={(color) => setPreview((p) => ({ ...p, color }))}
         />
-      </Field>
+      </FormSection>
 
-      <ColorField
-        // Remount with the submitted colour if the server sends the form back.
-        key={state?.values?.color ?? "initial"}
-        defaultValue={state?.values?.color ?? props.course?.color ?? props.defaultColor ?? ""}
-        error={errors.color}
-      />
+      <MoreDetails hint="Lecturer, contact, room and semester" open={detailsOpen}>
+        <FormSection title="Lecturer and contact" icon={User}>
+          {text("lecturer", "Lecturer", { placeholder: "e.g. Dr. Siti Rahma" })}
+          <div className="grid gap-4 sm:grid-cols-2">
+            {text("lecturerEmail", "Email", { type: "email", inputMode: "email", placeholder: "name@campus.ac.id" })}
+            {text("lecturerPhone", "WhatsApp", {
+              type: "tel",
+              inputMode: "tel",
+              placeholder: "+62 812 3456 7890",
+              pattern: "\\+?[0-9][0-9 ()\\-]{5,22}",
+              hint: "Adds a WhatsApp button.",
+            })}
+          </div>
+        </FormSection>
+        <FormSection title="Room and semester" icon={MapPin}>
+          {text("room", "Room", { placeholder: "e.g. B2.04", hint: "Used for class times without their own room." })}
+          {text("semester", "Semester", {
+            list: "semester-options",
+            autoComplete: "off",
+            placeholder: "e.g. 2026 Ganjil",
+            hint:
+              props.semesters.length > 0
+                ? "Pick one you already use, or type a new one."
+                : "Courses with the same semester are grouped together.",
+          })}
+          <datalist id="semester-options">
+            {props.semesters.map((s) => (
+              <option key={s} value={s} />
+            ))}
+          </datalist>
+        </FormSection>
+      </MoreDetails>
 
-      {state && !state.ok && !state.fieldErrors ? (
-        <p role="alert" className="text-destructive text-sm">
-          {state.error}
-        </p>
-      ) : null}
-
-      <div className="flex flex-wrap gap-3">
+      <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : props.mode === "create" ? "Add course" : "Save changes"}
         </Button>
         <CancelButton href={cancelHref} />
-      </div>
+      </FormFooter>
     </form>
+  );
+}
+
+/** The course card as it will look (same tint, code chip, serif name, credits). */
+function CoursePreview({ name, code, credits, room, color }: Record<string, string>) {
+  return (
+    <div
+      aria-hidden
+      style={{ "--tint": color } as React.CSSProperties}
+      className="tile tile-tinted relative flex flex-col gap-2 overflow-hidden p-4 pl-5"
+    >
+      <span className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
+      <span className="flex items-center gap-2">
+        {code ? <Pill tone="course">{code}</Pill> : <span className="text-muted-foreground text-xs">Preview</span>}
+      </span>
+      <span className="font-display font-medium text-xl leading-tight">
+        {name || <span className="text-muted-foreground">Course name</span>}
+      </span>
+      <span className="flex flex-wrap gap-x-3 text-muted-foreground text-xs">
+        <span className="inline-flex items-center gap-1">
+          <CalendarRange className="size-3.5" />
+          {Number(credits) > 0 ? `${credits} SKS` : "Not graded"}
+        </span>
+        {room ? (
+          <span className="inline-flex items-center gap-1">
+            <MapPin className="size-3.5" />
+            {room}
+          </span>
+        ) : null}
+        <span className="inline-flex items-center gap-1">
+          <ListTodo className="size-3.5" />0 open tasks
+        </span>
+      </span>
+    </div>
   );
 }

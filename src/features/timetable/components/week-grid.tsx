@@ -124,7 +124,9 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
                   )}
                 >
                   <span className="flex items-start justify-between gap-1">
-                    <span className={cn("truncate font-medium", cancelled && "line-through")}>{item.title}</span>
+                    <span className={cn("line-clamp-2 font-medium", cancelled && "line-through")}>
+                      {item.courseName}
+                    </span>
                     <OverlapWarning withNames={item.overlapsWith} compact />
                   </span>
                   <span
@@ -135,6 +137,7 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
                     )}
                   >
                     {item.timeLabel}
+                    {item.code ? <span className="ml-1 opacity-80">· {item.code}</span> : null}
                   </span>
                   {item.chips.length > 0 ? (
                     <ChangeChips chips={item.chips} compact className="mt-0.5" />
