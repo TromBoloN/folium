@@ -65,6 +65,15 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (signedIn && matches(pathname, GUEST_ONLY_PATHS)) {
+    // Claims only prove the token is validly signed (verified locally); the account may
+    // be gone (deleted, or the local demo reseeded). Pages check with getUser() and send
+    // such a session here, so trusting the claims would bounce /login <-> / forever.
+    // Ask the auth server on these two pages only, and drop a dead session.
+    const { data: user } = await supabase.auth.getUser();
+    if (!user.user) {
+      await supabase.auth.signOut({ scope: "local" });
+      return response;
+    }
     const url = request.nextUrl.clone();
     url.pathname = "/";
     url.search = "";
