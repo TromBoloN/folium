@@ -1,110 +1,62 @@
-<a href="https://demo-nextjs-with-supabase.vercel.app/">
-  <img alt="Next.js and Supabase Starter Kit - the fastest way to build apps with Next.js and Supabase" src="https://demo-nextjs-with-supabase.vercel.app/opengraph-image.png">
-  <h1 align="center">Next.js and Supabase Starter Kit</h1>
-</a>
+# Folium
 
-<p align="center">
- The fastest way to build apps with Next.js and Supabase
-</p>
+A personal student dashboard: courses, a weekly timetable, tasks with deadlines, and a customizable **Today** page that answers "what do I need to do today?" at a glance. One student, their own data, their own look.
 
-<p align="center">
-  <a href="#features"><strong>Features</strong></a> ·
-  <a href="#demo"><strong>Demo</strong></a> ·
-  <a href="#deploy-to-vercel"><strong>Deploy to Vercel</strong></a> ·
-  <a href="#clone-and-run-locally"><strong>Clone and run locally</strong></a> ·
-  <a href="#feedback-and-issues"><strong>Feedback and issues</strong></a>
-  <a href="#more-supabase-examples"><strong>More Examples</strong></a>
-</p>
-<br/>
+Built with **Next.js 16** (App Router, Cache Components), **Supabase** (Postgres, Auth, Row Level Security), **Tailwind v4**, **TypeScript** and **Zod**.
 
 ## Features
 
-- Works across the entire [Next.js](https://nextjs.org) stack
-  - App Router
-  - Pages Router
-  - Proxy
-  - Client
-  - Server
-  - It just works!
-- supabase-ssr. A package to configure Supabase Auth to use cookies
-- Password-based authentication block installed via the [Supabase UI Library](https://supabase.com/ui/docs/nextjs/password-based-auth)
-- Styling with [Tailwind CSS](https://tailwindcss.com)
-- Components with [shadcn/ui](https://ui.shadcn.com/)
-- Optional deployment with [Supabase Vercel Integration and Vercel deploy](#deploy-your-own)
-  - Environment variables automatically assigned to Vercel project
+- **Today dashboard**: greeting, today's classes with "Now"/"Next", tasks due soon, overdue tasks, quick add. Show, hide and reorder widgets (drag, keyboard or up/down buttons).
+- **Courses and timetable**: courses with colour, lecturer, room and semester; weekly class times with optional date ranges; a day-by-day agenda on phones and a week grid on desktop. Overlapping classes are allowed and flagged.
+- **Tasks and deadlines**: due date with optional time, priority, status, course, notes and a checklist of steps. Filter by overdue / today / this week, status and course; quick add with just a title.
+- **Personal by design**: light/dark/system mode, colour presets or a custom accent, font and density, all applied on the first paint. Time zone, week start and 12/24-hour preferences.
+- **Private by default**: every row belongs to one user and is protected by RLS; email sign-up with confirmation.
+- **Mobile first**: bottom navigation on phones, sidebar on desktop.
 
-## Demo
+## Quick start
 
-You can view a fully working demo at [demo-nextjs-with-supabase.vercel.app](https://demo-nextjs-with-supabase.vercel.app/).
+Requires [Bun](https://bun.sh) and Docker.
 
-## Deploy to Vercel
-
-Vercel deployment will guide you through creating a Supabase account and project.
-
-After installation of the Supabase integration, all relevant environment variables will be assigned to the project so the deployment is fully functioning.
-
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&project-name=nextjs-with-supabase&repository-name=nextjs-with-supabase&demo-title=nextjs-with-supabase&demo-description=This+starter+configures+Supabase+Auth+to+use+cookies%2C+making+the+user%27s+session+available+throughout+the+entire+Next.js+app+-+Client+Components%2C+Server+Components%2C+Route+Handlers%2C+Server+Actions+and+Middleware.&demo-url=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2F&external-id=https%3A%2F%2Fgithub.com%2Fvercel%2Fnext.js%2Ftree%2Fcanary%2Fexamples%2Fwith-supabase&demo-image=https%3A%2F%2Fdemo-nextjs-with-supabase.vercel.app%2Fopengraph-image.png)
-
-The above will also clone the Starter kit to your GitHub, you can clone that locally and develop locally.
-
-If you wish to just develop locally and not deploy to Vercel, [follow the steps below](#clone-and-run-locally).
-
-## Clone and run locally
-
-1. You'll first need a Supabase project which can be made [via the Supabase dashboard](https://database.new)
-
-2. Create a Next.js app using the Supabase Starter template npx command
-
-   ```bash
-   npx create-next-app --example with-supabase with-supabase-app
-   ```
-
-   ```bash
-   yarn create next-app --example with-supabase with-supabase-app
-   ```
-
-   ```bash
-   pnpm create next-app --example with-supabase with-supabase-app
-   ```
-
-3. Use `cd` to change into the app's directory
-
-   ```bash
-   cd with-supabase-app
-   ```
-
-4. Rename `.env.example` to `.env.local` and update the following:
-
-```env
-NEXT_PUBLIC_SUPABASE_URL=[INSERT SUPABASE PROJECT URL]
-NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=[INSERT SUPABASE PROJECT API PUBLISHABLE OR ANON KEY]
+```bash
+bun install
+bunx supabase start            # local Postgres, Auth, Studio, Mailpit
+cp .env.example .env.local     # set the URL and PUBLISHABLE_KEY printed by `bunx supabase status`
+bunx supabase db reset         # migrations + demo data
+bun dev                        # http://127.0.0.1:3000
 ```
 
-> [!NOTE]
-> This example uses `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, which refers to Supabase's new **publishable** key format.
-> Both legacy **anon** keys and new **publishable** keys can be used with this variable name during the transition period. Supabase's dashboard may show `NEXT_PUBLIC_SUPABASE_ANON_KEY`; its value can be used in this example.
-> See the [full announcement](https://github.com/orgs/supabase/discussions/29260) for more information.
+Sign in with the demo account **`demo@folium.test` / `folium-demo-2026`**, or sign up: confirmation emails land in Mailpit at http://127.0.0.1:54324.
 
-Both `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` can be found in [your Supabase project's API settings](https://supabase.com/dashboard/project/_?showConnect=true)
+## Commands
 
-5. You can now run the Next.js local development server:
+| Command | |
+|---|---|
+| `bun dev` | Dev server |
+| `bun run build` / `bun run start` | Production build / serve |
+| `bun run typecheck` | Route types + `tsc` |
+| `bun run lint` / `bun run format` | Biome |
+| `bun run test` | Unit tests (Vitest) |
+| `bun run test:db` | Database tests (pgTAP: RLS, constraints, triggers) |
+| `bun run test:e2e` | End-to-end tests (Playwright; needs Supabase and a running app) |
+| `bun run db:types` | Regenerate `src/types/database.ts` after a schema change |
+| `bun run db:seed` | Rebuild the demo account |
 
-   ```bash
-   npm run dev
-   ```
+## Project layout
 
-   The starter kit should now be running on [localhost:3000](http://localhost:3000/).
+```
+src/app/            routes and layouts (thin)
+src/features/       one folder per feature: schema, queries, actions, pure logic + tests, components
+src/components/     app shell and shared UI
+src/lib/            dates, env, Supabase clients, helpers
+supabase/           migrations, pgTAP tests, seed, email template, local config
+e2e/                Playwright tests
+docs/documentation/ full documentation
+```
 
-6. This template comes with the default shadcn/ui style initialized. If you instead want other ui.shadcn styles, delete `components.json` and [re-install shadcn/ui](https://ui.shadcn.com/docs/installation/next)
+## Documentation
 
-> Check out [the docs for Local Development](https://supabase.com/docs/guides/getting-started/local-development) to also run Supabase locally.
+Start at **[docs/documentation/00-start-here.md](docs/documentation/00-start-here.md)**. It maps every question to the right doc: architecture, a file-by-file codebase map, database, auth, theming, each feature, dates and time zones, the form/action pattern, testing, step-by-step recipes, known gotchas, and the decision log.
 
-## Feedback and issues
+## Status
 
-Please file feedback and issues over on the [Supabase GitHub org](https://github.com/supabase/supabase/issues/new/choose).
-
-## More Supabase examples
-
-- [Next.js Subscription Payments Starter](https://github.com/vercel/nextjs-subscription-payments)
-- [Cookie-based Auth and the Next.js 13 App Router (free course)](https://youtube.com/playlist?list=PL5S4mPUpp4OtMhpnp93EFSo42iQ40XjbF)
-- [Supabase Auth and the Next.js App Router](https://github.com/supabase/supabase/tree/master/examples/auth/nextjs)
+Stages 1–5 of the [v1 plan](docs/development/Folium-V1.md) are done (foundation, auth and settings, courses and timetable, tasks, Today dashboard). Next: polish and deployment.
