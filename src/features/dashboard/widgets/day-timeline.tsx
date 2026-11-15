@@ -2,6 +2,7 @@
 
 import { MapPin } from "lucide-react";
 import Link from "next/link";
+import { ChangeChip } from "@/features/schedule/components/change-chips";
 import { formatTime, layoutDay, toMinutes } from "@/features/timetable/logic";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
@@ -29,13 +30,22 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
   const { minute } = useNow(initialNow, timeZone);
   const range = timelineRange(classes);
   if (!range) return null;
-  const moment = classMoment(classes, minute);
+  // Cancelled classes stay on the axis (dimmed) but are never "now" or "next".
+  const live = classes.filter((c) => !c.cancelled);
+  const moment = classMoment(live, minute);
   const offset = nowOffset(minute, range);
   const hours = (range.end - range.start) / 60;
   const hourMarks = Array.from({ length: hours + 1 }, (_, i) => range.start / 60 + i);
   // Once the day's classes are over, look ahead instead of showing an empty axis.
   if (moment.current.length === 0 && moment.next === null) {
-    return <DaySummary past={classes} tomorrow={tomorrow} timeFormat={timeFormat} />;
+    return (
+      <DaySummary
+        past={live}
+        cancelled={classes.filter((c) => c.cancelled)}
+        tomorrow={tomorrow}
+        timeFormat={timeFormat}
+      />
+    );
   }
 
   return (
@@ -63,6 +73,7 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
             const isNow = moment.current.includes(slot.id);
             const isNext = moment.next === slot.id;
             const isPast = toMinutes(slot.endTime) <= minute;
+            const dim = isPast || slot.cancelled;
             return (
               <li
                 key={slot.id}
@@ -75,11 +86,11 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
                 }}
               >
                 <Link
-                  href={`/courses/${slot.courseId}`}
+                  href={`/courses/class/${slot.key}`}
                   style={{ "--tint": slot.color } as React.CSSProperties}
                   className={cn(
                     "relative flex h-full min-h-9 items-start justify-between gap-2 overflow-hidden rounded-lg py-1.5 pr-2 pl-3 text-sm transition-colors",
-                    isPast
+                    dim
                       ? "bg-muted text-muted-foreground"
                       : "bg-[color-mix(in_oklab,var(--tint)_15%,var(--surface-1))] hover:bg-[color-mix(in_oklab,var(--tint)_24%,var(--surface-1))]",
                     isNow && "ring-2 ring-(--tint)",
@@ -87,11 +98,14 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
                 >
                   <span
                     aria-hidden
-                    className={cn("absolute inset-y-0 left-0 w-1", isPast ? "bg-border" : "bg-(--tint)")}
+                    className={cn("absolute inset-y-0 left-0 w-1", dim ? "bg-border" : "bg-(--tint)")}
                   />
                   <span className="flex min-w-0 flex-col leading-tight">
-                    <span className="truncate font-medium">{slot.code ?? slot.name}</span>
-                    <span className="truncate text-xs tabular-nums">
+                    <span className={cn("truncate font-medium", slot.cancelled && "line-through")}>
+                      {slot.code ?? slot.name}
+                      {slot.cancelled ? <span className="sr-only"> (cancelled)</span> : null}
+                    </span>
+                    <span className={cn("truncate text-xs tabular-nums", slot.cancelled && "line-through")}>
                       {formatTime(slot.startTime, timeFormat)}–{formatTime(slot.endTime, timeFormat)}
                       {slot.location ? (
                         <>
@@ -101,7 +115,11 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
                       ) : null}
                     </span>
                   </span>
-                  {isNow ? (
+                  {slot.cancelled ? (
+                    <ChangeChip chip={{ kind: "cancelled", text: "Cancelled" }} compact />
+                  ) : slot.chips.length > 0 && !isNow && !isNext ? (
+                    <ChangeChip chip={slot.chips[0]} compact />
+                  ) : isNow ? (
                     <span className="shrink-0 rounded-full bg-foreground px-2 py-0.5 font-medium text-background text-xs">
                       Now
                     </span>

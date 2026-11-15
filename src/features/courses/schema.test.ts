@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { slotInputSchema } from "../timetable/schema";
-import { COURSE_COLORS, courseInputSchema, nextCourseColor } from "./schema";
+import { COURSE_COLORS, courseInputSchema, nextCourseColor, nextSemesterName, whatsappLink } from "./schema";
 
 describe("courseInputSchema", () => {
   it("trims text and turns empty optional fields into null", () => {
@@ -14,7 +14,17 @@ describe("courseInputSchema", () => {
       room: null,
       semester: null,
       credits: 0,
+      lecturerEmail: null,
+      lecturerPhone: null,
     });
+  });
+
+  it("checks the lecturer's email and phone", () => {
+    const base = { name: "Calculus", color: "#2f9e44" };
+    expect(courseInputSchema.safeParse({ ...base, lecturerEmail: "siti@campus.ac.id" }).success).toBe(true);
+    expect(courseInputSchema.safeParse({ ...base, lecturerEmail: "not an email" }).success).toBe(false);
+    expect(courseInputSchema.safeParse({ ...base, lecturerPhone: "+62 812-3456 7890" }).success).toBe(true);
+    expect(courseInputSchema.safeParse({ ...base, lecturerPhone: "call me" }).success).toBe(false);
   });
 
   it("requires a name and a valid colour", () => {
@@ -53,7 +63,17 @@ describe("slotInputSchema", () => {
       location: null,
       startsOn: null,
       endsOn: null,
+      online: false,
+      meetingUrl: null,
     });
+  });
+
+  it("takes an online flag and only http(s) meeting links", () => {
+    expect(slotInputSchema.parse({ ...base, online: "on", meetingUrl: " https://meet.example/abc " })).toMatchObject({
+      online: true,
+      meetingUrl: "https://meet.example/abc",
+    });
+    expect(slotInputSchema.safeParse({ ...base, meetingUrl: "javascript:alert(1)" }).success).toBe(false);
   });
 
   it("accepts times with seconds from the database", () => {
@@ -88,5 +108,18 @@ describe("course credits", () => {
 
   it.each([["-1"], ["25"], ["abc"], ["1.25"]])("rejects %s", (credits) => {
     expect(courseInputSchema.safeParse({ ...base, credits }).success).toBe(false);
+  });
+});
+
+describe("nextSemesterName and whatsappLink", () => {
+  it("rolls Indonesian semester names forward", () => {
+    expect(nextSemesterName("2026 Ganjil")).toBe("2026 Genap");
+    expect(nextSemesterName("2026 genap")).toBe("2027 Ganjil");
+    expect(nextSemesterName("Fall 2026")).toBe("");
+  });
+  it("turns a local Indonesian number into an international wa.me link", () => {
+    expect(whatsappLink("0812-3456-7890")).toBe("https://wa.me/6281234567890");
+    expect(whatsappLink("+62 812 3456 7890")).toBe("https://wa.me/6281234567890");
+    expect(whatsappLink("+44 20 7946 0958")).toBe("https://wa.me/442079460958");
   });
 });

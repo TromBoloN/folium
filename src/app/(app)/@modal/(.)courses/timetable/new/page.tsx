@@ -20,7 +20,7 @@ async function New({ searchParams }: Pick<PageProps<"/courses/timetable/new">, "
       variant="sheet"
       weekday={Number(weekday) || undefined}
       start={typeof start === "string" ? start : undefined}
-      returnTo="/courses/timetable"
+      returnTo="/courses?view=week"
     />
   );
 }

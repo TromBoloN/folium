@@ -68,8 +68,8 @@ export const WIDGETS: Record<WidgetId, WidgetDefinition> = {
     size: "tall",
     frame: "tile",
     stretch: true,
-    href: "/courses/timetable",
-    hrefLabel: "Week",
+    href: "/courses?view=day",
+    hrefLabel: "By day",
     skeletonRows: 5,
   },
   week: {
@@ -79,8 +79,8 @@ export const WIDGETS: Record<WidgetId, WidgetDefinition> = {
     Component: WeekWidget,
     size: "wide",
     frame: "tile",
-    href: "/courses/timetable",
-    hrefLabel: "Timetable",
+    href: "/courses?view=day",
+    hrefLabel: "By day",
     skeletonRows: 2,
   },
   "due-soon": {

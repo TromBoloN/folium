@@ -27,6 +27,15 @@ export const slotInputSchema = z
       .default(null),
     startsOn: optionalDate,
     endsOn: optionalDate,
+    online: z.preprocess((v) => v === "on" || v === "true" || v === true, z.boolean()),
+    meetingUrl: z
+      .string()
+      .trim()
+      .max(500, "The link can be at most 500 characters.")
+      .transform((v) => (v === "" ? null : v))
+      .nullable()
+      .default(null)
+      .refine((v) => v === null || /^https?:\/\/\S+$/.test(v), "Paste a full link starting with https://"),
   })
   // The database enforces these too; checking here gives a clear message on the right field.
   .refine((s) => toMinutes(s.endTime) > toMinutes(s.startTime), {

@@ -19,6 +19,8 @@ function parseSlot(formData: FormData) {
     location: formData.get("location") ?? "",
     startsOn: formData.get("startsOn") ?? "",
     endsOn: formData.get("endsOn") ?? "",
+    online: formData.get("online") ?? "",
+    meetingUrl: formData.get("meetingUrl") ?? "",
   });
 }
 
@@ -31,6 +33,9 @@ function toRow(slot: z.infer<typeof slotInputSchema>) {
     location: slot.location,
     starts_on: slot.startsOn,
     ends_on: slot.endsOn,
+    // A link means the class is online even if the box wasn't ticked.
+    is_online: slot.online || slot.meetingUrl !== null,
+    meeting_url: slot.meetingUrl,
   };
 }
 

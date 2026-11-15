@@ -1,4 +1,5 @@
 import "server-only";
+import { cache } from "react";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { trimSeconds } from "../timetable/logic";
@@ -8,7 +9,7 @@ import type { Course } from "./schema";
 export type CourseWithSlots = Course & { slots: TimetableSlot[] };
 
 const COURSE_COLUMNS =
-  "id, name, code, color, lecturer, room, semester, credits, archived_at, timetable_slots(id, weekday, start_time, end_time, location, starts_on, ends_on)";
+  "id, name, code, color, lecturer, lecturer_email, lecturer_phone, room, semester, credits, archived_at, timetable_slots(id, weekday, start_time, end_time, location, starts_on, ends_on, is_online, meeting_url)";
 
 type Row = {
   id: string;
@@ -16,6 +17,8 @@ type Row = {
   code: string | null;
   color: string;
   lecturer: string | null;
+  lecturer_email: string | null;
+  lecturer_phone: string | null;
   room: string | null;
   semester: string | null;
   credits: number;
@@ -28,6 +31,8 @@ type Row = {
     location: string | null;
     starts_on: string | null;
     ends_on: string | null;
+    is_online: boolean;
+    meeting_url: string | null;
   }[];
 };
 
@@ -42,6 +47,8 @@ function toCourse(row: Row): CourseWithSlots {
     semester: row.semester,
     credits: Number(row.credits),
     archivedAt: row.archived_at,
+    lecturerEmail: row.lecturer_email,
+    lecturerPhone: row.lecturer_phone,
   };
   return {
     ...course,
@@ -54,13 +61,15 @@ function toCourse(row: Row): CourseWithSlots {
       location: s.location,
       startsOn: s.starts_on,
       endsOn: s.ends_on,
+      online: s.is_online,
+      meetingUrl: s.meeting_url,
       course,
     })),
   };
 }
 
 /** All of the user's courses with their class times, active first, then by name. RLS limits rows to the owner. */
-export async function listCourses(): Promise<CourseWithSlots[]> {
+export const listCourses = cache(async (): Promise<CourseWithSlots[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("courses")
@@ -69,7 +78,7 @@ export async function listCourses(): Promise<CourseWithSlots[]> {
     .order("name");
   if (error) throw new Error(`Couldn't load courses: ${error.message}`);
   return (data as Row[]).map(toCourse);
-}
+});
 
 /** One course, or null if it doesn't exist or isn't the user's (RLS hides other users' rows). */
 export async function getCourse(id: string): Promise<CourseWithSlots | null> {

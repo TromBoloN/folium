@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChangeChips } from "@/features/schedule/components/change-chips";
 import { isoWeekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { Week } from "../week";
@@ -33,6 +34,14 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
             <span className="block text-muted-foreground">{d.shortLabel}</span>
             <span className="font-display font-medium text-lg leading-none">{d.dayNumber}</span>
             {d.isToday ? <span className="sr-only"> (today)</span> : null}
+            {d.breakLabel ? (
+              <span
+                className="mt-1 block truncate text-[0.6875rem] text-muted-foreground"
+                title={`No classes · ${d.breakLabel}`}
+              >
+                {d.breakLabel}
+              </span>
+            ) : null}
           </div>
         ))}
 
@@ -66,33 +75,75 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
               week={week.days[0].date}
               dayLabel={d.fullLabel}
             />
-            {d.items.map((item) => (
-              <Link
-                key={item.id}
-                href={`/courses/${item.courseId}`}
-                title={`${item.courseName}, ${item.timeLabel}${item.location ? `, ${item.location}` : ""}`}
+            {d.ghosts.map((g) => (
+              // Where a moved class used to be: faint and dashed, not interactive (the moved class says "Moved from").
+              <div
+                key={g.id}
+                aria-hidden
+                title={`${g.title} moved to ${g.movedToLabel}`}
                 style={
                   {
-                    "--course": item.color,
-                    top: `${toRem(item.startMinute)}rem`,
-                    height: `${toRem(item.endMinute) - toRem(item.startMinute)}rem`,
-                    // Overlaps cascade like a calendar app: each later lane is offset and drawn on top,
-                    // so every block keeps most of the column's width and earlier titles stay visible.
-                    left: `calc(${cascadeOffset(item.lane, item.lanes)}% + 2px)`,
-                    width: `calc(${100 - cascadeOffset(item.lane, item.lanes)}% - 4px)`,
-                    zIndex: item.lane + 1,
+                    "--course": g.color,
+                    top: `${toRem(g.startMinute)}rem`,
+                    height: `${toRem(g.endMinute) - toRem(g.startMinute)}rem`,
                   } as React.CSSProperties
                 }
-                className="absolute flex flex-col gap-0.5 overflow-hidden rounded-lg border-l-(--course) border-l-4 bg-[color-mix(in_oklab,var(--course)_18%,var(--card))] px-1.5 py-1 text-xs leading-tight shadow-tile ring-1 ring-card transition-colors hover:bg-[color-mix(in_oklab,var(--course)_28%,var(--card))]"
+                className="pointer-events-none absolute inset-x-0.5 flex flex-col overflow-hidden rounded-lg border border-(--course)/50 border-dashed px-1.5 py-1 text-muted-foreground text-xs leading-tight"
               >
-                <span className="flex items-start justify-between gap-1">
-                  <span className="truncate font-medium">{item.title}</span>
-                  <OverlapWarning withNames={item.overlapsWith} compact />
-                </span>
-                <span className="truncate text-muted-foreground tabular-nums">{item.timeLabel}</span>
-                {item.location ? <span className="truncate text-muted-foreground">{item.location}</span> : null}
-              </Link>
+                <span className="truncate">{g.title}</span>
+                <span className="truncate">→ {g.movedToLabel}</span>
+              </div>
             ))}
+            {d.items.map((item) => {
+              const cancelled = item.status === "cancelled";
+              const dim = cancelled || item.past;
+              return (
+                <Link
+                  key={item.id}
+                  href={`/courses/class/${item.id}`}
+                  data-status={item.status}
+                  title={`${item.courseName}, ${item.timeLabel}${item.location ? `, ${item.location}` : ""}${item.chips.length ? ` · ${item.chips.map((c) => c.text).join(" · ")}` : ""}${item.note ? ` · “${item.note}”` : ""}`}
+                  style={
+                    {
+                      "--course": item.color,
+                      top: `${toRem(item.startMinute)}rem`,
+                      height: `${toRem(item.endMinute) - toRem(item.startMinute)}rem`,
+                      // Overlaps cascade like a calendar app: each later lane is offset and drawn on top,
+                      // so every block keeps most of the column's width and earlier titles stay visible.
+                      left: `calc(${cascadeOffset(item.lane, item.lanes)}% + 2px)`,
+                      width: `calc(${100 - cascadeOffset(item.lane, item.lanes)}% - 4px)`,
+                      zIndex: item.lane + 1,
+                    } as React.CSSProperties
+                  }
+                  className={cn(
+                    "absolute flex flex-col gap-0.5 overflow-hidden rounded-lg border-l-4 px-1.5 py-1 text-xs leading-tight shadow-tile ring-1 ring-card transition-colors",
+                    dim
+                      ? "border-l-border bg-muted text-muted-foreground hover:bg-accent"
+                      : "border-l-(--course) bg-[color-mix(in_oklab,var(--course)_18%,var(--card))] hover:bg-[color-mix(in_oklab,var(--course)_28%,var(--card))]",
+                    item.status === "extra" && "border border-(--course) border-l-4 border-dashed",
+                  )}
+                >
+                  <span className="flex items-start justify-between gap-1">
+                    <span className={cn("truncate font-medium", cancelled && "line-through")}>{item.title}</span>
+                    <OverlapWarning withNames={item.overlapsWith} compact />
+                  </span>
+                  <span
+                    className={cn(
+                      "truncate tabular-nums",
+                      !dim && "text-muted-foreground",
+                      cancelled && "line-through",
+                    )}
+                  >
+                    {item.timeLabel}
+                  </span>
+                  {item.chips.length > 0 ? (
+                    <ChangeChips chips={item.chips} compact className="mt-0.5" />
+                  ) : item.location ? (
+                    <span className="truncate text-muted-foreground">{item.location}</span>
+                  ) : null}
+                </Link>
+              );
+            })}
           </section>
         ))}
       </div>

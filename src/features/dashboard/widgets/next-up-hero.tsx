@@ -1,22 +1,30 @@
 "use client";
 
-import { CalendarClock, MapPin, Sprout } from "lucide-react";
+import { CalendarClock, CircleSlash, ExternalLink, MapPin, Sprout, Video } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { Pill } from "@/components/ui/pill";
 import { Tile } from "@/components/ui/tile";
+import { ChangeChips } from "@/features/schedule/components/change-chips";
+import type { Chip } from "@/features/schedule/format";
 import { formatTime, type SlotTiming } from "@/features/timetable/logic";
 import type { CivilDate } from "@/lib/dates";
 import { useNow } from "@/lib/use-now";
 import { countdownText, nextUp } from "../now";
 
+/** A class as the Today widgets need it: an occurrence (see buildSchedule), flattened and serialisable. */
 export type HeroClass = SlotTiming & {
+  key: string;
   courseId: string;
   name: string;
   code: string | null;
   color: string;
   location: string | null;
+  cancelled: boolean;
+  chips: Chip[];
+  note: string | null;
+  meetingUrl: string | null;
 };
 
 type Props = {
@@ -24,12 +32,24 @@ type Props = {
   serverToday: CivilDate;
   timeZone: string;
   timeFormat: "24h" | "12h";
+  /** Today's live classes (not cancelled). */
   today: HeroClass[];
   tomorrow: HeroClass[];
+  /** Today's cancelled classes, mentioned under the hero. */
+  cancelled: HeroClass[];
   deadline: { id: string; title: string; due: string; color: string | null; course: string | null } | null;
 };
 
-export function NextUpHero({ initialNow, serverToday, timeZone, timeFormat, today, tomorrow, deadline }: Props) {
+export function NextUpHero({
+  initialNow,
+  serverToday,
+  timeZone,
+  timeFormat,
+  today,
+  tomorrow,
+  cancelled,
+  deadline,
+}: Props) {
   const clock = useNow(initialNow, timeZone);
   const router = useRouter();
   // Past midnight the classes above belong to yesterday: fetch the new day.
@@ -83,7 +103,20 @@ export function NextUpHero({ initialNow, serverToday, timeZone, timeFormat, toda
             </span>
           ) : null}
           {slot.code ? <Pill tone="course">{slot.code}</Pill> : null}
+          <ChangeChips chips={slot.chips} />
         </span>
+        {slot.meetingUrl && up.kind !== "tomorrow" ? (
+          <a
+            href={slot.meetingUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 font-medium text-background text-sm transition-opacity hover:opacity-90"
+          >
+            <Video aria-hidden className="size-4" />
+            Open link
+            <ExternalLink aria-hidden className="size-3.5 opacity-70" />
+          </a>
+        ) : null}
       </div>
 
       <div className="relative flex flex-wrap items-end justify-between gap-3">
@@ -110,14 +143,28 @@ export function NextUpHero({ initialNow, serverToday, timeZone, timeFormat, toda
             </span>
           ) : null}
         </div>
-        {then ? (
-          <p className="text-muted-foreground text-sm">
-            Then <span className="font-medium text-foreground">{then.code ?? then.name}</span> at{" "}
-            <span className="tabular-nums">{time(then.startTime)}</span>
-          </p>
-        ) : null}
+        <div className="flex flex-col items-end gap-1 text-right">
+          {then ? (
+            <p className="text-muted-foreground text-sm">
+              Then <span className="font-medium text-foreground">{then.code ?? then.name}</span> at{" "}
+              <span className="tabular-nums">{time(then.startTime)}</span>
+            </p>
+          ) : null}
+          <CancelledNote cancelled={cancelled} time={time} />
+        </div>
       </div>
     </Tile>
+  );
+}
+
+/** "FIS101 07:30 cancelled": today's cancellations, so they aren't missed. */
+function CancelledNote({ cancelled, time }: { cancelled: HeroClass[]; time: (t: string) => string }) {
+  if (cancelled.length === 0) return null;
+  return (
+    <p className="inline-flex items-center gap-1.5 text-muted-foreground text-sm">
+      <CircleSlash aria-hidden className="size-3.5 text-destructive" />
+      {cancelled.map((c) => `${c.code ?? c.name} ${time(c.startTime)}`).join(", ")} cancelled today
+    </p>
   );
 }
 

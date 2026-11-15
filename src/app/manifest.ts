@@ -19,7 +19,7 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     shortcuts: [
       { name: "Add a task", url: "/tasks/new" },
-      { name: "Timetable", url: "/courses/timetable" },
+      { name: "This week", url: "/courses?view=day" },
     ],
   };
 }

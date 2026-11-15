@@ -53,7 +53,7 @@ const WEEKDAY_NAMES: Record<string, number> = {
   sun: 7,
   sunday: 7,
 };
-const MONTH_NAMES: Record<string, number> = {
+export const MONTH_NAMES: Record<string, number> = {
   jan: 1,
   january: 1,
   feb: 2,
@@ -98,7 +98,7 @@ function nextWeekday(today: CivilDate, day: number): CivilDate {
 }
 
 /** A day/month with no year: this year, or next year if it has already passed. */
-function dayMonth(today: CivilDate, day: number, month: number): CivilDate | null {
+export function dayMonth(today: CivilDate, day: number, month: number): CivilDate | null {
   const year = Number(today.slice(0, 4));
   const thisYear = `${year}-${pad(month)}-${pad(day)}`;
   if (!isCivilDate(thisYear)) return null;
@@ -106,13 +106,13 @@ function dayMonth(today: CivilDate, day: number, month: number): CivilDate | nul
 }
 
 /** Strip punctuation a sentence might leave around a token ("tomorrow," "(5pm)"). */
-function bare(word: string) {
+export function bare(word: string) {
   return word.toLowerCase().replace(/^[("']+|[),.;:'"]+$/g, "");
 }
 
-type Match = { length: number; value: string };
+export type Match = { length: number; value: string };
 
-function matchDate(words: string[], i: number, ctx: ParseContext): Match | null {
+export function matchDate(words: string[], i: number, ctx: ParseContext): Match | null {
   const w = bare(words[i] ?? "");
   const next = bare(words[i + 1] ?? "");
   if (w === "today" || w === "tonight" || w === "tod") return { length: 1, value: ctx.today };
@@ -148,7 +148,7 @@ function matchDate(words: string[], i: number, ctx: ParseContext): Match | null 
   return null;
 }
 
-function matchTime(words: string[], i: number): Match | null {
+export function matchTime(words: string[], i: number): Match | null {
   const w = bare(words[i] ?? "");
   const next = bare(words[i + 1] ?? "");
   if (w === "noon") return { length: 1, value: "12:00" };

@@ -18,6 +18,21 @@ const TEXT_FIELDS = [
   { name: "code", label: "Code", placeholder: "MAT101" },
   { name: "lecturer", label: "Lecturer", placeholder: "Dr. Siti Rahma" },
   {
+    name: "lecturerEmail",
+    label: "Lecturer email",
+    placeholder: "siti.rahma@campus.ac.id",
+    type: "email",
+    inputMode: "email",
+  },
+  {
+    name: "lecturerPhone",
+    label: "Lecturer WhatsApp",
+    placeholder: "+62 812 3456 7890",
+    type: "tel",
+    inputMode: "tel",
+    hint: "Adds a WhatsApp button on the course.",
+  },
+  {
     name: "room",
     label: "Room",
     placeholder: "Building B, 2.04",
@@ -51,7 +66,9 @@ export function CourseForm(props: Props) {
               defaultValue={value(f.name)}
               placeholder={f.placeholder}
               required={required}
-              autoComplete={"autoComplete" in f ? f.autoComplete : undefined}
+              autoComplete={"autoComplete" in f ? f.autoComplete : "type" in f ? "off" : undefined}
+              type={"type" in f ? f.type : undefined}
+              inputMode={"inputMode" in f ? f.inputMode : undefined}
               aria-invalid={errors[f.name] ? true : undefined}
               aria-describedby={describedBy(f.name, errors[f.name], hint)}
             />

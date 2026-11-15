@@ -54,4 +54,4 @@ Thumbs.db
 .claude/settings.local.json
 CLAUDE.local.md
 
-/docs
+/docs/playwright/.auth/

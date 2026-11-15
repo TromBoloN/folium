@@ -25,8 +25,8 @@ async function New({ searchParams }: Pick<PageProps<"/courses/timetable/new">, "
       start={typeof start === "string" ? start : undefined}
       returnTo={
         typeof week === "string" && /^\d{4}-\d{2}-\d{2}$/.test(week)
-          ? `/courses/timetable?week=${week}`
-          : "/courses/timetable"
+          ? `/courses?view=week&week=${week}`
+          : "/courses?view=week"
       }
     />
   );

@@ -1,12 +1,12 @@
 "use client";
 
-import { CalendarPlus, CalendarX2, MapPin } from "lucide-react";
+import { CalendarPlus, CalendarX2 } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
+import { OccurrenceRow } from "@/features/schedule/components/occurrence-row";
 import { isoWeekday } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { WeekDay } from "../week";
-import { OverlapWarning } from "./overlap-warning";
 
 /** Mobile: one day at a time, with a tab per day. */
 export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialIndex: number }) {
@@ -43,7 +43,7 @@ export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialInde
             <span className={cn("font-display font-medium text-lg leading-tight", i !== index && "text-foreground")}>
               {d.dayNumber}
             </span>
-            {d.items.length > 0 ? (
+            {d.classCount > 0 ? (
               <span
                 aria-hidden
                 className={cn("size-1 rounded-full", i === index ? "bg-primary-foreground" : "bg-primary")}
@@ -60,32 +60,21 @@ export function DayAgenda({ days, initialIndex }: { days: WeekDay[]; initialInde
           {day.fullLabel}
           {day.isToday ? <span className="text-muted-foreground"> · Today</span> : null}
         </h2>
+        {day.breakLabel ? (
+          <p className="rounded-xl border border-border-soft border-dashed px-3 py-2 text-muted-foreground text-sm">
+            No classes · <span className="text-foreground">{day.breakLabel}</span>
+          </p>
+        ) : null}
         {day.items.length === 0 ? (
           <p className="flex items-center gap-2 rounded-tile border border-dashed px-4 py-6 text-muted-foreground text-sm">
             <CalendarX2 aria-hidden className="size-4" />
-            No classes.
+            {day.breakLabel ? "Nothing scheduled." : "No classes."}
           </p>
         ) : (
-          <ul className="flex flex-col gap-2">
+          <ul className="flex flex-col gap-1.5">
             {day.items.map((item) => (
               <li key={item.id}>
-                <Link
-                  href={`/courses/${item.courseId}`}
-                  style={{ "--course": item.color } as React.CSSProperties}
-                  className="tile flex flex-col gap-1 border-l-(--course) border-l-4 bg-[color-mix(in_oklab,var(--course)_13%,var(--card))] px-4 py-3 transition-colors hover:bg-[color-mix(in_oklab,var(--course)_20%,var(--card))]"
-                >
-                  <span className="flex items-center justify-between gap-2">
-                    <span className="font-medium">{item.courseName}</span>
-                    <span className="text-muted-foreground text-sm tabular-nums">{item.timeLabel}</span>
-                  </span>
-                  {item.location ? (
-                    <span className="flex items-center gap-1 text-muted-foreground text-sm">
-                      <MapPin aria-hidden className="size-3.5" />
-                      {item.location}
-                    </span>
-                  ) : null}
-                  <OverlapWarning withNames={item.overlapsWith} />
-                </Link>
+                <OccurrenceRow item={item} />
               </li>
             ))}
           </ul>

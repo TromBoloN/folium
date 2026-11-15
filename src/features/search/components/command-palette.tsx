@@ -2,6 +2,7 @@
 
 import {
   AlarmClock,
+  ArrowRightLeft,
   BookOpen,
   CalendarClock,
   CalendarDays,
@@ -19,6 +20,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { removeBreak, runScheduleCommand, undoChange } from "@/features/schedule/actions";
+import { useScheduleCommand } from "@/features/schedule/components/command-preview";
 import { quickAddTask, removeTask } from "@/features/tasks/actions";
 import { ParsePreview } from "@/features/tasks/components/parse-preview";
 import { QUICK_ADD_HINT } from "@/features/tasks/parse";
@@ -42,7 +45,8 @@ const COMMANDS: { label: string; href: string; icon: LucideIcon; group: string }
   { label: "Tasks", href: "/tasks", icon: ListChecks, group: "Go to" },
   { label: "Overdue tasks", href: "/tasks?due=overdue", icon: AlarmClock, group: "Go to" },
   { label: "Courses", href: "/courses", icon: BookOpen, group: "Go to" },
-  { label: "Timetable", href: "/courses/timetable", icon: CalendarDays, group: "Go to" },
+  { label: "This week by day", href: "/courses?view=day", icon: CalendarDays, group: "Go to" },
+  { label: "Week timetable", href: "/courses?view=week", icon: CalendarDays, group: "Go to" },
   { label: "Grades", href: "/grades", icon: GraduationCap, group: "Go to" },
   { label: "Settings", href: "/settings", icon: Settings, group: "Go to" },
   { label: "New task with details", href: "/tasks/new", icon: Plus, group: "Create" },
@@ -68,6 +72,32 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
   const listId = useId();
 
   const close = () => dialog.current?.close();
+  const scheduleCommand = useScheduleCommand(text);
+
+  // A schedule change ("cancel physics tomorrow"): applied at once, with Undo.
+  const apply = () => {
+    setError(null);
+    startAdding(async () => {
+      const result = await runScheduleCommand(text);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const { undo, message } = result.data;
+      toast({
+        message,
+        action: {
+          label: "Undo",
+          onClick: async () =>
+            void (undo.kind === "break"
+              ? await removeBreak(undo.id)
+              : await undoChange({ key: undo.key, previous: undo.previous })),
+        },
+      });
+      router.refresh();
+      close();
+    });
+  };
 
   // Search as you type (debounced); stale responses are ignored.
   useEffect(() => {
@@ -114,10 +144,22 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
     };
     const q = text.trim().toLowerCase();
     const list: Item[] = [];
+    const applyItem: Item | null = scheduleCommand
+      ? { key: "apply", group: "Schedule", label: scheduleCommand.summary, icon: ArrowRightLeft, run: apply }
+      : null;
     if (mode === "add") {
-      if (q) list.push({ key: "add", group: "Add", label: "Add task", icon: Plus, run: add });
+      if (applyItem) list.push(applyItem);
+      if (q)
+        list.push({
+          key: "add",
+          group: "Add",
+          label: applyItem ? `Add “${text.trim()}” as a task` : "Add task",
+          icon: Plus,
+          run: add,
+        });
       return list;
     }
+    if (applyItem) list.push(applyItem);
     for (const t of results?.tasks ?? []) {
       list.push({
         key: `task-${t.id}`,
@@ -215,13 +257,27 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
 
       {mode === "add" ? (
         <div className="flex min-h-12 flex-col gap-1 px-4 py-3">
-          {text ? <ParsePreview text={text} /> : <p className="text-muted-foreground text-xs">{QUICK_ADD_HINT}</p>}
+          {scheduleCommand ? (
+            <p className="text-muted-foreground text-xs">Schedule change: press Enter to apply (you can undo it).</p>
+          ) : text ? (
+            <ParsePreview text={text} />
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              {QUICK_ADD_HINT}, or change a class: “cancel physics tomorrow”
+            </p>
+          )}
           {error ? (
             <p role="alert" className="text-destructive text-xs">
               {error}
             </p>
           ) : null}
         </div>
+      ) : null}
+
+      {mode === "search" && error ? (
+        <p role="alert" className="px-4 pt-3 text-destructive text-xs">
+          {error}
+        </p>
       ) : null}
 
       <div id={listId} role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto p-2 empty:hidden">
@@ -254,7 +310,11 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
                 />
                 <span className="min-w-0 flex-1 truncate">{item.label}</span>
                 {item.detail ? <span className="shrink-0 text-muted-foreground text-xs">{item.detail}</span> : null}
-                {item.key === "add" && adding ? <span className="text-muted-foreground text-xs">Adding…</span> : null}
+                {(item.key === "add" || item.key === "apply") && adding ? (
+                  <span className="text-muted-foreground text-xs">
+                    {item.key === "apply" ? "Applying…" : "Adding…"}
+                  </span>
+                ) : null}
               </div>
             </div>
           );

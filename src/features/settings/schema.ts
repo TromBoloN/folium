@@ -22,6 +22,9 @@ export const MOTIONS = ["full", "subtle", "off"] as const;
 export const WEEK_STARTS = ["monday", "sunday", "saturday"] as const;
 export const TIME_FORMATS = ["24h", "12h"] as const;
 export const LANGUAGES = ["en", "id"] as const;
+/** How /courses opens: course cards, a time-first list by day, or the week grid. */
+export const COURSES_VIEWS = ["cards", "day", "week"] as const;
+export type CoursesView = (typeof COURSES_VIEWS)[number];
 
 const hexColor = z
   .string()
@@ -47,6 +50,10 @@ export const preferencesSchema = z.object({
   timeZone: z.string().refine(isValidTimeZone, "Choose a time zone from the list."),
   /** Percentage → letter → grade points. Default: Indonesian 4.0 scale. */
   gradeScale: gradeScaleSchema,
+  /** Remembered from the view switch on /courses (not part of the settings form). */
+  coursesView: z.enum(COURSES_VIEWS),
+  /** Minimum attendance (percent of all classes) the campus requires; warnings use it. */
+  attendanceTarget: z.number().int().min(0, "Use 0–100.").max(100, "Use 0–100."),
 });
 
 export type Theme = z.infer<typeof themeSchema>;
@@ -68,6 +75,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   language: "en",
   timeZone: DEFAULT_TIME_ZONE,
   gradeScale: DEFAULT_GRADE_SCALE,
+  coursesView: "cards",
+  attendanceTarget: 75,
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -123,5 +132,6 @@ export const settingsFormSchema = z.object({
   theme: themeSchema.extend({
     accent: z.preprocess((v) => (v === "" || v == null ? null : v), hexColor.nullable()),
   }),
-  preferences: preferencesSchema,
+  // The view switch saves coursesView on its own; the form keeps whatever is stored.
+  preferences: preferencesSchema.omit({ coursesView: true }),
 });

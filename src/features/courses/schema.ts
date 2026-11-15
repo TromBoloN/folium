@@ -43,6 +43,15 @@ export const courseInputSchema = z.object({
   lecturer: optionalText(120, "Lecturer"),
   room: optionalText(80, "Room"),
   semester: optionalText(60, "Semester"),
+  lecturerEmail: optionalText(254, "Email").refine(
+    (v) => v === null || /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(v),
+    "Enter an email like name@campus.ac.id.",
+  ),
+  /** For a WhatsApp link. Spaces, dashes and brackets are fine; a leading 0 is kept as typed. */
+  lecturerPhone: optionalText(24, "Phone").refine(
+    (v) => v === null || /^\+?[0-9][0-9 ()-]{5,22}$/.test(v),
+    "Enter a phone number like +62 812 3456 7890.",
+  ),
   /** Credit units (SKS); 0 = not counted in the GPA. Blank means 0. */
   credits: z.preprocess(
     (v) => (v === "" || v == null ? 0 : typeof v === "string" ? Number(v) : v),
@@ -66,4 +75,29 @@ export type Course = {
   semester: string | null;
   credits: number;
   archivedAt: string | null;
+  lecturerEmail: string | null;
+  lecturerPhone: string | null;
 };
+
+/** The database row for a validated course form. */
+export function courseRow(input: CourseInput) {
+  const { lecturerEmail, lecturerPhone, ...rest } = input;
+  return { ...rest, lecturer_email: lecturerEmail, lecturer_phone: lecturerPhone };
+}
+
+/**
+ * wa.me wants digits only, with the country code. Indonesian numbers are often
+ * written 0812…; that leading 0 becomes 62. Other numbers need their own "+".
+ */
+export function whatsappLink(phone: string): string {
+  let digits = phone.replace(/[^0-9]/g, "");
+  if (!phone.trim().startsWith("+") && digits.startsWith("0")) digits = `62${digits.slice(1)}`;
+  return `https://wa.me/${digits}`;
+}
+
+/** Suggest the next semester's name: "2026 Ganjil" -> "2026 Genap" -> "2027 Ganjil". Unknown formats: "". */
+export function nextSemesterName(label: string): string {
+  const m = /^(\d{4})\s+(Ganjil|Genap)$/i.exec(label.trim());
+  if (!m) return "";
+  return m[2].toLowerCase() === "ganjil" ? `${m[1]} Genap` : `${Number(m[1]) + 1} Ganjil`;
+}

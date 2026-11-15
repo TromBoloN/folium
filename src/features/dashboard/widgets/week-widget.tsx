@@ -1,6 +1,7 @@
 import { io } from "next/cache";
 import Link from "next/link";
-import { listActiveSlots } from "@/features/courses/queries";
+import { isLive } from "@/features/schedule/occurrences";
+import { getSchedule } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { listOpenTasks } from "@/features/tasks/queries";
 import { weekDates } from "@/features/timetable/logic";
@@ -16,10 +17,13 @@ function plural(n: number, one: string, many: string) {
 
 /** This week as seven columns: class dots in course colours, deadline bars, and shading by how full the day is. */
 export async function WeekWidget() {
-  const [slots, tasks, { preferences }] = await Promise.all([listActiveSlots(), listOpenTasks(), getSettings()]);
+  const [tasks, { preferences }] = await Promise.all([listOpenTasks(), getSettings()]);
   await io();
   const today = todayIn(preferences.timeZone, new Date());
-  const days = weekLoad(weekDates(today, preferences.weekStart), slots, tasks, preferences.timeZone, today);
+  const dates = weekDates(today, preferences.weekStart);
+  // Only classes that really happen this week (changes and breaks applied).
+  const classes = (await getSchedule({ from: dates[0], to: dates[6] })).filter(isLive);
+  const days = weekLoad(dates, classes, tasks, preferences.timeZone, today);
   const totalClasses = days.reduce((n, d) => n + d.classes.length, 0);
   const totalDeadlines = days.reduce((n, d) => n + d.deadlines, 0);
   const busiest = days
@@ -37,7 +41,7 @@ export async function WeekWidget() {
           return (
             <li key={d.date} className="reveal" style={{ "--i": i + 2 } as React.CSSProperties}>
               <Link
-                href={`/courses/timetable?week=${d.date}`}
+                href={`/courses?view=day&week=${d.date}#day-${d.date}`}
                 aria-current={d.isToday ? "date" : undefined}
                 className={cn(
                   "flex h-full min-h-32 flex-col items-center gap-2 rounded-xl px-1 pt-2 pb-2.5 transition-transform duration-(--dur-fast) hover:-translate-y-0.5",

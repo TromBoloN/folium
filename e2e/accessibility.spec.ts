@@ -1,6 +1,6 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, type Page, test } from "@playwright/test";
-import { localDate, signUp, waitForContent } from "./helpers";
+import { localDate, waitForContent } from "./helpers";
 
 /**
  * Accessibility: every page, in light and dark mode, across every colour
@@ -35,68 +35,38 @@ function report(findings: Finding[]) {
   return findings.map((f) => `\n[${f.impact}] ${f.rule} on ${f.page}\n  ${f.nodes.join("\n  ")}`).join("");
 }
 
-/** A small but complete data set so lists, the week grid and grades aren't empty. */
-async function seedData(page: Page) {
-  await page.goto("/courses/new");
-  await page.getByLabel("Name").fill("Calculus");
-  await page.getByLabel("Code").fill("MAT101");
-  await page.getByLabel("Room").fill("B2.04");
-  await page.getByLabel("Credits (SKS)").fill("3");
-  await page.getByRole("button", { name: "Add course" }).click();
-  await expect(page).toHaveURL(/\/courses\/[0-9a-f-]{36}$/);
-  const courseId = page.url().split("/").pop() as string;
-
-  for (const [weekday, start, end] of [
-    ["1", "08:00", "10:00"],
-    ["1", "09:00", "10:40"], // overlap, so the warning icon is checked too
-    ["3", "13:00", "14:40"],
-  ]) {
-    await page.goto(`/courses/${courseId}/slots/new`);
-    await page.getByLabel("Day").selectOption(weekday);
-    await page.getByLabel("Starts").fill(start);
-    await page.getByLabel("Ends").fill(end);
-    await page.getByRole("button", { name: "Add class time" }).click();
-    await expect(page).toHaveURL(new RegExp(`/courses/${courseId}$`));
-  }
+/**
+ * Links into the seeded demo account (bun run db:seed): a course with class
+ * times, changes and attendance, a task with steps, an assessment, a class.
+ */
+async function demoIds(page: Page) {
+  await page.goto("/courses?view=cards");
+  await waitForContent(page);
+  const courseHref = await page.locator("main a", { hasText: "Calculus I" }).first().getAttribute("href");
+  const courseId = (courseHref as string).split("/").pop() as string;
+  await page.goto(`/courses/${courseId}`);
+  await waitForContent(page);
   const slotEdit = await page
     .getByRole("link", { name: /^Edit Monday class/ })
     .first()
     .getAttribute("href");
-
-  for (const [title, date, priority] of [
-    ["Essay draft", localDate(-1), "high"],
-    ["Quiz prep", localDate(0), "urgent"],
-    ["Lab report", localDate(1), "medium"],
-  ]) {
-    await page.goto("/tasks/new");
-    await page.getByLabel("Title").fill(title);
-    await page.getByLabel("Course").selectOption({ label: "Calculus" });
-    await page.getByLabel("Date").fill(date);
-    await page.locator(`label:has(input[name="priority"][value="${priority}"])`).click();
-    await page.getByRole("button", { name: "Add task" }).click();
-    await expect(page).toHaveURL(/\/tasks\/[0-9a-f-]{36}$/);
-  }
-  const taskId = page.url().split("/").pop() as string;
-  await page.getByLabel("New step").fill("Collect data");
-  await page.getByLabel("New step").press("Enter");
-  await expect(page.getByText("Collect data", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Mark “Collect data” as done" }).click();
-  await expect(page.getByText("1 of 1 done")).toBeVisible();
-
-  for (const [name, weight, score] of [
-    ["Quiz", "20", "85"],
-    ["Final exam", "80", ""],
-  ]) {
-    await page.goto(`/grades/${courseId}/assessments/new`);
-    await page.getByLabel("Name").fill(name);
-    await page.getByLabel("Weight (% of the course grade)").fill(weight);
-    if (score) await page.getByLabel("Score").fill(score);
-    await page.getByRole("button", { name: "Add assessment" }).click();
-    await expect(page).toHaveURL(new RegExp(`/grades/${courseId}$`));
-  }
-  const assessmentEdit = await page.getByRole("link", { name: "Edit Quiz" }).getAttribute("href");
-
-  return { courseId, taskId, slotEdit: slotEdit as string, assessmentEdit: assessmentEdit as string };
+  const classHref = await page.locator('main a[href^="/courses/class/"]').first().getAttribute("href");
+  await page.goto("/tasks");
+  await waitForContent(page);
+  const taskHref = await page.locator('main a[href^="/tasks/"]').first().getAttribute("href");
+  await page.goto(`/grades/${courseId}`);
+  await waitForContent(page);
+  const assessmentEdit = await page
+    .getByRole("link", { name: /^Edit / })
+    .first()
+    .getAttribute("href");
+  return {
+    courseId,
+    taskId: (taskHref as string).split("/").pop() as string,
+    slotEdit: slotEdit as string,
+    classPage: classHref as string,
+    assessmentEdit: assessmentEdit as string,
+  };
 }
 
 async function applyTheme(page: Page, mode: string, preset: string) {
@@ -110,8 +80,10 @@ async function applyTheme(page: Page, mode: string, preset: string) {
 }
 
 test.describe("signed-out pages", () => {
+  test.use({ storageState: { cookies: [], origins: [] } });
   for (const mode of MODES) {
-    test(`${mode} mode`, async ({ page }) => {
+    test(`${mode} mode`, async ({ page }, testInfo) => {
+      test.skip(testInfo.project.name === "a11y-mobile", "checked once, on desktop");
       await page.emulateMedia({ colorScheme: mode });
       const findings: Finding[] = [];
       for (const path of ["/login", "/signup", "/forgot-password", "/login?error=confirm_failed"]) {
@@ -129,25 +101,35 @@ test.describe("signed-out pages", () => {
 });
 
 test.describe("signed-in pages", () => {
-  test.describe.configure({ mode: "parallel" });
+  // Leave the demo account on its default look.
+  test.afterAll(async ({ browser }) => {
+    const page = await browser.newPage({ storageState: "playwright/.auth/demo.json" });
+    await applyTheme(page, "system", "green");
+    await page.close();
+  });
 
   for (const mode of MODES) {
     for (const preset of PRESETS) {
       test(`${mode} · ${preset}`, async ({ page }, testInfo) => {
         // The mobile layout is checked for the default preset; desktop runs the full matrix.
-        test.skip(testInfo.project.name === "mobile" && preset !== "green", "full matrix runs on desktop");
+        test.skip(testInfo.project.name === "a11y-mobile" && preset !== "green", "full matrix runs on desktop");
         test.setTimeout(180_000);
 
-        await signUp(page);
-        const ids = await seedData(page);
+        const ids = await demoIds(page);
         await applyTheme(page, mode, preset);
 
         const paths = [
           "/",
           "/?edit=1",
-          "/courses",
+          "/courses?view=cards",
+          "/courses?view=day",
+          `/courses?view=week&week=${localDate(0)}`,
+          `/courses?view=day&week=${localDate(14)}`,
+          ids.classPage,
+          "/courses/extra/new",
+          "/courses/breaks/new",
+          "/courses/rollover",
           "/courses/new",
-          `/courses/timetable?week=${localDate(0)}`,
           `/courses/${ids.courseId}`,
           `/courses/${ids.courseId}/edit`,
           `/courses/${ids.courseId}/slots/new`,

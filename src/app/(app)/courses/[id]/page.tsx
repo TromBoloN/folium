@@ -1,5 +1,6 @@
-import { Archive, CalendarPlus, Clock } from "lucide-react";
+import { Archive, CalendarPlus, Clock, Mail, MessageCircle, Sparkles } from "lucide-react";
 import type { Metadata } from "next";
+import { io } from "next/cache";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -9,11 +10,20 @@ import { ListSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { CourseActions } from "@/features/courses/components/course-actions";
-import { getCourse, listActiveSlots } from "@/features/courses/queries";
+import { type CourseWithSlots, getCourse, listActiveSlots } from "@/features/courses/queries";
+import { whatsappLink } from "@/features/courses/schema";
+import { attendanceStats } from "@/features/schedule/attendance";
+import { AttendancePanel } from "@/features/schedule/components/attendance-panel";
+import { OccurrenceRow } from "@/features/schedule/components/occurrence-row";
+import { placementLabel, toRowItem } from "@/features/schedule/format";
+import { buildSchedule, isListed, isLive, isPast } from "@/features/schedule/occurrences";
+import { getScheduleInput, listAttendanceMarks } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
+import type { Preferences } from "@/features/settings/schema";
 import { SlotList } from "@/features/timetable/components/slot-list";
 import { findConflicts } from "@/features/timetable/logic";
 import type { TimetableSlot } from "@/features/timetable/types";
+import { addDays, formatDate, minutesNowIn, todayIn } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Course" };
 
@@ -73,40 +83,129 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
             ))}
           </dl>
         ) : null}
+        {course.lecturerPhone || course.lecturerEmail ? (
+          <div className="relative flex flex-wrap gap-2">
+            {course.lecturerPhone ? (
+              <Button asChild size="sm" variant="outline">
+                <a href={whatsappLink(course.lecturerPhone)} target="_blank" rel="noopener noreferrer">
+                  <MessageCircle aria-hidden />
+                  WhatsApp
+                </a>
+              </Button>
+            ) : null}
+            {course.lecturerEmail ? (
+              <Button asChild size="sm" variant="outline">
+                <a href={`mailto:${course.lecturerEmail}`}>
+                  <Mail aria-hidden />
+                  Email
+                </a>
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
         <div className="relative">
           <CourseActions course={course} />
         </div>
       </header>
 
-      <section className="flex flex-col gap-3" aria-labelledby="class-times">
+      <div className="flex flex-col gap-8">
+        {course.archivedAt ? null : <CourseSchedule course={course} preferences={preferences} />}
+
+        <section className="flex flex-col gap-3" aria-labelledby="class-times">
+          <div className="flex items-center justify-between gap-3">
+            <h2 id="class-times" className="font-medium">
+              Class times
+            </h2>
+            {course.slots.length > 0 ? (
+              <Button asChild size="sm" variant="outline">
+                <Link href={`/courses/${course.id}/slots/new`}>
+                  <CalendarPlus aria-hidden />
+                  Add class time
+                </Link>
+              </Button>
+            ) : null}
+          </div>
+          {course.slots.length === 0 ? (
+            <EmptyState icon={Clock} title="No class times yet" description="Add when this course meets each week.">
+              <Button asChild size="sm">
+                <Link href={`/courses/${course.id}/slots/new`}>Add class time</Link>
+              </Button>
+            </EmptyState>
+          ) : (
+            <SlotList
+              slots={course.slots}
+              conflicts={conflicts}
+              courseRoom={course.room}
+              timeFormat={preferences.timeFormat}
+            />
+          )}
+        </section>
+      </div>
+    </div>
+  );
+}
+
+/** Coming up (with this course's changes) and attendance over the term. */
+async function CourseSchedule({ course, preferences }: { course: CourseWithSlots; preferences: Preferences }) {
+  await io();
+  const now = new Date();
+  const today = todayIn(preferences.timeZone, now);
+  const clock = { date: today, minute: minutesNowIn(preferences.timeZone, now) };
+  // The term: from the first class time's start (at most ~6 months back) to the last one's end, if every slot has one.
+  const starts = course.slots.map((s) => s.startsOn).filter((d): d is string => d !== null);
+  const ends = course.slots.map((s) => s.endsOn);
+  const termKnown = course.slots.length > 0 && ends.every((d) => d !== null);
+  const earliest = addDays(today, -180);
+  const from =
+    starts.length === course.slots.length && starts.length > 0 ? [...starts].sort()[0] : addDays(today, -120);
+  const termEnd = termKnown ? ([...ends].sort().at(-1) as string) : today;
+  // "YYYY-MM-DD" strings sort as dates.
+  const range = { from: [from, earliest].sort()[1], to: [termEnd, addDays(today, 21)].sort()[1] };
+
+  const [input, marks] = await Promise.all([getScheduleInput(range.from, range.to), listAttendanceMarks(course.id)]);
+  const mine = buildSchedule(input, range).filter((o) => o.courseId === course.id);
+  const upcoming = mine.filter((o) => isListed(o) && !isPast(o, clock) && o.date <= addDays(today, 21)).slice(0, 6);
+  const term = mine.filter((o) => o.date <= termEnd);
+  const stats = attendanceStats(term, marks, clock, preferences.attendanceTarget, termKnown);
+  const recent = term
+    .filter((o) => isLive(o) && isPast(o, clock))
+    .slice(-5)
+    .reverse()
+    .map((o) => ({
+      key: o.key,
+      label: `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" })} · ${placementLabel(o, preferences.timeFormat, o.date)}`,
+      status: marks.get(o.key) ?? null,
+    }));
+
+  return (
+    <>
+      <section className="flex flex-col gap-3" aria-labelledby="coming-up">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="class-times" className="font-medium">
-            Class times
+          <h2 id="coming-up" className="font-medium">
+            Coming up
           </h2>
-          {course.slots.length > 0 ? (
-            <Button asChild size="sm" variant="outline">
-              <Link href={`/courses/${course.id}/slots/new`}>
-                <CalendarPlus aria-hidden />
-                Add class time
-              </Link>
-            </Button>
-          ) : null}
+          <Button asChild size="sm" variant="ghost">
+            <Link href={`/courses/extra/new?course=${course.id}&date=${today}`}>
+              <Sparkles aria-hidden />
+              Extra session
+            </Link>
+          </Button>
         </div>
-        {course.slots.length === 0 ? (
-          <EmptyState icon={Clock} title="No class times yet" description="Add when this course meets each week.">
-            <Button asChild size="sm">
-              <Link href={`/courses/${course.id}/slots/new`}>Add class time</Link>
-            </Button>
-          </EmptyState>
+        {upcoming.length === 0 ? (
+          <p className="text-muted-foreground text-sm">No classes in the next three weeks.</p>
         ) : (
-          <SlotList
-            slots={course.slots}
-            conflicts={conflicts}
-            courseRoom={course.room}
-            timeFormat={preferences.timeFormat}
-          />
+          <ul className="flex flex-col gap-1.5">
+            {upcoming.map((o) => (
+              <li key={o.key}>
+                <OccurrenceRow item={toRowItem(o, preferences.timeFormat, clock)} />
+              </li>
+            ))}
+          </ul>
         )}
       </section>
-    </div>
+      {stats.held > 0 || stats.missed > 0 ? (
+        <AttendancePanel courseId={course.id} stats={stats} target={preferences.attendanceTarget} recent={recent} />
+      ) : null}
+    </>
   );
 }

@@ -1,8 +1,18 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
-import { appliesOn, findConflicts, formatTime, layoutDay, toMinutes, type WeekStart, weekDates } from "./logic";
-import type { TimetableSlot } from "./types";
+import { type Chip, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
+import {
+  buildSchedule,
+  type DateRange,
+  isListed,
+  isLive,
+  type Occurrence,
+  type OccurrenceStatus,
+  type ScheduleInput,
+} from "../schedule/occurrences";
+import { findConflicts, layoutDay, toMinutes, type WeekStart, weekDates } from "./logic";
 
 export type WeekItem = {
+  /** The occurrence key: opens the class sheet. */
   id: string;
   courseId: string;
   title: string;
@@ -15,6 +25,21 @@ export type WeekItem = {
   lane: number;
   lanes: number;
   overlapsWith: string[];
+  status: OccurrenceStatus;
+  chips: Chip[];
+  note: string | null;
+  meetingUrl: string | null;
+  /** Finished by the time the page was rendered. */
+  past: boolean;
+};
+
+export type Ghost = {
+  id: string;
+  title: string;
+  startMinute: number;
+  endMinute: number;
+  movedToLabel: string;
+  color: string;
 };
 
 export type WeekDay = {
@@ -23,7 +48,17 @@ export type WeekDay = {
   dayNumber: string;
   fullLabel: string;
   isToday: boolean;
+  /** Listed classes: live ones and cancelled ones (dimmed). */
   items: WeekItem[];
+  /** Where moved classes used to be (week grid only). */
+  ghosts: Ghost[];
+  /** Live classes (what "3 classes" counts). */
+  classCount: number;
+  /** Set when a break covers this day. */
+  breakLabel: string | null;
+  breakId: string | null;
+  /** Cancelled classes (listed, not counted). */
+  cancelledCount: number;
 };
 
 export type Week = {
@@ -37,8 +72,23 @@ export type Week = {
   lastHour: number;
 };
 
-function courseTitle(slot: TimetableSlot) {
-  return slot.course.code ?? slot.course.name;
+export type WeekOptions = {
+  anchor: CivilDate;
+  today: CivilDate;
+  weekStart: WeekStart;
+  timeFormat: "24h" | "12h";
+  /** Minutes since midnight now (for dimming past classes); defaults to the start of the day. */
+  nowMinute?: number;
+};
+
+/** The dates the week containing `anchor` covers: what to load before `buildWeek`. */
+export function weekRange(anchor: CivilDate, weekStart: WeekStart): DateRange {
+  const dates = weekDates(anchor, weekStart);
+  return { from: dates[0], to: dates[6] };
+}
+
+function courseTitle(o: Pick<Occurrence, "course">) {
+  return o.course.code ?? o.course.name;
 }
 
 function weekLabel(first: CivilDate, last: CivilDate): string {
@@ -53,38 +103,59 @@ function weekLabel(first: CivilDate, last: CivilDate): string {
   return `${start} – ${formatDate(last, { day: "numeric", month: "short", year: "numeric" })}`;
 }
 
-export function buildWeek(
-  slots: readonly TimetableSlot[],
-  options: { anchor: CivilDate; today: CivilDate; weekStart: WeekStart; timeFormat: "24h" | "12h" },
-): Week {
+/** One week of the schedule, laid out for the week grid and the by-day list. */
+export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
   const dates = weekDates(options.anchor, options.weekStart);
+  const occurrences = buildSchedule(input, { from: dates[0], to: dates[6] });
+  const nowMinute = options.nowMinute ?? 0;
   let firstHour = 8;
   let lastHour = 17;
 
   const days = dates.map((date): WeekDay => {
-    const todays = slots.filter((s) => appliesOn(s, date));
-    const conflicts = findConflicts(todays);
-    const items = layoutDay(todays).map(({ slot, lane, lanes }): WeekItem => {
-      const startMinute = toMinutes(slot.startTime);
-      const endMinute = toMinutes(slot.endTime);
-      firstHour = Math.min(firstHour, Math.floor(startMinute / 60));
-      lastHour = Math.max(lastHour, Math.ceil(endMinute / 60));
-      const others = conflicts.get(slot.id) ?? [];
+    const todays = occurrences.filter((o) => o.date === date);
+    const listed = todays.filter(isListed);
+    const live = todays.filter(isLive);
+    // Overlaps only between classes that really happen.
+    const conflicts = findConflicts(live);
+    for (const o of todays) {
+      firstHour = Math.min(firstHour, Math.floor(toMinutes(o.startTime) / 60));
+      lastHour = Math.max(lastHour, Math.ceil(toMinutes(o.endTime) / 60));
+    }
+    const items = layoutDay(listed).map(({ slot: o, lane, lanes }): WeekItem => {
+      const others = conflicts.get(o.key) ?? [];
       return {
-        id: slot.id,
-        courseId: slot.courseId,
-        title: courseTitle(slot),
-        courseName: slot.course.name,
-        color: slot.course.color,
-        timeLabel: `${formatTime(slot.startTime, options.timeFormat)}–${formatTime(slot.endTime, options.timeFormat)}`,
-        location: slot.location ?? slot.course.room,
-        startMinute,
-        endMinute,
+        id: o.key,
+        courseId: o.courseId,
+        title: courseTitle(o),
+        courseName: o.course.name,
+        color: o.course.color,
+        timeLabel: timeRange(o, options.timeFormat),
+        location: o.location,
+        startMinute: toMinutes(o.startTime),
+        endMinute: toMinutes(o.endTime),
         lane,
         lanes,
         overlapsWith: [...new Set(others.map(courseTitle))],
+        status: o.status,
+        chips: occurrenceChips(o, options.timeFormat),
+        note: o.note,
+        meetingUrl: o.meetingUrl,
+        past: date < options.today || (date === options.today && toMinutes(o.endTime) <= nowMinute),
       };
     });
+    const ghosts = todays
+      .filter((o) => o.status === "ghost" && o.movedTo)
+      .map(
+        (o): Ghost => ({
+          id: o.key,
+          title: courseTitle(o),
+          startMinute: toMinutes(o.startTime),
+          endMinute: toMinutes(o.endTime),
+          movedToLabel: o.movedTo ? placementLabel(o.movedTo, options.timeFormat, date) : "",
+          color: o.course.color,
+        }),
+      );
+    const brk = input.breaks.find((b) => date >= b.startsOn && date <= b.endsOn);
     return {
       date,
       shortLabel: formatDate(date, { weekday: "short" }),
@@ -92,6 +163,11 @@ export function buildWeek(
       fullLabel: formatDate(date, { weekday: "long", day: "numeric", month: "long" }),
       isToday: date === options.today,
       items,
+      ghosts,
+      classCount: live.length,
+      breakLabel: brk?.label ?? null,
+      breakId: brk?.id ?? null,
+      cancelledCount: todays.filter((o) => o.status === "cancelled").length,
     };
   });
 

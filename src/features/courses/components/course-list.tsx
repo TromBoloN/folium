@@ -1,17 +1,34 @@
-import { Archive, ChevronRight, Clock, MapPin, User } from "lucide-react";
+import { Archive, ArrowRightLeft, BookCheck, ChevronRight, ListTodo, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import { Pill } from "@/components/ui/pill";
 import { cn } from "@/lib/utils";
+import { ChangeChips } from "../../schedule/components/change-chips";
+import type { Chip } from "../../schedule/format";
 import { OverlapWarning } from "../../timetable/components/overlap-warning";
-import { findConflicts, formatTime, sortSlots, weekdayLabel } from "../../timetable/logic";
+import { findConflicts, WEEKDAYS } from "../../timetable/logic";
 import type { TimetableSlot } from "../../timetable/types";
 import type { CourseWithSlots } from "../queries";
 
-type Props = { courses: CourseWithSlots[]; timeFormat: "24h" | "12h" };
+/** What a course card shows besides the course itself; worked out on the page from the schedule. */
+export type CourseCardStats = {
+  /** "Wed 10:00", "On now, until 09:10"; null when nothing is coming up. */
+  next: { label: string; location: string | null; chips: Chip[] } | null;
+  /** ISO weekdays the course meets on, from its current weekly slots. */
+  weekdays: number[];
+  openTasks: number;
+  grade: { letter: string; percent: string } | null;
+  changesThisWeek: number;
+};
 
-export function CourseList({ courses, timeFormat }: Props) {
+type Props = {
+  courses: CourseWithSlots[];
+  stats: Record<string, CourseCardStats>;
+};
+
+export function CourseList({ courses, stats }: Props) {
   const active = courses.filter((c) => !c.archivedAt);
   const archived = courses.filter((c) => c.archivedAt);
+  // Clashes in the weekly pattern (a property of the timetable itself, not of one week).
   const conflicts = findConflicts(active.flatMap((c) => c.slots));
 
   return (
@@ -19,7 +36,7 @@ export function CourseList({ courses, timeFormat }: Props) {
       {active.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {active.map((c, i) => (
-            <CourseTile key={c.id} course={c} timeFormat={timeFormat} conflicts={conflicts} index={i} />
+            <CourseCard key={c.id} course={c} stats={stats[c.id]} conflicts={conflicts} index={i} />
           ))}
         </ul>
       ) : (
@@ -35,7 +52,7 @@ export function CourseList({ courses, timeFormat }: Props) {
           </summary>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {archived.map((c) => (
-              <CourseTile key={c.id} course={c} timeFormat={timeFormat} muted />
+              <CourseCard key={c.id} course={c} stats={stats[c.id]} muted />
             ))}
           </ul>
         </details>
@@ -44,26 +61,34 @@ export function CourseList({ courses, timeFormat }: Props) {
   );
 }
 
-function CourseTile({
+function plural(n: number, one: string, many: string) {
+  return `${n} ${n === 1 ? one : many}`;
+}
+
+function CourseCard({
   course,
-  timeFormat,
+  stats,
   conflicts,
   index,
   muted = false,
 }: {
   course: CourseWithSlots;
-  timeFormat: "24h" | "12h";
+  stats: CourseCardStats | undefined;
   conflicts?: Map<string, TimetableSlot[]>;
   index?: number;
   muted?: boolean;
 }) {
-  const slots = sortSlots(course.slots);
   const clashing = conflicts
     ? [...new Set(course.slots.flatMap((s) => conflicts.get(s.id) ?? []).map((o) => o.course.code ?? o.course.name))]
     : [];
+  const days = new Set(stats?.weekdays ?? []);
+  const facts = [
+    course.credits > 0 ? `${course.credits} SKS` : null,
+    stats ? plural(stats.openTasks, "open task", "open tasks") : null,
+  ].filter(Boolean);
 
   return (
-    <li className={index === undefined ? undefined : "reveal"} style={{ "--i": index } as React.CSSProperties}>
+    <li className={cn("h-full", index !== undefined && "reveal")} style={{ "--i": index } as React.CSSProperties}>
       <Link
         href={`/courses/${course.id}`}
         data-spotlight
@@ -76,11 +101,15 @@ function CourseTile({
         <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
         <span className="flex items-start justify-between gap-2">
           <span className="flex min-w-0 flex-col gap-1">
-            {course.code ? (
-              <Pill tone="course" className="w-fit">
-                {course.code}
-              </Pill>
-            ) : null}
+            <span className="flex flex-wrap items-center gap-1.5">
+              {course.code ? <Pill tone="course">{course.code}</Pill> : null}
+              {stats && stats.changesThisWeek > 0 ? (
+                <Pill tone="warning">
+                  <ArrowRightLeft aria-hidden />
+                  {plural(stats.changesThisWeek, "change", "changes")} this week
+                </Pill>
+              ) : null}
+            </span>
             <span className="font-display font-medium text-xl leading-tight">{course.name}</span>
           </span>
           <ChevronRight
@@ -88,36 +117,87 @@ function CourseTile({
             className="mt-1 size-4 shrink-0 text-muted-foreground transition-transform duration-(--dur-fast) group-hover/course:translate-x-0.5"
           />
         </span>
+
         {course.lecturer || course.room ? (
-          <span className="flex flex-wrap gap-x-3 gap-y-1 text-muted-foreground text-sm">
+          <span className="flex min-w-0 gap-x-3 text-muted-foreground text-sm">
             {course.lecturer ? (
-              <span className="inline-flex items-center gap-1">
-                <User aria-hidden className="size-3.5" />
-                {course.lecturer}
+              <span className="inline-flex min-w-0 items-center gap-1">
+                <User aria-hidden className="size-3.5 shrink-0" />
+                <span className="truncate">{course.lecturer}</span>
               </span>
             ) : null}
             {course.room ? (
-              <span className="inline-flex items-center gap-1">
+              <span className="inline-flex shrink-0 items-center gap-1">
                 <MapPin aria-hidden className="size-3.5" />
                 {course.room}
               </span>
             ) : null}
           </span>
         ) : null}
-        <span className="mt-auto flex flex-wrap gap-1.5">
-          {slots.length > 0 ? (
-            slots.map((s) => (
-              <Pill key={s.id} tone="neutral" className="bg-surface-1/70 text-foreground">
-                <Clock aria-hidden />
-                {weekdayLabel(s.weekday, "short")} {formatTime(s.startTime, timeFormat)}
-              </Pill>
-            ))
-          ) : (
-            <span className="text-muted-foreground text-xs">No class times yet</span>
-          )}
+
+        {muted ? null : (
+          <span className="flex flex-col gap-2">
+            <span className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+              {stats?.next ? (
+                <>
+                  <span>
+                    <span className="text-muted-foreground">Next: </span>
+                    <span className="font-medium tabular-nums">{stats.next.label}</span>
+                    {stats.next.location ? (
+                      <span className="text-muted-foreground"> · {stats.next.location}</span>
+                    ) : null}
+                  </span>
+                  <ChangeChips chips={stats.next.chips} />
+                </>
+              ) : (
+                <span className="text-muted-foreground">
+                  {course.slots.length > 0 ? "No classes in the next two weeks" : "No class times yet"}
+                </span>
+              )}
+            </span>
+            <span className="flex gap-1" role="img" aria-label={weekdayText(days)}>
+              {WEEKDAYS.map((d) => (
+                <span
+                  key={d.value}
+                  aria-hidden
+                  className={cn(
+                    "flex size-6 items-center justify-center rounded-full font-medium text-[0.6875rem]",
+                    days.has(d.value)
+                      ? "bg-[color-mix(in_oklab,var(--tint)_45%,var(--surface-1))] font-semibold text-foreground ring-1 ring-(--tint)"
+                      : "bg-surface-1/70 text-muted-foreground",
+                  )}
+                >
+                  {d.short[0]}
+                </span>
+              ))}
+            </span>
+          </span>
+        )}
+
+        <span className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-border-soft border-t pt-3 text-muted-foreground text-xs">
+          {facts.map((f, i) => (
+            <span key={f} className="inline-flex items-center gap-1">
+              {i === 1 ? <ListTodo aria-hidden className="size-3.5" /> : null}
+              {f}
+            </span>
+          ))}
+          {stats?.grade ? (
+            <span className="ml-auto inline-flex items-center gap-1 text-foreground">
+              <BookCheck aria-hidden className="size-3.5 text-muted-foreground" />
+              <span className="font-medium">{stats.grade.letter}</span>
+              <span className="text-muted-foreground tabular-nums">{stats.grade.percent}</span>
+            </span>
+          ) : null}
         </span>
         <OverlapWarning withNames={clashing} />
       </Link>
     </li>
   );
+}
+
+function weekdayText(days: Set<number>) {
+  if (days.size === 0) return "No weekly classes";
+  return `Meets on ${WEEKDAYS.filter((d) => days.has(d.value))
+    .map((d) => d.label)
+    .join(", ")}`;
 }

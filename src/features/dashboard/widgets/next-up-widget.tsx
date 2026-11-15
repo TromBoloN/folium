@@ -1,31 +1,23 @@
 import { io } from "next/cache";
-import { listActiveSlots } from "@/features/courses/queries";
+import { isLive, liveOn } from "@/features/schedule/occurrences";
+import { getSchedule } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { dueState, formatDue } from "@/features/tasks/due";
 import { listOpenTasks } from "@/features/tasks/queries";
 import { addDays, todayIn } from "@/lib/dates";
-import { selectTodaysClasses } from "../today";
-import { type HeroClass, NextUpHero } from "./next-up-hero";
+import { toHeroClass } from "./hero-class";
+import { NextUpHero } from "./next-up-hero";
 
 /** The hero: what's on now or next, with a live countdown. Falls back to tomorrow, then the next deadline. */
 export async function NextUpWidget() {
-  const [slots, tasks, { preferences }] = await Promise.all([listActiveSlots(), listOpenTasks(), getSettings()]);
+  const [tasks, { preferences }] = await Promise.all([listOpenTasks(), getSettings()]);
   await io();
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
-  const toHero = (s: (typeof slots)[number]): HeroClass => ({
-    id: s.id,
-    courseId: s.courseId,
-    weekday: s.weekday,
-    startTime: s.startTime,
-    endTime: s.endTime,
-    startsOn: s.startsOn,
-    endsOn: s.endsOn,
-    name: s.course.name,
-    code: s.course.code,
-    color: s.course.color,
-    location: s.location ?? s.course.room,
-  });
+  const tomorrow = addDays(today, 1);
+  const schedule = await getSchedule({ from: today, to: tomorrow });
+  const fmt = preferences.timeFormat;
+  const hero = (o: (typeof schedule)[number]) => toHeroClass(o, fmt);
   // Open tasks come sorted by deadline; the first not yet overdue is the next one.
   const next = tasks.find((t) => t.dueAt && dueState(t, now, preferences.timeZone) !== "overdue");
 
@@ -34,9 +26,10 @@ export async function NextUpWidget() {
       initialNow={now.getTime()}
       serverToday={today}
       timeZone={preferences.timeZone}
-      timeFormat={preferences.timeFormat}
-      today={selectTodaysClasses(slots, today).map(toHero)}
-      tomorrow={selectTodaysClasses(slots, addDays(today, 1)).map(toHero)}
+      timeFormat={fmt}
+      today={liveOn(schedule, today).map(hero)}
+      tomorrow={liveOn(schedule, tomorrow).map(hero)}
+      cancelled={schedule.filter((o) => o.date === today && !isLive(o) && o.status === "cancelled").map(hero)}
       deadline={
         next
           ? {

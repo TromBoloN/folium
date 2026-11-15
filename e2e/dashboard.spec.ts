@@ -1,5 +1,5 @@
 import { expect, type Page, test } from "@playwright/test";
-import { localDate, signUp, waitForContent } from "./helpers";
+import { localDate, signUp, waitForContent, waitForHydration } from "./helpers";
 
 const TZ = "Asia/Makassar";
 const DEFAULT_TITLES = [
@@ -49,6 +49,8 @@ test("sign up, add a task due today, see it on the dashboard", async ({ page }) 
   await expect(widget(page, "Due soon")).toContainText("Today");
 
   // Quick add from the dashboard; a task with no deadline doesn't belong in "Due soon".
+  // Wait for hydration: before it, Enter submits the plain form, which keeps the typed text.
+  await waitForHydration(page);
   const quickAdd = widget(page, "Quick add").getByLabel("New task title");
   await quickAdd.fill("Buy lab coat");
   await quickAdd.press("Enter");

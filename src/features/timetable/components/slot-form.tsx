@@ -33,6 +33,8 @@ export function SlotForm({ courseId, courses, slot, defaultLocation, prefill, re
         location: slot.location ?? "",
         startsOn: slot.startsOn ?? "",
         endsOn: slot.endsOn ?? "",
+        online: slot.online ? "on" : "",
+        meetingUrl: slot.meetingUrl ?? "",
       }
     : {
         weekday: String(prefill?.weekday ?? 1),
@@ -94,6 +96,32 @@ export function SlotForm({ courseId, courses, slot, defaultLocation, prefill, re
       <Field id="location" label="Location" optional error={errors.location} hint={locationHint}>
         <Input placeholder={defaultLocation ?? "Building B, 2.04"} {...field("location", locationHint)} />
       </Field>
+
+      <div className="grid gap-3 rounded-xl border border-border-soft p-3">
+        <label className="flex items-center gap-2 font-medium text-sm">
+          <input
+            type="checkbox"
+            name="online"
+            defaultChecked={value("online") === "on"}
+            className="size-4 accent-(--primary)"
+          />
+          Online class
+        </label>
+        <Field
+          id="meetingUrl"
+          label="Meeting link"
+          optional
+          error={errors.meetingUrl}
+          hint="Zoom, Meet or Teams. Shows an “Open link” button when the class is on."
+        >
+          <Input
+            type="url"
+            inputMode="url"
+            placeholder="https://meet.google.com/abc-defg-hij"
+            {...field("meetingUrl", "hint")}
+          />
+        </Field>
+      </div>
 
       <fieldset className="grid gap-3">
         <legend className="mb-1 font-medium text-sm">

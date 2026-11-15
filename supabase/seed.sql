@@ -70,6 +70,9 @@ declare
   v_term_start date := v_today - 70;
   v_term_end date := v_today + 50;
 
+  -- Monday of this week: schedule changes are placed on weekdays of this and the next weeks.
+  v_mon date := date_trunc('week', v_today)::date;
+
   c_calc uuid; c_phys uuid; c_chem uuid; c_prog uuid; c_eng uuid; c_pkn uuid; c_study uuid; c_old uuid;
   t uuid;
 begin
@@ -190,6 +193,54 @@ begin
     (v_user, c_study, 7, '10:00', '12:00', null, null, null),
     -- Archived course: kept for history, not shown.
     (v_user, c_old,   2, '07:30', '09:10', null, v_today - 200, v_today - 90);
+
+  -- -------------------------------------------------------------------------
+  -- Lecturer contacts and an online class
+  -- -------------------------------------------------------------------------
+  update public.courses set lecturer_email = 'siti.rahma@ft.example.ac.id', lecturer_phone = '0812-3456-7801'
+    where id = c_calc;
+  update public.courses set lecturer_email = 'laura.wijaya@ft.example.ac.id' where id = c_eng;
+  update public.timetable_slots set is_online = true, meeting_url = 'https://meet.google.com/abc-defg-hij'
+    where course_id = c_study and weekday = 7;
+
+  -- -------------------------------------------------------------------------
+  -- Schedule changes (one date each), a break, and extra sessions
+  -- -------------------------------------------------------------------------
+  -- Calculus on Wednesday is cancelled.
+  insert into public.class_changes (user_id, course_id, slot_id, kind, original_date, note)
+  select v_user, c_calc, id, 'cancelled', v_mon + 2, 'Dr. Siti unwell'
+    from public.timetable_slots where course_id = c_calc and weekday = 3;
+  -- English moves from Friday afternoon to Thursday morning.
+  insert into public.class_changes (user_id, course_id, slot_id, kind, original_date, new_date, start_time, end_time, note)
+  select v_user, c_eng, id, 'moved', v_mon + 4, v_mon + 3, '10:00', '11:40', 'Ms. Wijaya is at a conference on Friday'
+    from public.timetable_slots where course_id = c_eng and weekday = 5;
+  -- Physics next Monday is in another room.
+  insert into public.class_changes (user_id, course_id, slot_id, kind, original_date, location)
+  select v_user, c_phys, id, 'moved', v_mon + 7, 'B2.05'
+    from public.timetable_slots where course_id = c_phys and weekday = 1;
+  -- A Saturday makeup for the cancelled Calculus class.
+  insert into public.class_changes (user_id, course_id, kind, new_date, start_time, end_time, location, label, note)
+  values (v_user, c_calc, 'extra', v_mon + 5, '09:00', '10:40', 'B2.04', 'Makeup', 'Replaces Wednesday');
+  -- Midterm week in two weeks: no regular classes, but the exams happen.
+  insert into public.class_breaks (user_id, label, starts_on, ends_on)
+  values (v_user, 'Midterm week', v_mon + 14, v_mon + 18);
+  insert into public.class_changes (user_id, course_id, kind, new_date, start_time, end_time, location, label) values
+    (v_user, c_calc, 'extra', v_mon + 14, '08:00', '10:00', 'Aula Utama', 'Midterm exam'),
+    (v_user, c_phys, 'extra', v_mon + 15, '13:00', '15:00', 'Aula Utama', 'Midterm exam');
+
+  -- -------------------------------------------------------------------------
+  -- Attendance: the last six weeks of Calculus and Physics, two misses
+  -- -------------------------------------------------------------------------
+  insert into public.attendance (user_id, course_id, slot_id, occurs_on, status)
+  select v_user, s.course_id, s.id, d::date,
+         case when (s.course_id = c_calc and d::date in (v_mon - 12, v_mon - 26)) then 'missed' else 'attended' end
+    from public.timetable_slots s
+    cross join generate_series(v_mon - 42, v_today - 1, interval '1 day') d
+   where s.course_id in (c_calc, c_phys)
+     and extract(isodow from d) = s.weekday
+     and (s.starts_on is null or d::date >= s.starts_on)
+     and (s.ends_on is null or d::date <= s.ends_on)
+     and d::date <> v_mon + 2;
 
   -- -------------------------------------------------------------------------
   -- Tasks

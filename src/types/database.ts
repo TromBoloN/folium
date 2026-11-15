@@ -43,16 +43,88 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
-                },"courses": {
+                },"attendance": {
                   Row: {
-                    "archived_at": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"lecturer": string | null,"name": string,"room": string | null,"semester": string | null,"updated_at": string,"user_id": string
+                    "change_id": string | null,"course_id": string,"created_at": string,"id": string,"occurs_on": string | null,"slot_id": string | null,"status": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "change_id"?: string | null,"course_id": string,"created_at"?: string,"id"?: string,"occurs_on"?: string | null,"slot_id"?: string | null,"status": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "change_id"?: string | null,"course_id"?: string,"created_at"?: string,"id"?: string,"occurs_on"?: string | null,"slot_id"?: string | null,"status"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "attendance_change_fk"
+      columns: ["change_id","course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "class_changes"
+      referencedColumns: ["id","course_id","user_id"]
+    },{
+      foreignKeyName: "attendance_course_fk"
+      columns: ["course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "courses"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "attendance_slot_fk"
+      columns: ["slot_id","course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "timetable_slots"
+      referencedColumns: ["id","course_id","user_id"]
+    }
+                  ]
+                },"class_breaks": {
+                  Row: {
+                    "created_at": string,"ends_on": string,"id": string,"label": string,"starts_on": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"ends_on": string,"id"?: string,"label": string,"starts_on": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"ends_on"?: string,"id"?: string,"label"?: string,"starts_on"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"class_changes": {
+                  Row: {
+                    "course_id": string,"created_at": string,"end_time": string | null,"id": string,"kind": string,"label": string | null,"location": string | null,"new_date": string | null,"note": string | null,"original_date": string | null,"slot_id": string | null,"start_time": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "course_id": string,"created_at"?: string,"end_time"?: string | null,"id"?: string,"kind": string,"label"?: string | null,"location"?: string | null,"new_date"?: string | null,"note"?: string | null,"original_date"?: string | null,"slot_id"?: string | null,"start_time"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "course_id"?: string,"created_at"?: string,"end_time"?: string | null,"id"?: string,"kind"?: string,"label"?: string | null,"location"?: string | null,"new_date"?: string | null,"note"?: string | null,"original_date"?: string | null,"slot_id"?: string | null,"start_time"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "class_changes_course_fk"
+      columns: ["course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "courses"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "class_changes_slot_fk"
+      columns: ["slot_id","course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "timetable_slots"
+      referencedColumns: ["id","course_id","user_id"]
+    }
+                  ]
+                },"courses": {
+                  Row: {
+                    "archived_at": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"lecturer": string | null,"lecturer_email": string | null,"lecturer_phone": string | null,"name": string,"room": string | null,"semester": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -99,14 +171,14 @@ isOneToOne: false
                   ]
                 },"timetable_slots": {
                   Row: {
-                    "course_id": string,"created_at": string,"end_time": string,"ends_on": string | null,"id": string,"location": string | null,"start_time": string,"starts_on": string | null,"updated_at": string,"user_id": string,"weekday": number
+                    "course_id": string,"created_at": string,"end_time": string,"ends_on": string | null,"id": string,"is_online": boolean,"location": string | null,"meeting_url": string | null,"start_time": string,"starts_on": string | null,"updated_at": string,"user_id": string,"weekday": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "course_id": string,"created_at"?: string,"end_time": string,"ends_on"?: string | null,"id"?: string,"location"?: string | null,"start_time": string,"starts_on"?: string | null,"updated_at"?: string,"user_id"?: string,"weekday": number
+                    "course_id": string,"created_at"?: string,"end_time": string,"ends_on"?: string | null,"id"?: string,"is_online"?: boolean,"location"?: string | null,"meeting_url"?: string | null,"start_time": string,"starts_on"?: string | null,"updated_at"?: string,"user_id"?: string,"weekday": number
                   }
                   Update: {
-                    "course_id"?: string,"created_at"?: string,"end_time"?: string,"ends_on"?: string | null,"id"?: string,"location"?: string | null,"start_time"?: string,"starts_on"?: string | null,"updated_at"?: string,"user_id"?: string,"weekday"?: number
+                    "course_id"?: string,"created_at"?: string,"end_time"?: string,"ends_on"?: string | null,"id"?: string,"is_online"?: boolean,"location"?: string | null,"meeting_url"?: string | null,"start_time"?: string,"starts_on"?: string | null,"updated_at"?: string,"user_id"?: string,"weekday"?: number
                   }
                   Relationships: [
                     {

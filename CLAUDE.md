@@ -22,3 +22,4 @@ Personal student dashboard (courses, timetable, tasks, customizable "Today" view
 - record real architectural decisions in `docs/documentation/decisions.md`.
 - Before finishing a task, ensure `bun run typecheck`, `bunx biome check .`, `bun run test`, and `bunx supabase test db` all pass.
 - End every message with a single-line recommended commit message.
+- **Testing:** Test pure logic, parsers, and route handlers in Vitest (`bun run test`) and RLS in pgTAP (`bunx supabase test db`). Do NOT spin up ad-hoc Playwright scripts, production builds, or screenshots unless explicitly asked.

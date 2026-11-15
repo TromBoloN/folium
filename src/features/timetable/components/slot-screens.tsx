@@ -49,7 +49,7 @@ export async function NewSlotScreen({
   return (
     <>
       {variant === "page" ? (
-        <PageHeader title="Add class time" back={<BackLink href="/courses/timetable">Timetable</BackLink>} />
+        <PageHeader title="Add class time" back={<BackLink href="/courses?view=week">Timetable</BackLink>} />
       ) : null}
       {courses.length === 0 ? (
         <div className="flex flex-col items-start gap-3">

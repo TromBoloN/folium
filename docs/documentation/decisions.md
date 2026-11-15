@@ -237,3 +237,35 @@ Short records of real choices, newest first. Each says what was decided, why, an
 **Decision.** Biome lints and formats code, with Markdown excluded from formatting.
 
 **Why.** One fast tool for lint and format, as AGENTS.md specifies. Docs are written by hand and shouldn't be reflowed.
+
+## 2026-11-15: Schedule changes are one-date rows next to the weekly slots, merged by one function
+
+**Decision.** `timetable_slots` stays the default schedule. A `class_changes` row touches one date only (cancelled, moved, extra); `class_breaks` cancels regular classes over a range. Not generic calendar events. Every screen reads `buildSchedule()` (`schedule/occurrences.ts`), which merges slots, changes and breaks into the occurrences for a date range.
+
+**Why.** The weekly pattern stays intact and editable, and a change shows next to what it replaced ("Moved from Fri 13:30"). One merge function means the cards, list, grid, Today widgets, overlap warnings, attendance and export can't disagree; it carries the heaviest tests.
+
+**Rules.** An explicit change beats a break; extras always happen; a change whose slot no longer runs on its original date is ignored. "Every week from now on" splits the slot instead of rewriting history.
+
+## 2026-11-15: Attendance is keyed by the original occurrence
+
+**Decision.** `attendance` rows point at `(slot_id, original date)` or an extra session's `change_id`, never at a computed date.
+
+**Why.** A moved class keeps its mark; cancelling makes it not count (stats only read live occurrences) without deleting the mark, so un-cancelling restores it.
+
+## 2026-11-15: Calendar export is a download, not a feed
+
+**Decision.** `/courses/calendar.ics` is an authenticated one-off download with stable UIDs.
+
+**Why.** A feed Google/Apple can poll must be readable without a session, which needs a per-user secret URL token and a server read path outside RLS. Deferred until needed; re-importing updates the same events.
+
+## 2026-11-15: The Courses view is remembered in preferences, the URL wins
+
+**Decision.** `preferences.coursesView` stores the last chosen view (saved on click); `?view=` overrides it. The settings form keeps the stored value instead of posting it.
+
+**Why.** Shareable links open the same view, and a stale settings tab can't reset it.
+
+## 2026-11-15: The axe matrix is its own suite, on the demo account
+
+**Decision.** `test:e2e` runs the functional specs (desktop + mobile, 2 workers). `test:a11y` runs the axe matrix as separate projects, signed in once as the seeded demo account via storageState, one test at a time.
+
+**Why.** The matrix signed up and seeded a user per test and dominated run time and load, which made functional tests flaky. The demo account has richer data (changes, breaks, attendance). Sequential because the theme is per user.

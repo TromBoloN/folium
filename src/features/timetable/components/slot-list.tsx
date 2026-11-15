@@ -1,4 +1,4 @@
-import { CalendarRange, MapPin, Pencil, Trash2 } from "lucide-react";
+import { CalendarRange, MapPin, Pencil, Trash2, Video } from "lucide-react";
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Button } from "@/components/ui/button";
@@ -35,6 +35,25 @@ export function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
                 <p className="flex items-center gap-1 text-muted-foreground text-sm">
                   <MapPin aria-hidden className="size-3.5" />
                   {location}
+                </p>
+              ) : null}
+              {slot.online ? (
+                <p className="flex items-center gap-1 text-muted-foreground text-sm">
+                  <Video aria-hidden className="size-3.5" />
+                  Online
+                  {slot.meetingUrl ? (
+                    <>
+                      {" · "}
+                      <a
+                        href={slot.meetingUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-foreground underline underline-offset-4"
+                      >
+                        Open link
+                      </a>
+                    </>
+                  ) : null}
                 </p>
               ) : null}
               {range ? (

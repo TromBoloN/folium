@@ -6,6 +6,7 @@ import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChoiceGroup } from "@/components/ui/choice-group";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { NativeSelect } from "@/components/ui/native-select";
 import type { FormState } from "@/lib/action-result";
@@ -290,6 +291,27 @@ function SettingsFields({
                 { value: "12h", label: "12-hour (2:30 PM)" },
               ]}
             />
+            <div className="grid gap-2">
+              <Label htmlFor="attendanceTarget">Attendance target</Label>
+              <div className="flex items-center gap-2">
+                <Input
+                  id="attendanceTarget"
+                  name="attendanceTarget"
+                  type="number"
+                  inputMode="numeric"
+                  min={0}
+                  max={100}
+                  step={1}
+                  className="w-24"
+                  defaultValue={value("attendanceTarget", String(preferences.attendanceTarget))}
+                  aria-describedby="attendanceTarget-hint"
+                />
+                <span className="text-muted-foreground text-sm">% of classes</span>
+              </div>
+              <p id="attendanceTarget-hint" className="text-muted-foreground text-xs">
+                Many campuses require about 75% to sit the final exam. Check yours; courses warn you below it.
+              </p>
+            </div>
             <GradeScaleEditor initial={submitted?.gradeScale ?? preferences.gradeScale} onEdit={onChange} />
           </CardContent>
         </Card>
