@@ -550,3 +550,80 @@
     animation: none !important;
   }
 }
+
+/*
+ * Selects. Two layers:
+ * 1. Everywhere: options take the popover colours explicitly. Without this they
+ *    inherit the page's text colour, while some systems (e.g. Chrome on Linux)
+ *    draw the popup itself light: white text on white in dark mode.
+ * 2. Chromium 135+: the customizable select (appearance: base-select) draws the
+ *    open list as one of our popovers. Still a real <select>, so keyboard,
+ *    screen readers, forms and phone pickers keep working; other browsers keep
+ *    the native popup from layer 1.
+ */
+@layer base {
+  select option,
+  select optgroup {
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+  }
+}
+
+/* Unlayered on purpose: it must beat the `appearance-none` utility on the component. */
+@supports (appearance: base-select) {
+  select[data-slot="select"],
+  select[data-slot="select"]::picker(select) {
+    appearance: base-select;
+  }
+  /* The component draws its own chevron. */
+  select[data-slot="select"]::picker-icon {
+    display: none;
+  }
+  select[data-slot="select"]::picker(select) {
+    margin-block: 0.375rem;
+    padding: 0.25rem;
+    max-height: min(20rem, 60dvh);
+    overflow-y: auto;
+    border: 1px solid var(--border-soft);
+    border-radius: var(--radius-xl);
+    background-color: var(--popover);
+    color: var(--popover-foreground);
+    box-shadow: var(--shadow-raised);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  select[data-slot="select"] option {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.4375rem 0.625rem;
+    border-radius: var(--radius-md);
+    background-color: transparent;
+    font-size: 0.875rem;
+    cursor: pointer;
+  }
+  select[data-slot="select"] option:hover,
+  select[data-slot="select"] option:focus-visible {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+    outline: none;
+  }
+  select[data-slot="select"] option:checked {
+    font-weight: 500;
+  }
+  select[data-slot="select"] option::checkmark {
+    order: 1;
+    margin-inline-start: auto;
+    color: var(--primary);
+  }
+  select[data-slot="select"] option:disabled {
+    color: var(--muted-foreground);
+    cursor: not-allowed;
+  }
+  select[data-slot="select"] optgroup {
+    padding-top: 0.25rem;
+    color: var(--muted-foreground);
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
+}
