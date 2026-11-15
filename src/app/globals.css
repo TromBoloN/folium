@@ -1,0 +1,175 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+/*
+ * Theme tokens
+ *
+ * Every colour is derived from one hue (--hue) and chroma (--chroma), so a
+ * preset is just two numbers and the neutrals pick up a faint tint of it.
+ * Each token holds its light and dark value via light-dark(); which one shows
+ * is decided by `color-scheme`, set from the user's mode on <html>:
+ *   data-mode="light" | "dark" | "system"   (system follows the OS, no JS)
+ *   data-preset, data-font, data-density     (see src/features/settings/theme.ts)
+ * A custom accent colour is applied as an inline --primary override.
+ */
+
+:root {
+  /* Default preset: green */
+  --hue: 152;
+  --chroma: 0.13;
+
+  --radius: 0.625rem;
+
+  --background: light-dark(oklch(0.99 0.004 var(--hue)), oklch(0.17 0.012 var(--hue)));
+  --foreground: light-dark(oklch(0.22 0.02 var(--hue)), oklch(0.96 0.008 var(--hue)));
+
+  --card: light-dark(oklch(1 0.002 var(--hue)), oklch(0.205 0.014 var(--hue)));
+  --card-foreground: var(--foreground);
+  --popover: var(--card);
+  --popover-foreground: var(--foreground);
+
+  --primary: light-dark(oklch(0.52 var(--chroma) var(--hue)), oklch(0.74 var(--chroma) var(--hue)));
+  --primary-foreground: light-dark(oklch(0.985 0.01 var(--hue)), oklch(0.2 0.04 var(--hue)));
+
+  --secondary: light-dark(oklch(0.955 0.02 var(--hue)), oklch(0.27 0.02 var(--hue)));
+  --secondary-foreground: light-dark(oklch(0.3 0.04 var(--hue)), oklch(0.94 0.01 var(--hue)));
+
+  --muted: light-dark(oklch(0.96 0.008 var(--hue)), oklch(0.245 0.012 var(--hue)));
+  --muted-foreground: light-dark(oklch(0.5 0.02 var(--hue)), oklch(0.71 0.02 var(--hue)));
+
+  /* shadcn's "accent" = hover/active surface, not the user's accent colour */
+  --accent: light-dark(oklch(0.94 0.03 var(--hue)), oklch(0.29 0.03 var(--hue)));
+  --accent-foreground: light-dark(oklch(0.28 0.05 var(--hue)), oklch(0.95 0.01 var(--hue)));
+
+  --destructive: light-dark(oklch(0.56 0.21 27), oklch(0.68 0.19 22));
+  --destructive-foreground: oklch(0.985 0 0);
+
+  --warning: light-dark(oklch(0.62 0.15 70), oklch(0.8 0.14 80));
+
+  --border: light-dark(oklch(0.91 0.01 var(--hue)), oklch(0.3 0.015 var(--hue)));
+  --input: var(--border);
+  --ring: light-dark(oklch(0.62 var(--chroma) var(--hue)), oklch(0.6 var(--chroma) var(--hue)));
+
+  --sidebar: light-dark(oklch(0.975 0.008 var(--hue)), oklch(0.19 0.013 var(--hue)));
+  --sidebar-foreground: var(--foreground);
+  --sidebar-border: var(--border);
+  --sidebar-active: var(--accent);
+  --sidebar-active-foreground: var(--accent-foreground);
+
+  --font-app: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+
+  color-scheme: light dark;
+}
+
+/* Mode */
+[data-mode="light"] {
+  color-scheme: light;
+}
+[data-mode="dark"] {
+  color-scheme: dark;
+}
+[data-mode="system"] {
+  color-scheme: light dark;
+}
+
+/* Presets: hue and chroma only */
+[data-preset="green"] {
+  --hue: 152;
+  --chroma: 0.13;
+}
+[data-preset="blue"] {
+  --hue: 250;
+  --chroma: 0.14;
+}
+[data-preset="violet"] {
+  --hue: 292;
+  --chroma: 0.14;
+}
+[data-preset="orange"] {
+  --hue: 55;
+  --chroma: 0.14;
+}
+[data-preset="rose"] {
+  --hue: 10;
+  --chroma: 0.15;
+}
+
+/* Fonts (CSS variables come from next/font in the root layout) */
+[data-font="geist"] {
+  --font-app: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+[data-font="inter"] {
+  --font-app: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+}
+[data-font="system"] {
+  --font-app: ui-sans-serif, system-ui, sans-serif;
+}
+
+/* Density scales every Tailwind spacing utility */
+[data-density="compact"] {
+  --spacing: 0.21rem;
+}
+
+/* `dark:` utilities follow the same rules as the tokens */
+@custom-variant dark {
+  &:where([data-mode="dark"], [data-mode="dark"] *) {
+    @slot;
+  }
+  @media (prefers-color-scheme: dark) {
+    &:where([data-mode="system"], [data-mode="system"] *) {
+      @slot;
+    }
+  }
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans: var(--font-app);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    @apply bg-background font-sans text-foreground antialiased;
+  }
+}
+
+/* Preset swatch: an element with data-preset shows that preset's colour */
+@utility swatch {
+  background: light-dark(oklch(0.58 var(--chroma) var(--hue)), oklch(0.72 var(--chroma) var(--hue)));
+}
