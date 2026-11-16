@@ -203,7 +203,7 @@ export function SlotForm(props: Props) {
                 aria-pressed={live.start === time}
                 aria-label={t("Start at {time}", { time: formatTime(time, timeFormat) })}
                 className={cn(
-                  "h-9 rounded-full border border-border px-3 text-sm tabular-nums transition-colors hover:border-foreground/25",
+                  "h-9 rounded-pill border border-border px-3 text-sm tabular-nums transition-colors hover:border-foreground/25",
                   live.start === time && "border-primary bg-accent text-accent-foreground",
                 )}
               >

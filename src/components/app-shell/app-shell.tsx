@@ -25,7 +25,10 @@ export function AppShell({ children, modal }: { children: React.ReactNode; modal
             </Suspense>
             <MotionRuntime />
             <PwaRuntime />
-            <aside className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-6 border-sidebar-border border-r bg-sidebar px-3 py-5 text-sidebar-foreground md:flex">
+            <aside
+              data-slot="sidebar"
+              className="fixed inset-y-0 left-0 z-30 hidden w-60 flex-col gap-6 border-sidebar-border border-r bg-sidebar px-3 py-5 text-sidebar-foreground md:flex"
+            >
               <Link href="/" className="flex items-center gap-2 px-3 font-display font-medium text-2xl tracking-tight">
                 <LeafMark className="size-7 text-primary" />
                 Folium

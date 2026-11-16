@@ -34,7 +34,11 @@ export function SectionTabs({
     if (pathname) active.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [pathname]);
   return (
-    <nav aria-label={tl(label)} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
+    <nav
+      aria-label={tl(label)}
+      data-slot="section-tabs"
+      className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0"
+    >
       <ul className="flex min-w-max items-center gap-1 border-border-soft border-b">
         {items.map((t) => {
           const current = activeHref === t.href;

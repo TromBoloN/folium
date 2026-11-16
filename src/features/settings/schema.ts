@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from "@/lib/dates";
 import { DEFAULT_GRADE_SCALE, gradeScaleSchema } from "../grades/scale";
+import { DEFAULT_PACK, THEME_PACK_IDS } from "../themes/registry";
 
 /**
  * Settings are stored as JSON in user_settings, one column per group, holding
@@ -33,6 +34,8 @@ const hexColor = z
   .regex(/^#[0-9a-f]{6}$/, "Use a colour like #2f9e44.");
 
 export const themeSchema = z.object({
+  /** The theme pack (src/features/themes): the whole look. Colour, mode and the rest below apply on top of it. */
+  pack: z.enum(THEME_PACK_IDS),
   mode: z.enum(MODES),
   preset: z.enum(PRESETS),
   /** Custom accent colour; overrides the preset's primary colour. */
@@ -65,6 +68,7 @@ export type Preferences = z.infer<typeof preferencesSchema>;
 export type Settings = { theme: Theme; preferences: Preferences };
 
 export const DEFAULT_THEME: Theme = {
+  pack: DEFAULT_PACK,
   mode: "system",
   preset: "green",
   accent: null,
@@ -133,13 +137,18 @@ export function resolveSettings(row: { version: number; theme: unknown; preferen
   };
 }
 
-/** The settings form: every field required, accent may be blank. */
+/** The settings form: every field required, accent may be blank. The pack is chosen on /themes, so the form keeps what's stored. */
 export const settingsFormSchema = z.object({
-  theme: themeSchema.extend({
+  theme: themeSchema.omit({ pack: true }).extend({
     accent: z.preprocess((v) => (v === "" || v == null ? null : v), hexColor.nullable()),
   }),
   // The view switch saves coursesView on its own; the form keeps whatever is stored.
   preferences: preferencesSchema.omit({ coursesView: true }),
+});
+
+/** Choosing a theme pack on /themes. */
+export const themePackFormSchema = z.object({
+  pack: z.enum(THEME_PACK_IDS, { error: "That theme doesn't exist." }),
 });
 
 /** Your name as Folium shows it (sidebar, greeting). Blank clears it (the email shows instead). */

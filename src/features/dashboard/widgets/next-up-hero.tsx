@@ -113,7 +113,7 @@ export function NextUpHero({
             href={slot.meetingUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-full bg-foreground px-3.5 py-1.5 font-medium text-background text-sm transition-opacity hover:opacity-90"
+            className="mt-1 inline-flex w-fit items-center gap-1.5 rounded-pill bg-foreground px-3.5 py-1.5 font-medium text-background text-sm transition-opacity hover:opacity-90"
           >
             <Video aria-hidden className="size-4" />
             {t("Open link")}
@@ -137,10 +137,10 @@ export function NextUpHero({
           {up.kind === "now" ? (
             <span
               aria-hidden
-              className="block h-1.5 w-full max-w-sm overflow-hidden rounded-full bg-[color-mix(in_oklab,var(--tint)_22%,transparent)]"
+              className="block h-1.5 w-full max-w-sm overflow-hidden rounded-pill bg-[color-mix(in_oklab,var(--tint)_22%,transparent)]"
             >
               <span
-                className="block h-full w-full origin-left rounded-full bg-(--tint) transition-transform duration-(--dur-base) ease-(--ease-out)"
+                className="block h-full w-full origin-left rounded-pill bg-(--tint) transition-transform duration-(--dur-base) ease-(--ease-out)"
                 style={{ transform: `scaleX(${up.progress})` }}
               />
             </span>

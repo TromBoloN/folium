@@ -64,7 +64,7 @@ export function ExtraSessionForm({ courses, prefill }: Props) {
                 aria-pressed={label === t(l)}
                 onClick={() => setLabel(t(l))}
                 className={cn(
-                  "h-11 rounded-full border border-border px-4 font-medium text-sm transition-colors md:h-9",
+                  "h-11 rounded-pill border border-border px-4 font-medium text-sm transition-colors md:h-9",
                   label === t(l)
                     ? "border-primary bg-primary text-primary-foreground"
                     : "bg-surface-1 hover:border-foreground/25",

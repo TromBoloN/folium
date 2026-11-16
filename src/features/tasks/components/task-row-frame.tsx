@@ -150,7 +150,7 @@ function QuickMove({ label, task, choice }: { label: string; task: MenuTask; cho
           )
           .finally(() => setBusy(false));
       }}
-      className="rounded-full border border-border-soft bg-surface-1 px-2.5 py-1 font-medium text-xs transition-colors hover:border-primary hover:bg-accent disabled:opacity-60"
+      className="rounded-pill border border-border-soft bg-surface-1 px-2.5 py-1 font-medium text-xs transition-colors hover:border-primary hover:bg-accent disabled:opacity-60"
     >
       {label}
     </button>

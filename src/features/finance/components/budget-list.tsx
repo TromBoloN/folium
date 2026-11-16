@@ -14,7 +14,7 @@ function Bar({ p }: { p: BudgetProgress }) {
   const spent = Math.min(100, Number((p.spent * 100n) / limit));
   const committed = Math.max(0, Math.min(100 - spent, Number((p.committed * 100n) / limit)));
   return (
-    <div aria-hidden className="flex h-2.5 overflow-hidden rounded-full bg-muted">
+    <div aria-hidden className="flex h-2.5 overflow-hidden rounded-pill bg-muted">
       <span
         className={cn(
           "h-full",

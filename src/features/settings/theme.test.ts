@@ -1,11 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { readableTextOn, relativeLuminance, toOklch } from "@/lib/color";
+import type { ThemeManifest } from "../themes/manifest";
+import { defaultTheme } from "../themes/packs/default/manifest";
 import { DEFAULT_THEME } from "./schema";
-import { accentTokens, themeAttributes } from "./theme";
+import { accentTokens, chromeColors, themeAttributes } from "./theme";
 
 describe("themeAttributes", () => {
   it("maps the theme to data attributes with no inline overrides by default", () => {
     expect(themeAttributes(DEFAULT_THEME)).toEqual({
+      "data-theme": "default",
       "data-mode": "system",
       "data-preset": "green",
       "data-font": "geist",
@@ -43,8 +46,27 @@ describe("themeAttributes", () => {
     expect(style).not.toHaveProperty("--hue");
   });
 
+  it("lets a dark-only, custom-palette pack lock the mode and ignore the accent", () => {
+    const pack: ThemeManifest = { ...defaultTheme, id: "night", scheme: "dark", palette: "custom" };
+    const attrs = themeAttributes({ ...DEFAULT_THEME, mode: "light", accent: "#ffd43b" }, pack);
+    expect(attrs["data-theme"]).toBe("night");
+    expect(attrs["data-mode"]).toBe("dark");
+    expect(attrs.style).toEqual({});
+  });
+
+  it("falls back to the default pack for an unknown one", () => {
+    expect(themeAttributes({ ...DEFAULT_THEME, pack: "gone" as never })["data-theme"]).toBe("default");
+  });
+
   it("passes the motion preference through", () => {
     expect(themeAttributes({ ...DEFAULT_THEME, motion: "off" })["data-motion"]).toBe("off");
+  });
+});
+
+describe("chromeColors", () => {
+  it("follows the OS for system mode and picks one colour for a fixed mode", () => {
+    expect(chromeColors(DEFAULT_THEME)).toHaveLength(2);
+    expect(chromeColors({ ...DEFAULT_THEME, mode: "dark" })).toEqual([{ color: "#0f1a14" }]);
   });
 });
 

@@ -91,7 +91,7 @@ function ManageMenu() {
       >
         <Settings2 aria-hidden className="size-4" />
       </summary>
-      <div className="absolute right-0 z-30 mt-2 flex w-52 flex-col gap-0.5 rounded-xl border border-border-soft bg-popover p-1.5 shadow-raised">
+      <div className="absolute right-0 z-30 mt-2 flex w-52 flex-col gap-0.5 panel rounded-xl p-1.5">
         <Link href="/money/accounts" className={menuItem}>
           <Landmark aria-hidden className="size-4 text-muted-foreground" />
           {t("Accounts")}

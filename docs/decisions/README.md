@@ -112,6 +112,7 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Theme and motion**
 
+- [2026-11-17: Themes are packs: a manifest plus scoped CSS on `data-theme`, effects lazy-loaded](frontend.md#2026-11-17-themes-are-packs-a-manifest-plus-scoped-css-on-data-theme-effects-lazy-loaded)
 - [2026-11-16: A custom accent is adjusted per mode](frontend.md#2026-11-16-a-custom-accent-is-adjusted-per-mode)
 - [2026-11-15: Visual redesign uses CSS and View Transitions, no animation library](frontend.md#2026-11-15-visual-redesign-uses-css-and-view-transitions-no-animation-library)
 - [2026-11-15: Motion is a theme setting; the OS reduced-motion setting always wins](frontend.md#2026-11-15-motion-is-a-theme-setting-the-os-reduced-motion-setting-always-wins)

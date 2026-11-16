@@ -25,7 +25,7 @@ export function SidebarNav() {
   const pathname = usePagePath();
   const t = useT();
   return (
-    <nav aria-label={t("Main")} className="flex flex-col gap-1">
+    <nav aria-label={t("Main")} data-slot="sidebar-nav" className="flex flex-col gap-1">
       {NAV_ITEMS.map((item) => {
         const { href, label, icon: Icon } = item;
         const active = isActive(pathname, item);
@@ -34,6 +34,7 @@ export function SidebarNav() {
             key={href}
             href={href}
             aria-current={active ? "page" : undefined}
+            data-slot="nav-item"
             className={cn(
               "relative isolate flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-sm outline-none transition-colors duration-(--dur-fast) focus-visible:ring-[3px] focus-visible:ring-ring/40",
               active ? "text-sidebar-active-foreground" : "text-muted-foreground hover:text-foreground",
@@ -42,7 +43,7 @@ export function SidebarNav() {
             {active ? (
               <ActivePill
                 name="nav-pill"
-                className="inset-0 rounded-xl border border-border-soft bg-sidebar-active shadow-tile"
+                className="nav-pill inset-0 rounded-xl border border-border-soft bg-sidebar-active shadow-tile"
               />
             ) : null}
             <Icon aria-hidden className={cn("size-4.5", active && "text-primary")} />
@@ -61,9 +62,10 @@ export function BottomNav() {
   return (
     <nav
       aria-label={t("Main")}
+      data-slot="bottom-nav"
       className="fixed inset-x-0 bottom-0 z-40 border-border-soft border-t bg-surface-1 pb-[env(safe-area-inset-bottom)] shadow-raised md:hidden"
     >
-      <ul className="grid grid-cols-4 px-0.5">
+      <ul className="grid grid-cols-5 px-0.5">
         {NAV_ITEMS.map((item) => {
           const { href, label, icon: Icon } = item;
           const active = isActive(pathname, item);
@@ -72,18 +74,23 @@ export function BottomNav() {
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
+                data-slot="nav-item"
                 className={cn(
                   "relative isolate flex h-16 flex-col items-center justify-center gap-1 rounded-lg font-medium text-xs outline-none transition-colors duration-(--dur-fast) focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:ring-inset",
                   active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {active ? (
-                  <ActivePill name="nav-pill-mobile" className="inset-x-1.5 top-1.5 h-8 rounded-full bg-accent" />
+                  <ActivePill
+                    name="nav-pill-mobile"
+                    className="nav-pill inset-x-1.5 top-1.5 h-8 rounded-pill bg-accent"
+                  />
                 ) : null}
                 <span className="flex h-8 items-center">
                   <Icon aria-hidden className={cn("size-5", active && "text-primary")} />
                 </span>
-                {t(label)}
+                {/* Five tabs: a long label ("Pengaturan") truncates on the narrowest phones. */}
+                <span className="max-w-full truncate px-0.5">{t(label)}</span>
               </Link>
             </li>
           );

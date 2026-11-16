@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Inter } from "next/font/google";
 import { getSettings } from "@/features/settings/queries";
-import { themeAttributes } from "@/features/settings/theme";
+import { chromeColors, themeAttributes } from "@/features/settings/theme";
+import { THEME_FONT_VARIABLES } from "@/features/themes/fonts";
 import { I18nProvider } from "@/lib/i18n/client";
-import { BRAND } from "@/lib/pwa/brand";
 import "./globals.css";
+// Theme packs after the base tokens, so their [data-theme] rules win (docs/themes.md).
+import "@/features/themes/packs/index.css";
 
 const defaultUrl = process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000";
 
@@ -15,15 +17,12 @@ export const metadata: Metadata = {
   appleWebApp: { capable: true, title: "Folium", statusBarStyle: "default" },
 };
 
+// The browser chrome colour (theme-color) depends on the user's theme pack and mode,
+// so it's rendered as <meta> tags in the layout below, not here.
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  // Browser chrome colour (outside the page, so not a CSS token): matches the paper and night surfaces.
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: BRAND.paper },
-    { media: "(prefers-color-scheme: dark)", color: BRAND.night },
-  ],
 };
 
 // The saved theme goes on <html> in the server render so the first paint is
@@ -43,9 +42,14 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   return (
     <html
       lang={preferences.language}
-      className={`${geist.variable} ${inter.variable} ${fraunces.variable}`}
+      className={[geist.variable, inter.variable, fraunces.variable, ...THEME_FONT_VARIABLES].join(" ")}
       {...themeAttributes(theme)}
     >
+      <head>
+        {chromeColors(theme).map(({ media, color }) => (
+          <meta key={media ?? "all"} name="theme-color" media={media} content={color} />
+        ))}
+      </head>
       <body>
         <I18nProvider locale={preferences.language}>{children}</I18nProvider>
       </body>

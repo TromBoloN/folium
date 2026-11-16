@@ -72,9 +72,9 @@ export function TaskRow({ task, dueLabel, dueState }: Props) {
             ) : null}
             {steps > 0 ? (
               <span className="inline-flex items-center gap-1.5 px-1 tabular-nums">
-                <span aria-hidden className="h-1.5 w-8 overflow-hidden rounded-full bg-muted">
+                <span aria-hidden className="h-1.5 w-8 overflow-hidden rounded-pill bg-muted">
                   <span
-                    className="block h-full w-full origin-left rounded-full bg-(--tint) transition-transform duration-(--dur-base)"
+                    className="block h-full w-full origin-left rounded-pill bg-(--tint) transition-transform duration-(--dur-base)"
                     style={
                       {
                         "--tint": color ?? "var(--primary)",

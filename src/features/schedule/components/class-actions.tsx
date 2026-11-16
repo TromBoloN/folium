@@ -337,7 +337,7 @@ function ChangeForm(
       onClick={() => setDate(value)}
       aria-pressed={date === value}
       className={cn(
-        "rounded-full border border-border-soft px-3 py-1 text-xs transition-colors",
+        "rounded-pill border border-border-soft px-3 py-1 text-xs transition-colors",
         date === value ? "bg-foreground text-background" : "hover:bg-accent",
       )}
     >

@@ -1,4 +1,4 @@
-import { GraduationCap, type LucideIcon, Settings, Sun, Wallet } from "lucide-react";
+import { GraduationCap, type LucideIcon, Palette, Settings, Sun, Wallet } from "lucide-react";
 import type { MessageKey } from "@/lib/i18n/core";
 import { isUnder, SCHOOL_PATHS } from "@/lib/sections";
 
@@ -16,6 +16,7 @@ export const NAV_ITEMS: NavItem[] = [
   // School = Courses, Tasks and Grades (one tab bar inside); opens on Courses.
   { href: "/courses", label: "School", icon: GraduationCap, match: SCHOOL_PATHS },
   { href: "/money", label: "Money", icon: Wallet },
+  { href: "/themes", label: "Themes", icon: Palette },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 

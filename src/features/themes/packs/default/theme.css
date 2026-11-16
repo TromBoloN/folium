@@ -1,0 +1,33 @@
+/*
+ * Folium (default pack). The reference pack: copy its structure for a new one.
+ * Colours, cards and shape come from the base tokens in app/globals.css, so this
+ * pack only draws the background: two slow-drifting accent glows and a film grain.
+ * Every selector starts with [data-theme="default"]; keyframes start with "default-".
+ */
+
+/* Scene: two soft glows in the preset's hue, drifting very slowly. */
+[data-theme="default"] .ambient::before {
+  inset: -20%;
+  background:
+    radial-gradient(38% 32% at 22% 12%, var(--glow-a), transparent 72%),
+    radial-gradient(34% 40% at 86% 78%, var(--glow-b), transparent 72%);
+  animation: default-drift 52s var(--ease-in-out) infinite alternate;
+  will-change: transform;
+}
+
+/* Texture: film grain in the text colour, stronger in dark mode (--grain-opacity). */
+[data-theme="default"] .ambient::after {
+  inset: 0;
+  background: var(--foreground);
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  opacity: var(--grain-opacity);
+}
+
+@keyframes default-drift {
+  from {
+    transform: translate3d(-4%, -3%, 0) rotate(0deg);
+  }
+  to {
+    transform: translate3d(5%, 4%, 0) rotate(7deg);
+  }
+}

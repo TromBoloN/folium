@@ -19,7 +19,7 @@ type CategoryOption = Option & { kind: "expense" | "income"; parentId: string | 
 const BASE = "/money/transactions";
 
 const pill =
-  "h-9 rounded-full border border-border bg-surface-1 pl-3 pr-8 text-sm font-medium transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 data-[active=true]:border-primary data-[active=true]:bg-accent data-[active=true]:text-accent-foreground";
+  "h-9 rounded-pill border border-border bg-surface-1 pl-3 pr-8 text-sm font-medium transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 data-[active=true]:border-primary data-[active=true]:bg-accent data-[active=true]:text-accent-foreground";
 
 /**
  * Filters are a plain GET form first: the URL holds them (shareable, back
@@ -133,7 +133,7 @@ export function TransactionFilters({
                 window.clearTimeout(debounce.current);
                 debounce.current = window.setTimeout(apply, 300);
               }}
-              className="h-11 w-full rounded-full border border-border bg-surface-1 pr-4 pl-10 text-base shadow-tile outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:text-sm"
+              className="h-11 w-full rounded-pill border border-border bg-surface-1 pr-4 pl-10 text-base shadow-tile outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30 sm:text-sm"
             />
           </div>
 
@@ -204,7 +204,7 @@ export function TransactionFilters({
             </select>
 
             <input type="hidden" name="month" value={filters.month ?? ""} />
-            <nav aria-label={t("Month")} className="flex items-center rounded-full border border-border bg-surface-1">
+            <nav aria-label={t("Month")} className="flex items-center rounded-pill border border-border bg-surface-1">
               <Link
                 href={filtersHref(filters, { month: prevMonth })}
                 scroll={false}
@@ -249,7 +249,7 @@ export function TransactionFilters({
                 href={filtersHref(filters, { [chip.key]: undefined })}
                 scroll={false}
                 aria-label={t("Remove filter: {name}", { name: chip.label })}
-                className="inline-flex h-8 items-center gap-1 rounded-full bg-accent pr-2 pl-3 text-accent-foreground text-sm transition-transform duration-(--dur-fast) hover:bg-accent/80 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
+                className="inline-flex h-8 items-center gap-1 rounded-pill bg-accent pr-2 pl-3 text-accent-foreground text-sm transition-transform duration-(--dur-fast) hover:bg-accent/80 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
               >
                 {chip.label}
                 <X aria-hidden className="size-3.5" />

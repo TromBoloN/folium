@@ -1,14 +1,18 @@
 import { toOklch } from "@/lib/color";
 import type { MessageKey } from "@/lib/i18n/core";
+import type { ThemeManifest } from "../themes/manifest";
+import { getManifest } from "../themes/registry";
 import type { Theme } from "./schema";
 
 /**
  * The attributes the root layout puts on <html> so the server-rendered page
- * already has the user's theme. globals.css reads these.
+ * already has the user's theme. globals.css and the theme packs read these.
+ * The pack can lock the mode (a dark-only pack) and replace the palette, in
+ * which case the preset hue and custom accent don't apply.
  */
-export function themeAttributes(theme: Theme) {
+export function themeAttributes(theme: Theme, pack: ThemeManifest = getManifest(theme.pack)) {
   const style: Record<string, string> = {};
-  if (theme.accent) {
+  if (theme.accent && pack.palette === "preset") {
     Object.assign(style, accentTokens(theme.accent));
     // Tint the neutrals and the ambient glow towards the accent too. A near-grey
     // accent has no meaningful hue, so it keeps the preset's.
@@ -16,7 +20,8 @@ export function themeAttributes(theme: Theme) {
     if (c >= 0.03) style["--hue"] = String(Math.round(h));
   }
   return {
-    "data-mode": theme.mode,
+    "data-theme": pack.id,
+    "data-mode": pack.scheme === "both" ? theme.mode : pack.scheme,
     "data-preset": theme.preset,
     "data-font": theme.font,
     "data-density": theme.density,
@@ -55,3 +60,15 @@ export const PRESET_LABELS: Record<Theme["preset"], MessageKey> = {
   orange: "Orange",
   rose: "Rose",
 };
+
+/** The browser UI colour for the user's pack, per scheme (rendered as <meta name="theme-color">). */
+export function chromeColors(theme: Theme): { media?: string; color: string }[] {
+  const { chrome, scheme } = getManifest(theme.pack);
+  const mode = scheme === "both" ? theme.mode : scheme;
+  if (mode === "light") return [{ color: chrome.light }];
+  if (mode === "dark") return [{ color: chrome.dark }];
+  return [
+    { media: "(prefers-color-scheme: light)", color: chrome.light },
+    { media: "(prefers-color-scheme: dark)", color: chrome.dark },
+  ];
+}

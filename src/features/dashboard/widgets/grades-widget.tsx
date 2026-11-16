@@ -69,9 +69,9 @@ export async function GradesWidget() {
                 </span>
                 <span className="w-6 text-right font-semibold">{result.band?.letter}</span>
               </span>
-              <span aria-hidden className="h-1.5 overflow-hidden rounded-full bg-muted">
+              <span aria-hidden className="h-1.5 overflow-hidden rounded-pill bg-muted">
                 <span
-                  className="grow-x block h-full w-full rounded-full bg-(--tint)"
+                  className="grow-x block h-full w-full rounded-pill bg-(--tint)"
                   style={{ transform: `scaleX(${Math.min(100, result.percent ?? 0) / 100})` }}
                 />
               </span>

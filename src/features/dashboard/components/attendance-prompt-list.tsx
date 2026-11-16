@@ -15,7 +15,7 @@ import { useT } from "@/lib/i18n/client";
 type Item = RescheduleTarget & { color: string };
 
 const chip =
-  "inline-flex h-9 items-center gap-1 rounded-full border border-border bg-surface-1 px-2.5 font-medium text-muted-foreground text-xs transition-colors hover:border-foreground/25 hover:text-foreground disabled:opacity-60";
+  "inline-flex h-9 items-center gap-1 rounded-pill border border-border bg-surface-1 px-2.5 font-medium text-muted-foreground text-xs transition-colors hover:border-foreground/25 hover:text-foreground disabled:opacity-60";
 
 function Dot({ color }: { color: string }) {
   return (

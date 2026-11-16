@@ -12,6 +12,7 @@ import { NativeSelect } from "@/components/ui/native-select";
 import type { FormState } from "@/lib/action-result";
 import { useI18n } from "@/lib/i18n/client";
 import { GradeScaleEditor } from "../../grades/components/grade-scale-editor";
+import { getManifest } from "../../themes/registry";
 import { updateSettings } from "../actions";
 import { DEFAULT_THEME, DENSITIES, FONTS, MODES, MOTIONS, PRESETS, type Settings, type Theme } from "../schema";
 import { PRESET_LABELS, themeAttributes } from "../theme";
@@ -24,13 +25,14 @@ const SAVE_DELAY_MS = 500;
 type Props = { settings: Settings; timeZones: string[] };
 
 /** Read the theme fields out of the form, falling back to defaults for anything odd. */
-function themeFrom(data: FormData): Theme {
+function themeFrom(data: FormData, pack: Theme["pack"]): Theme {
   const pick = <T extends string>(name: string, options: readonly T[], fallback: T) => {
     const v = data.get(name);
     return options.includes(v as T) ? (v as T) : fallback;
   };
   const accent = data.get("useAccent") === "on" ? String(data.get("accent") ?? "") : "";
   return {
+    pack,
     mode: pick("mode", MODES, DEFAULT_THEME.mode),
     preset: pick("preset", PRESETS, DEFAULT_THEME.preset),
     accent: /^#[0-9a-f]{6}$/i.test(accent) ? accent.toLowerCase() : null,
@@ -82,6 +84,7 @@ function SettingsFields({
   onRestored,
 }: Props & { state: FormState; action: (formData: FormData) => void; pending: boolean; onRestored: () => void }) {
   const { theme, preferences } = settings;
+  const pack = getManifest(theme.pack);
   const { t, tl } = useI18n();
   // After a rejected save, show what was submitted, not what's saved: React resets
   // uncontrolled fields to their defaults when the action finishes.
@@ -117,7 +120,7 @@ function SettingsFields({
         action: {
           label: t("Undo"),
           onClick: async () => {
-            applyTheme(themeFrom(undoTo));
+            applyTheme(themeFrom(undoTo, theme.pack));
             if (await save(undoTo, null)) startTransition(onRestored);
           },
         },
@@ -133,7 +136,7 @@ function SettingsFields({
     setStatus({ kind: "saving" });
     // Next frame: a checkbox's own state (e.g. "use a custom accent") has re-rendered by then.
     requestAnimationFrame(() => {
-      if (form.current) applyTheme(themeFrom(new FormData(form.current)));
+      if (form.current) applyTheme(themeFrom(new FormData(form.current), theme.pack));
     });
     clearTimeout(timer.current);
     timer.current = setTimeout(() => {
@@ -160,44 +163,65 @@ function SettingsFields({
                 { value: "dark", label: t("Dark") },
               ]}
             />
-            <ChoiceGroup
-              name="preset"
-              legend={t("Colour")}
-              columns={5}
-              defaultValue={value("preset", theme.preset)}
-              options={PRESETS.map((p) => ({
-                value: p,
-                label: t(PRESET_LABELS[p]),
-                render: <PresetCard preset={p} label={t(PRESET_LABELS[p])} />,
-              }))}
-            />
-            <div className="flex flex-col gap-2">
-              <div className="flex items-center gap-2">
-                <input
-                  id="useAccent"
-                  name="useAccent"
-                  type="checkbox"
-                  checked={useAccent}
-                  onChange={(e) => setUseAccent(e.target.checked)}
-                  className="size-4 accent-primary"
-                />
-                <Label htmlFor="useAccent">{t("Use a custom accent colour")}</Label>
-              </div>
-              <div className="flex items-center gap-3 pl-6">
-                <input
-                  id="accent"
-                  name="accent"
-                  type="color"
-                  aria-label={t("Accent colour")}
-                  defaultValue={value("accent", theme.accent ?? DEFAULT_ACCENT_PICK)}
-                  disabled={!useAccent}
-                  className="h-9 w-14 cursor-pointer rounded-md border bg-transparent p-1 disabled:cursor-not-allowed disabled:opacity-50"
-                />
-                <p className="text-muted-foreground text-xs">
-                  {t("Replaces the colour above for buttons and highlights.")}
+            {pack.scheme !== "both" ? (
+              <p className="-mt-4 text-muted-foreground text-xs">
+                {pack.scheme === "dark"
+                  ? t("The {name} theme is always dark.", { name: t(pack.label) })
+                  : t("The {name} theme is always light.", { name: t(pack.label) })}
+              </p>
+            ) : null}
+            {pack.palette === "custom" ? (
+              <>
+                {/* The pack brings its own colours; keep the saved choices for when you switch back. */}
+                <input type="hidden" name="preset" value={value("preset", theme.preset)} />
+                {theme.accent ? <input type="hidden" name="useAccent" value="on" /> : null}
+                <input type="hidden" name="accent" value={value("accent", theme.accent ?? "")} />
+                <p className="text-muted-foreground text-sm">
+                  {t("The {name} theme brings its own colours.", { name: t(pack.label) })}
                 </p>
-              </div>
-            </div>
+              </>
+            ) : (
+              <>
+                <ChoiceGroup
+                  name="preset"
+                  legend={t("Colour")}
+                  columns={5}
+                  defaultValue={value("preset", theme.preset)}
+                  options={PRESETS.map((p) => ({
+                    value: p,
+                    label: t(PRESET_LABELS[p]),
+                    render: <PresetCard preset={p} label={t(PRESET_LABELS[p])} />,
+                  }))}
+                />
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <input
+                      id="useAccent"
+                      name="useAccent"
+                      type="checkbox"
+                      checked={useAccent}
+                      onChange={(e) => setUseAccent(e.target.checked)}
+                      className="size-4 accent-primary"
+                    />
+                    <Label htmlFor="useAccent">{t("Use a custom accent colour")}</Label>
+                  </div>
+                  <div className="flex items-center gap-3 pl-6">
+                    <input
+                      id="accent"
+                      name="accent"
+                      type="color"
+                      aria-label={t("Accent colour")}
+                      defaultValue={value("accent", theme.accent ?? DEFAULT_ACCENT_PICK)}
+                      disabled={!useAccent}
+                      className="h-9 w-14 cursor-pointer rounded-md border bg-transparent p-1 disabled:cursor-not-allowed disabled:opacity-50"
+                    />
+                    <p className="text-muted-foreground text-xs">
+                      {t("Replaces the colour above for buttons and highlights.")}
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="grid gap-2">
                 <Label htmlFor="font">{t("Font")}</Label>

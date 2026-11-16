@@ -38,7 +38,7 @@ export async function CourseActions({ course }: { course: Course }) {
         >
           <MoreHorizontal aria-hidden className="size-4" />
         </summary>
-        <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-1 rounded-xl border border-border-soft bg-popover p-1.5 text-popover-foreground shadow-raised sm:right-auto sm:left-0">
+        <div className="absolute right-0 z-20 mt-2 flex w-72 flex-col gap-1 panel rounded-xl p-1.5 text-popover-foreground sm:right-auto sm:left-0">
           <ActionForm action={setCourseArchived} fields={{ id: course.id, archive: String(!archived) }}>
             <SubmitButton variant="ghost" size="sm" className="w-full justify-start">
               {archived ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}

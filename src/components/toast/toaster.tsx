@@ -76,9 +76,10 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
 
   return (
     <li
+      data-slot="toast"
       className={cn(
-        "toast-in pointer-events-auto flex w-full max-w-md items-center gap-3 rounded-xl border border-border-soft bg-popover py-2.5 pr-2 pl-4 text-popover-foreground text-sm shadow-raised md:w-auto md:min-w-80",
-        toast.tone === "error" && "border-destructive/40",
+        "toast-in pointer-events-auto flex w-full max-w-md items-center gap-3 panel rounded-xl py-2.5 pr-2 pl-4 text-popover-foreground text-sm md:w-auto md:min-w-80",
+        toast.tone === "error" && "[--panel-border:color-mix(in_oklab,var(--destructive)_40%,transparent)]",
       )}
       onPointerEnter={() => setPaused(true)}
       onPointerLeave={() => setPaused(false)}

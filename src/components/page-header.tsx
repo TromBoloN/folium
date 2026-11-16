@@ -4,7 +4,7 @@ type Props = { title: string; description?: string; action?: React.ReactNode; ba
 
 export function PageHeader({ title, description, action, back }: Props) {
   return (
-    <header className="mb-6 flex flex-col gap-3">
+    <header data-slot="page-header" className="mb-6 flex flex-col gap-3">
       {back}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">

@@ -12,6 +12,7 @@ Where to look before you change something. One section per feature: its routes, 
 | Business rules (pure, tested) | `features/<name>/*.ts` that aren't queries/actions |
 | Shared UI | `components/ui/` (primitives), `components/form/` (form pieces), `components/` (shell, sheet, toasts) |
 | Theme tokens, utilities, motion | `app/globals.css` (+ `features/settings/theme.ts`) |
+| Theme packs (whole looks) | `features/themes/` — guide: [themes.md](themes.md) |
 | Dates and time zones | `lib/dates.ts`, `features/tasks/due.ts` |
 | Who's signed in | `requireUser()` in `features/auth/queries.ts`; routing in `lib/supabase/proxy.ts` |
 | Schema | `supabase/migrations/*.sql` → generated `types/database.ts` |
@@ -21,14 +22,18 @@ Where to look before you change something. One section per feature: its routes, 
 ## Shell and shared UI
 
 - `app/layout.tsx`: fonts, theme attributes on `<html>` from settings (`instant = false`), PWA metadata. `app/(app)/layout.tsx`: app shell + `@modal` slot.
-- `components/app-shell/`: `app-shell.tsx` (sidebar, main, bottom nav, providers), `app-nav.tsx` + `nav-items.ts` (Today, School, Money, Settings; School lights up for `SCHOOL_PATHS`), `section-tabs.tsx` (the shared tab bar for School and Money). `src/lib/sections.ts`: `SCHOOL_TABS`/`SCHOOL_PATHS`, `MONEY_TABS`, `isUnder` (one source for sidebar and tabs), `page-transition.tsx`, `use-page-path.ts` (the page under an open sheet).
+- `components/app-shell/`: `app-shell.tsx` (sidebar, main, bottom nav, providers), `app-nav.tsx` + `nav-items.ts` (Today, School, Money, Themes, Settings: five tabs on phones; School lights up for `SCHOOL_PATHS`), `section-tabs.tsx` (the shared tab bar for School and Money). `src/lib/sections.ts`: `SCHOOL_TABS`/`SCHOOL_PATHS`, `MONEY_TABS`, `isUnder` (one source for sidebar and tabs), `page-transition.tsx`, `use-page-path.ts` (the page under an open sheet).
 - `components/sheet.tsx`: `Sheet` (native `<dialog>`, side/bottom sheet), `useSheet()` (`close`, `setTint`), `SheetFormBridge`, `CancelButton`.
 - `components/toast/toaster.tsx`: `useToast()` with an optional action (Undo).
 - `components/form/`: `FormSection` + `MoreDetails`, `ChipGroup`, `Stepper`, `FormFooter`. `components/ui/field.tsx` (self-checking field), `ui/control.ts` (the shared control look), `ui/native-select.tsx` (+ the "Selects" block in `globals.css`).
 - `components/action-form.tsx`: one-button actions. `section-error-boundary.tsx`: per-widget errors. `empty-state.tsx`, `page-header.tsx`, `skeletons.tsx`.
-- Motion: `components/motion/` (ambient glow, `MotionRuntime` sets `data-hydrated`, spotlight), `lib/use-now.ts` (minute ticker).
+- Motion: `components/motion/` (`Ambient`: the fixed background the theme pack draws on, hosting `<ThemeEffects>`; `MotionRuntime` sets `data-hydrated` and `data-tab-hidden`, spotlight), `lib/use-now.ts` (minute ticker).
 - Translations: `lib/i18n/` (`core.ts`: `makeT`, `plural`, `translateLoose`; `server.ts`: `getI18n`/`getT`; `client.tsx`: `I18nProvider`, `useI18n`/`useT`, `<Tr>`, `<TrL>`; `rich.tsx`; `id/*.ts`: the Indonesian dictionary keyed by English text, `id/patterns.ts` for messages with values).
 - PWA: `app/manifest.ts`, `app/icon.tsx`, `app/apple-icon.tsx`, `lib/pwa/brand.tsx`, `public/sw.js` (offline page only), `components/pwa/`.
+
+## Themes — `features/themes/`
+
+Route `/themes` ("Available soon"; in development it also lists every pack with an Apply button). A theme is a **pack**: `packs/<id>/manifest.ts` + `packs/<id>/theme.css` (every selector under `[data-theme="<id>"]`) + optional `effects.tsx`. `registry.ts` (`THEMES`, `THEME_PACK_IDS` → the `theme.pack` setting, `getManifest`, `visibleThemes`), `manifest.ts` (types), `packs/index.css` (imported after `globals.css` in `app/layout.tsx`), `effects.tsx` (`<ThemeEffects>`, lazy per pack, off with motion off / reduced motion / Save-Data), `fonts.ts` (theme fonts, `preload: false`), `lint.ts` + `packs.test.ts` (scoping, keyframes, colours-in-tokens, contrast). `packs/default/` is today's look. Saving: `setThemePack` in `features/settings/actions.ts`. **Everything else (token contract, skinnable parts, mobile budget, recipes): [themes.md](themes.md).**
 
 ## Auth — `features/auth/`
 
@@ -36,7 +41,7 @@ Routes `/login`, `/signup`, `/forgot-password`, `/update-password`, `app/auth/co
 
 ## Settings — `features/settings/`
 
-Route `/settings`. `schema.ts` (theme + preferences, defaults, merge/diff, `SETTINGS_VERSION`), `theme.ts` (`themeAttributes`, `accentTokens`), `queries.ts` (`getSettings`, cached, never throws), `actions.ts` (`updateSettings`; `rememberCoursesView`), `components/settings-form.tsx` (applies instantly, saves after 500 ms, Undo). Preferences include time zone, week start, time format, grade scale, `coursesView`, `attendanceTarget`.
+Route `/settings`. `schema.ts` (theme incl. `pack` + preferences, defaults, merge/diff, `SETTINGS_VERSION`), `theme.ts` (`themeAttributes`, `accentTokens`), `queries.ts` (`getSettings`, cached, never throws), `actions.ts` (`updateSettings`; `rememberCoursesView`), `components/settings-form.tsx` (applies instantly, saves after 500 ms, Undo). Preferences include time zone, week start, time format, grade scale, `coursesView`, `attendanceTarget`.
 
 ## School (Courses, Tasks, Grades)
 

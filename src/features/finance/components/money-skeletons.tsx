@@ -48,7 +48,7 @@ export function PanelSkeleton({ label, rows }: { label: string; rows: number }) 
         <TrL text={label} />
       </span>
       <div className={`${bar} h-5 w-36`} />
-      <div className={`${bar} h-3 w-full rounded-full`} />
+      <div className={`${bar} h-3 w-full rounded-pill`} />
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
         <div key={i} className={`${bar} h-5 w-full`} />

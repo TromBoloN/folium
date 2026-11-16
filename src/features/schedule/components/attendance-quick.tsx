@@ -63,7 +63,7 @@ export function AttendanceQuick({
             disabled={pending}
             onClick={() => set(value)}
             className={cn(
-              "inline-flex h-9 items-center gap-1 rounded-full border px-2.5 font-medium text-xs transition-colors disabled:opacity-60",
+              "inline-flex h-9 items-center gap-1 rounded-pill border px-2.5 font-medium text-xs transition-colors disabled:opacity-60",
               on
                 ? value === "attended"
                   ? "border-primary bg-primary text-primary-foreground"

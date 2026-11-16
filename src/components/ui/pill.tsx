@@ -20,8 +20,9 @@ type Props = React.ComponentProps<"span"> & { tone?: PillTone; tint?: string };
 export function Pill({ tone = "neutral", tint, className, style, ...props }: Props) {
   return (
     <span
+      data-slot="pill"
       className={cn(
-        "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-2 py-0.5 font-medium text-xs tabular-nums [&_svg]:size-3.5 [&_svg]:shrink-0",
+        "inline-flex items-center gap-1 whitespace-nowrap rounded-pill px-2 py-0.5 font-medium text-xs tabular-nums [&_svg]:size-3.5 [&_svg]:shrink-0",
         TONES[tone],
         className,
       )}

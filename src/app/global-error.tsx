@@ -13,7 +13,14 @@ export default function GlobalError({ error, retry }: { error: Error & { digest?
   }, [error]);
 
   return (
-    <html lang="en" data-mode="system" data-preset="green" data-font="system" data-density="comfortable">
+    <html
+      lang="en"
+      data-theme="default"
+      data-mode="system"
+      data-preset="green"
+      data-font="system"
+      data-density="comfortable"
+    >
       <body>
         <main className="mx-auto flex min-h-svh max-w-md flex-col items-center justify-center gap-4 px-4 text-center">
           <h1 className="font-semibold text-xl">Folium couldn&apos;t load</h1>

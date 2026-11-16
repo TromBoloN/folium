@@ -6,6 +6,7 @@ import { SubmitButton } from "@/components/action-form";
 import { EmptyState } from "@/components/empty-state";
 import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { Button } from "@/components/ui/button";
+import { CONTROL, CONTROL_HEIGHT } from "@/components/ui/control";
 import { requireUser } from "@/features/auth/queries";
 import { deleteGoal, saveGoal } from "@/features/finance/actions/planning";
 import { PanelSkeleton } from "@/features/finance/components/money-skeletons";
@@ -34,8 +35,8 @@ export default function GoalsPage() {
   );
 }
 
-const input =
-  "h-10 rounded-md border border-border bg-surface-1 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30";
+// The shared control look (theme packs restyle it in one place), sized for an inline row.
+const input = cn(CONTROL, CONTROL_HEIGHT, "w-auto px-3");
 
 const STATUS: Record<string, MessageKey> = {
   done: "Reached",
@@ -100,7 +101,7 @@ async function Goals() {
                     {t("of {amount}", { amount: formatIdr(g.targetAmount) })}
                   </span>
                 </p>
-                <div aria-hidden className="h-2.5 overflow-hidden rounded-full bg-muted">
+                <div aria-hidden className="h-2.5 overflow-hidden rounded-pill bg-muted">
                   <span className="money-accent block h-full" style={{ width: `${pace.percent}%` }} />
                 </div>
                 <p className="text-muted-foreground text-sm">
@@ -177,7 +178,7 @@ async function Goals() {
                   inputMode="decimal"
                   required
                   placeholder={t("e.g. 8jt")}
-                  className={`${input} w-32`}
+                  className={cn(input, "w-32")}
                 />
               </div>
               <div className="grid gap-1.5">

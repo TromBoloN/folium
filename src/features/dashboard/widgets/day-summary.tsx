@@ -56,7 +56,7 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
           {[...past, ...cancelled].map((c) => (
             <li
               key={c.id}
-              className="inline-flex items-center gap-1.5 rounded-full bg-muted px-2 py-0.5 text-muted-foreground text-xs"
+              className="inline-flex items-center gap-1.5 rounded-pill bg-muted px-2 py-0.5 text-muted-foreground text-xs"
             >
               <span
                 aria-hidden

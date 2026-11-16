@@ -281,7 +281,7 @@ export function TransactionForm({
           {DEBT_CHOICES.map((k) => (
             <label
               key={k.value}
-              className="flex h-8 cursor-pointer select-none items-center rounded-full border border-border bg-surface-1 px-3 text-xs transition-colors duration-(--dur-fast) hover:border-foreground/25 has-checked:border-foreground/40 has-checked:bg-muted has-checked:font-medium has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30"
+              className="flex h-8 cursor-pointer select-none items-center rounded-pill border border-border bg-surface-1 px-3 text-xs transition-colors duration-(--dur-fast) hover:border-foreground/25 has-checked:border-foreground/40 has-checked:bg-muted has-checked:font-medium has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30"
             >
               <input
                 type="radio"
@@ -347,7 +347,7 @@ export function TransactionForm({
       <div data-kinds="transfer">
         <div className="flex flex-col gap-4">
           <div className="-my-2 flex justify-center">
-            <Button type="button" variant="outline" size="sm" onClick={swap} className="rounded-full">
+            <Button type="button" variant="outline" size="sm" onClick={swap} className="rounded-pill">
               <ArrowDownUp aria-hidden />
               {t("Swap")}
             </Button>
@@ -494,7 +494,7 @@ export function TransactionForm({
                 type="button"
                 variant="outline"
                 size="sm"
-                className="rounded-full"
+                className="rounded-pill"
                 aria-label={t("Set date to {day}", { day: d.label.toLowerCase() })}
                 onClick={() => {
                   if (dateRef.current) dateRef.current.value = d.date;

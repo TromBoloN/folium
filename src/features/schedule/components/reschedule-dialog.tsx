@@ -105,7 +105,7 @@ export function RescheduleDialog({
       onClick={(e) => {
         if (e.target === e.currentTarget) ref.current?.close();
       }}
-      className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded-tile border border-border-soft bg-popover p-0 text-popover-foreground shadow-raised backdrop:bg-foreground/35"
+      className="m-auto w-[min(26rem,calc(100vw-2rem))] panel rounded-tile p-0 text-popover-foreground backdrop:bg-foreground/35"
     >
       <form
         className="flex flex-col gap-4 p-5"

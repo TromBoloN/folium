@@ -1,0 +1,6 @@
+/*
+ * Every theme pack's stylesheet, loaded right after app/globals.css (see
+ * app/layout.tsx) so a pack's rules win over the base tokens. One line per
+ * pack, in the same order as THEMES in ../registry.ts. Guide: docs/themes.md.
+ */
+@import "./default/theme.css";

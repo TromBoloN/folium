@@ -30,3 +30,33 @@ export function toOklch(hex: string): { l: number; c: number; h: number } {
   const h = (Math.atan2(B, A) * 180) / Math.PI;
   return { l: L, c: Math.hypot(A, B), h: h < 0 ? h + 360 : h };
 }
+
+/** #rrggbb for an OKLCH colour (hue in degrees), clamped into sRGB. Used by the theme contrast checks. */
+export function oklchToHex(l: number, c: number, h: number): string {
+  const rad = (h * Math.PI) / 180;
+  const A = c * Math.cos(rad);
+  const B = c * Math.sin(rad);
+  const l_ = (l + 0.3963377774 * A + 0.2158037573 * B) ** 3;
+  const m_ = (l - 0.1055613458 * A - 0.0638541728 * B) ** 3;
+  const s_ = (l - 0.0894841775 * A - 1.291485548 * B) ** 3;
+  const linear = [
+    4.0767416621 * l_ - 3.3077115913 * m_ + 0.2309699292 * s_,
+    -1.2684380046 * l_ + 2.6097574011 * m_ - 0.3413193965 * s_,
+    -0.0041960863 * l_ - 0.7034186147 * m_ + 1.707614701 * s_,
+  ];
+  return `#${linear
+    .map((v) => {
+      const x = Math.min(1, Math.max(0, v));
+      const srgb = x <= 0.0031308 ? 12.92 * x : 1.055 * x ** (1 / 2.4) - 0.055;
+      return Math.round(srgb * 255)
+        .toString(16)
+        .padStart(2, "0");
+    })
+    .join("")}`;
+}
+
+/** WCAG contrast ratio between two #rrggbb colours (1–21). */
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [relativeLuminance(a), relativeLuminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}

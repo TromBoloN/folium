@@ -41,6 +41,11 @@ describe("mergeOverDefaults", () => {
     expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { motion: "wild" }).motion).toBe("full");
   });
 
+  it("falls back to the default pack when a stored pack no longer exists, keeping the rest", () => {
+    const merged = mergeOverDefaults(themeSchema, DEFAULT_THEME, { pack: "removed-pack", mode: "dark" });
+    expect(merged).toEqual({ ...DEFAULT_THEME, mode: "dark" });
+  });
+
   it("ignores unknown keys", () => {
     expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { removedSetting: true })).toEqual(DEFAULT_THEME);
   });

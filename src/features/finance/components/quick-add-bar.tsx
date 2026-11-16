@@ -214,7 +214,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
               key={item.id}
               type="button"
               onClick={() => choose(picking, item, options)}
-              className="h-9 rounded-full border border-border bg-surface-1 px-3 text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
+              className="h-9 rounded-pill border border-border bg-surface-1 px-3 text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
             >
               {item.name}
             </button>
@@ -244,7 +244,7 @@ export function QuickExamples() {
               window.dispatchEvent(new CustomEvent(QUICK_ADD_PREFILL, { detail: line }));
               window.scrollTo({ top: 0, behavior: motionLevel() === "full" ? "smooth" : "auto" });
             }}
-            className="inline-flex h-9 items-center rounded-full border border-border border-dashed bg-surface-1 px-3 font-mono text-xs transition-colors duration-(--dur-fast) hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+            className="inline-flex h-9 items-center rounded-pill border border-border border-dashed bg-surface-1 px-3 font-mono text-xs transition-colors duration-(--dur-fast) hover:border-foreground/30 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
           >
             {line}
           </a>

@@ -12,6 +12,7 @@ import {
   GraduationCap,
   ListChecks,
   type LucideIcon,
+  Palette,
   Plus,
   Search,
   Settings,
@@ -57,6 +58,7 @@ const COMMANDS: { label: MessageKey; href: string; icon: LucideIcon; group: Mess
   { label: "This week by day", href: "/courses?view=day", icon: CalendarDays, group: "Go to" },
   { label: "Week timetable", href: "/courses?view=week", icon: CalendarDays, group: "Go to" },
   { label: "School: Grades", href: "/grades", icon: GraduationCap, group: "Go to" },
+  { label: "Themes", href: "/themes", icon: Palette, group: "Go to" },
   { label: "Settings", href: "/settings", icon: Settings, group: "Go to" },
   { label: "New task with details", href: "/tasks/new", icon: Plus, group: "Create" },
   { label: "New course", href: "/courses/new", icon: BookOpen, group: "Create" },
@@ -263,7 +265,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       aria-label={
         mode === "add" ? tr("Add a task") : mode === "money" ? tr("Add a transaction") : tr("Search and commands")
       }
-      className="toast-in mx-auto mt-[12vh] mb-auto w-[min(40rem,calc(100vw-2rem))] overflow-hidden rounded-tile border border-border-soft bg-popover p-0 text-popover-foreground shadow-raised backdrop:bg-foreground/35"
+      className="toast-in mx-auto mt-[12vh] mb-auto w-[min(40rem,calc(100vw-2rem))] overflow-hidden panel rounded-tile p-0 text-popover-foreground backdrop:bg-foreground/35"
       onClick={(e) => {
         if (e.target === e.currentTarget) close(); // a click on the backdrop
       }}

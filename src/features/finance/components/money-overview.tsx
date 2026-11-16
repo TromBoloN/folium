@@ -225,7 +225,7 @@ export async function MonthOverview({ summary }: { summary: MonthSummary }) {
           </dd>
         </div>
       </dl>
-      <div aria-hidden className="flex h-2 overflow-hidden rounded-full bg-muted">
+      <div aria-hidden className="flex h-2 overflow-hidden rounded-pill bg-muted">
         {total > 0n ? (
           <>
             <span className="h-full bg-money-in" style={{ width: `${inShare}%` }} />

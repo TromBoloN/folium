@@ -6,6 +6,7 @@ import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
+import { CONTROL, CONTROL_HEIGHT } from "@/components/ui/control";
 import { requireUser } from "@/features/auth/queries";
 import { deleteAllFinanceData, undoImport } from "@/features/finance/actions/data";
 import { ImportForm } from "@/features/finance/components/import-form";
@@ -14,6 +15,7 @@ import { ensureFinanceDefaults, lastUsedAccountId, listAccounts } from "@/featur
 import { listImportBatches } from "@/features/finance/queries/imports";
 import { formatDate } from "@/lib/dates";
 import { getI18n, getT } from "@/lib/i18n/server";
+import { cn } from "@/lib/utils";
 
 export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT())("Import and export") };
@@ -117,7 +119,7 @@ async function Content() {
               id="confirm"
               name="confirm"
               autoComplete="off"
-              className="h-10 rounded-md border border-border bg-surface-1 px-3 text-sm outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+              className={cn(CONTROL, CONTROL_HEIGHT, "w-auto px-3")}
             />
           </div>
           <SubmitButton size="sm" variant="destructive">

@@ -23,7 +23,7 @@ export function ViewSwitch({ current, week }: { current: CoursesView; week?: str
   return (
     <nav
       aria-label={t("View")}
-      className="flex w-fit max-w-full gap-1 rounded-full border border-border-soft bg-surface-1 p-1 shadow-tile"
+      className="flex w-fit max-w-full gap-1 rounded-pill border border-border-soft bg-surface-1 p-1 shadow-tile"
     >
       {VIEWS.map((v) => {
         const active = v.value === current;
@@ -38,7 +38,7 @@ export function ViewSwitch({ current, week }: { current: CoursesView; week?: str
               if (!active) void rememberCoursesView(v.value);
             }}
             className={cn(
-              "inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 font-medium text-sm transition-colors duration-(--dur-fast)",
+              "inline-flex items-center gap-1.5 whitespace-nowrap rounded-pill px-3.5 py-1.5 font-medium text-sm transition-colors duration-(--dur-fast)",
               active ? "bg-foreground text-background" : "text-muted-foreground hover:bg-accent hover:text-foreground",
             )}
           >

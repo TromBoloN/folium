@@ -198,7 +198,7 @@ function DatePicker({ task, onClose }: { task: MenuTask; onClose: () => void }) 
       }}
       onClose={onClose}
       aria-labelledby={`pick-${task.id}`}
-      className="m-auto w-[min(22rem,calc(100vw-2rem))] rounded-tile border border-border-soft bg-popover p-5 text-popover-foreground shadow-raised backdrop:bg-foreground/30"
+      className="m-auto w-[min(22rem,calc(100vw-2rem))] panel rounded-tile p-5 text-popover-foreground backdrop:bg-foreground/30"
     >
       <form
         method="dialog"

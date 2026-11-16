@@ -11,6 +11,7 @@ import { schedule } from "./schedule";
 import { search } from "./search";
 import { settings } from "./settings";
 import { tasks } from "./tasks";
+import { themes } from "./themes";
 import { today } from "./today";
 
 /** Indonesian, keyed by the English text. Split by area; later files win on a repeated key. */
@@ -29,5 +30,6 @@ export const id = {
   ...search,
   ...settings,
   ...tasks,
+  ...themes,
   ...today,
 };

@@ -36,7 +36,8 @@ usefulness, fast workflows, customizable theme, preferences and widgets.
 - **UI:** mobile-first, with empty, loading and error states. Theme tokens only; no
   hardcoded colours, radii or fonts. Animate only transform and opacity, and honour the
   motion setting and `prefers-reduced-motion`. Settings are versioned JSON merged over
-  defaults on read.
+  defaults on read. Themes are packs in `src/features/themes/packs/`; follow `docs/themes.md`
+  (cards use `.tile`, floating surfaces `.panel`, pills `rounded-pill`, circles `rounded-full`).
 - **Time:** store UTC. Interpret and display in the user's `preferences.timeZone`
   (default Asia/Makassar). Never hardcode a zone.
 - **Protected:** never hand-edit `src/types/database.ts`. Leave the

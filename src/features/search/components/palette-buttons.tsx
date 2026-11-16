@@ -30,6 +30,7 @@ export function AddFab() {
       type="button"
       onClick={() => open("add")}
       aria-label={t("Add a task")}
+      data-slot="fab"
       className="fixed right-4 bottom-[calc(5rem+env(safe-area-inset-bottom))] z-40 flex size-14 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-raised transition-transform duration-(--dur-fast) active:scale-95 md:hidden"
     >
       <Plus aria-hidden className="size-6" />

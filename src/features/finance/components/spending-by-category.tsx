@@ -41,7 +41,7 @@ export async function SpendingByCategory({ slices, total, month }: { slices: Sli
         </p>
       ) : (
         <>
-          <div aria-hidden className="flex h-3 gap-0.5 overflow-hidden rounded-full">
+          <div aria-hidden className="flex h-3 gap-0.5 overflow-hidden rounded-pill">
             {slices.map((s) =>
               s.percent > 0 ? (
                 <span

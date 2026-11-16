@@ -77,7 +77,7 @@ export async function WeekWidget() {
                     <span
                       // biome-ignore lint/suspicious/noArrayIndexKey: identical bars
                       key={k}
-                      className="grow-y w-1.5 rounded-full bg-current"
+                      className="grow-y w-1.5 rounded-pill bg-current"
                       style={{ height: `${10 + k * 3}px`, "--i": i } as React.CSSProperties}
                     />
                   ))}
@@ -93,7 +93,7 @@ export async function WeekWidget() {
           {count(t, totalClasses, "{n} class", "{n} classes")}
         </span>
         <span className="inline-flex items-center gap-1.5">
-          <span aria-hidden className="h-2.5 w-1.5 rounded-full bg-foreground" />
+          <span aria-hidden className="h-2.5 w-1.5 rounded-pill bg-foreground" />
           {count(t, totalDeadlines, "{n} deadline", "{n} deadlines")}
         </span>
         {busiest ? (

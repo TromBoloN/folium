@@ -99,7 +99,7 @@ export function QuickMoneyPreview({
                       ? t("Amount missing: type one")
                       : t("Change {name}", { name: `${tl(chip.label)}${state(chip)}` })
                   }
-                  className="rounded-full transition-transform duration-(--dur-fast) focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
+                  className="rounded-pill transition-transform duration-(--dur-fast) focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
                 >
                   {pill}
                 </button>

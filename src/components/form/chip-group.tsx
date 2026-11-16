@@ -66,7 +66,7 @@ export function ChipGroup({
             key={o.value}
             title={o.title}
             className={cn(
-              "flex cursor-pointer select-none items-center justify-center rounded-full border border-border bg-surface-1 font-medium text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 has-checked:border-primary has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30",
+              "flex cursor-pointer select-none items-center justify-center rounded-pill border border-border bg-surface-1 font-medium text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 has-checked:border-primary has-checked:bg-primary has-checked:text-primary-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30",
               compact ? "h-11 min-w-11 px-0 md:h-10 md:min-w-10" : "h-11 px-4 md:h-9",
             )}
           >

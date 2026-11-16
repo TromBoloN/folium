@@ -26,6 +26,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Theme and motion**
 
+- [2026-11-17: Themes are packs: a manifest plus scoped CSS on `data-theme`, effects lazy-loaded](#2026-11-17-themes-are-packs-a-manifest-plus-scoped-css-on-data-theme-effects-lazy-loaded)
 - [2026-11-16: Translations are gettext-style, keyed by the English text](#2026-11-16-translations-are-gettext-style-keyed-by-the-english-text)
 - [2026-11-16: A custom accent is adjusted per mode](#2026-11-16-a-custom-accent-is-adjusted-per-mode)
 - [2026-11-15: Visual redesign uses CSS and View Transitions, no animation library](#2026-11-15-visual-redesign-uses-css-and-view-transitions-no-animation-library)
@@ -40,6 +41,16 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 - [2026-11-16: Forms share primitives and only enhance a real form](#2026-11-16-forms-share-primitives-and-only-enhance-a-real-form)
 - [2026-11-15: Settings apply instantly; the action is called directly](#2026-11-15-settings-apply-instantly-the-action-is-called-directly)
 - [2026-11-15: Forms echo submitted values back on error](#2026-11-15-forms-echo-submitted-values-back-on-error)
+
+## 2026-11-17: Themes are packs: a manifest plus scoped CSS on `data-theme`, effects lazy-loaded
+
+**Status.** Accepted (foundation only; no bold packs ship yet, and /themes shows "Available soon").
+
+**Decision.** A theme is a *pack*: a folder in `src/features/themes/packs/<id>/` with a manifest (`manifest.ts`: name, `scheme` both/dark/light, `palette` preset/custom, browser chrome colours, optional lazy `effects`) and one stylesheet (`theme.css`) whose every selector starts with `[data-theme="<id>"]`. The `theme.pack` setting puts `data-theme` on `<html>` next to the existing `data-mode`, `data-preset` and the other attributes, from the server render. Packs restyle the app through a documented token contract (palette, `--tile-*`, `--panel-*`, radii, shadows, fonts, motion, `--app-bg`) and a short list of skinnable parts (`.tile`, `.panel`, `.ambient`, `data-slot` hooks). The old ambient glow is now the `default` pack. Pack stylesheets load right after `globals.css` (imported in the root layout), so they win by order. A Vitest linter (`features/themes/lint.ts`) enforces scoping, `<id>-` keyframe names, transform/opacity-only keyframes, colours only in tokens, and 4.5:1 contrast for custom palettes. The full guide is `docs/themes.md`.
+
+**Why.** Opera GX-style themes change cards, backgrounds, motion and fonts, not just a hue. Putting everything a theme touches behind tokens and a few stable hooks makes a new theme one folder, with no component edits, and keeps the "same app underneath" rule enforceable. Shipping all pack CSS in the main stylesheet avoids a flash of the default look. Effects code is the only heavy part, so it's loaded per pack, and only when motion is allowed.
+
+**Cost.** Every pack's CSS ships to every user (a few KB each; images in `url()` only download when matched). Packs can still write broad selectors inside their scope, so a careless pack can change layout; the guide forbids it, but only review catches it. `rounded-full` now means a true circle and `rounded-pill` a pill shape; new code has to pick the right one. The bottom nav has five tabs.
 
 ## 2026-11-16: Translations are gettext-style, keyed by the English text
 

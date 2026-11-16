@@ -15,6 +15,7 @@ import {
   resolveSettings,
   SETTINGS_VERSION,
   settingsFormSchema,
+  themePackFormSchema,
 } from "./schema";
 
 type JsonObject = { [key: string]: Json | undefined };
@@ -48,13 +49,14 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
   if (!auth.user) return { ok: false, error: "Your session has ended. Sign in again.", values };
 
   const { data: stored } = await supabase.from("user_settings").select("version, theme, preferences").maybeSingle();
-  const { coursesView } = resolveSettings(stored).preferences;
+  const current = resolveSettings(stored);
+  const { coursesView } = current.preferences;
 
   const { error } = await supabase
     .from("user_settings")
     .update({
       version: SETTINGS_VERSION,
-      theme: diffFromDefaults(parsed.data.theme, DEFAULT_THEME) as JsonObject,
+      theme: diffFromDefaults({ ...parsed.data.theme, pack: current.theme.pack }, DEFAULT_THEME) as JsonObject,
       preferences: diffFromDefaults({ ...parsed.data.preferences, coursesView }, DEFAULT_PREFERENCES) as JsonObject,
     })
     .eq("user_id", auth.user.id);
@@ -67,6 +69,30 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
   // The theme lives on <html> in the root layout, so re-render from the top.
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/** Switch the theme pack (the Themes page). Keeps every other theme setting. Works without JavaScript. */
+export async function setThemePack(_prev: FormState, formData: FormData): Promise<FormState> {
+  const parsed = themePackFormSchema.safeParse({ pack: formData.get("pack") });
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, error: "Your session has ended. Sign in again." };
+
+  const { data: stored } = await supabase.from("user_settings").select("version, theme, preferences").maybeSingle();
+  const theme = { ...resolveSettings(stored).theme, pack: parsed.data.pack };
+  const { error } = await supabase
+    .from("user_settings")
+    .update({ version: SETTINGS_VERSION, theme: diffFromDefaults(theme, DEFAULT_THEME) as JsonObject })
+    .eq("user_id", auth.user.id);
+  if (error) {
+    console.error("[settings] theme pack save failed", error.code, error.message);
+    return { ok: false, error: "Couldn't change the theme. Please try again." };
+  }
+  // The pack lives on <html> in the root layout.
+  revalidatePath("/", "layout");
+  return { ok: true, result: { message: "Theme applied" } };
 }
 
 /** Change the display name (profiles.display_name). Blank clears it. */

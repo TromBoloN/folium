@@ -97,7 +97,7 @@ export function IconBadge({
     <span
       aria-hidden
       className={cn(
-        "money-badge flex shrink-0 items-center justify-center rounded-full",
+        "money-badge flex shrink-0 items-center justify-center rounded-pill",
         size === "sm" && "size-7 [&_svg]:size-3.5",
         size === "md" && "size-9 [&_svg]:size-4",
         size === "lg" && "size-11 [&_svg]:size-5",

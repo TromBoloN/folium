@@ -67,7 +67,8 @@ export function Sheet({ title, children }: { title: string; children: React.Reac
         onClick={(e) => {
           if (e.target === e.currentTarget) dialog.current?.close(); // backdrop
         }}
-        className="sheet m-0 mt-auto w-full max-w-none overflow-hidden rounded-t-tile border border-border-soft bg-popover p-0 text-popover-foreground shadow-raised backdrop:bg-foreground/35 md:mt-0 md:mr-0 md:ml-auto md:h-dvh md:max-h-dvh md:w-[min(38rem,100vw)] md:rounded-none md:rounded-l-tile"
+        data-slot="sheet"
+        className="sheet m-0 mt-auto w-full max-w-none overflow-hidden rounded-t-tile panel p-0 text-popover-foreground backdrop:bg-foreground/35 md:mt-0 md:mr-0 md:ml-auto md:h-dvh md:max-h-dvh md:w-[min(38rem,100vw)] md:rounded-none md:rounded-l-tile"
       >
         <div className="flex max-h-[92dvh] flex-col md:h-full md:max-h-none">
           <header

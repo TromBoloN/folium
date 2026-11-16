@@ -50,7 +50,7 @@ export function BreakForm({ prefill }: { prefill: { startsOn: string; endsOn: st
                 onClick={() => {
                   if (labelRef.current) labelRef.current.value = l;
                 }}
-                className="h-9 rounded-full border border-border bg-surface-1 px-3 text-sm transition-colors hover:border-foreground/25"
+                className="h-9 rounded-pill border border-border bg-surface-1 px-3 text-sm transition-colors hover:border-foreground/25"
               >
                 {l}
               </button>

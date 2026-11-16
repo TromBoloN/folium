@@ -122,11 +122,11 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
                   ) : slot.chips.length > 0 && !isNow && !isNext ? (
                     <ChangeChip chip={slot.chips[0]} compact />
                   ) : isNow ? (
-                    <span className="shrink-0 rounded-full bg-foreground px-2 py-0.5 font-medium text-background text-xs">
+                    <span className="shrink-0 rounded-pill bg-foreground px-2 py-0.5 font-medium text-background text-xs">
                       {t("Now")}
                     </span>
                   ) : isNext ? (
-                    <span className="shrink-0 rounded-full border border-foreground/40 px-2 py-0.5 font-medium text-xs">
+                    <span className="shrink-0 rounded-pill border border-foreground/40 px-2 py-0.5 font-medium text-xs">
                       {t("Next")}
                     </span>
                   ) : null}

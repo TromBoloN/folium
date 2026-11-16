@@ -18,6 +18,11 @@
  * nested element (the settings preview, preset cards) can show another preset
  * or mode: custom properties built from var(--hue) are resolved where they're
  * declared, so they have to be re-declared under the nested --hue.
+ *
+ * Theme packs (src/features/themes/packs/<id>/theme.css, data-theme on <html>)
+ * override these tokens and restyle the parts below. They load after this file
+ * (see app/layout.tsx), so a pack's [data-theme="x"] rule wins over the base.
+ * The full token contract and the list of skinnable parts: docs/themes.md.
  */
 
 :root {
@@ -26,6 +31,9 @@
   --chroma: 0.13;
 
   --radius: 0.625rem;
+  /* Shape tokens a pack may change. Pills and chips use --pill-radius; true circles stay rounded-full. */
+  --tile-radius: 1rem;
+  --pill-radius: 9999px;
 
   color-scheme: light dark;
 }
@@ -97,6 +105,31 @@
   --glow-b: light-dark(oklch(0.88 0.07 calc(var(--hue) + 50) / 0.35), oklch(0.5 0.1 calc(var(--hue) + 40) / 0.16));
   --grain-opacity: 0.035;
 
+  /* The page behind everything (body). A pack may use a gradient here; the ambient layer sits on top. */
+  --app-bg: var(--background);
+
+  /* Cards (.tile): every bento card, form card and list card reads these. */
+  --tile-bg: var(--surface-1);
+  --tile-border: var(--border-soft);
+  --tile-border-width: 1px;
+  --tile-shadow: var(--shadow-tile);
+  /* clip-path for shaped cards (cut corners). Clips the shadow and the spotlight too. */
+  --tile-clip: none;
+  /* How strongly a course colour tints a card (.tile-tinted): background, border. */
+  --tint-surface: 13%;
+  --tint-border: 28%;
+
+  /* Floating surfaces (.panel): sheets, menus, toasts, select popups. */
+  --panel-bg: var(--popover);
+  --panel-border: var(--border-soft);
+  --panel-shadow: var(--shadow-raised);
+
+  /* Small shadows behind Tailwind's shadow-xs/sm/md/lg (buttons, controls). Same values as Tailwind's defaults. */
+  --elevation-xs: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --elevation-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+  --elevation-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --elevation-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+
   /* Intensity scale for load shading (week strip): 0 = surface, 4 = strong accent tint. */
   --load-1: color-mix(in oklab, var(--primary) 9%, var(--surface-1));
   --load-2: color-mix(in oklab, var(--primary) 17%, var(--surface-1));
@@ -108,6 +141,7 @@
   --font-app: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
   /* Serif for page titles, the greeting and big numerals. */
   --font-display-stack: var(--font-fraunces), ui-serif, Georgia, "Times New Roman", serif;
+  --font-mono-stack: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   /* Motion */
   --dur-fast: 150ms;
@@ -225,17 +259,27 @@
   --color-surface-1: var(--surface-1);
   --color-surface-2: var(--surface-2);
 
+  /* Every radius follows --radius (values match Tailwind's at the default 0.625rem; calc clamps at 0). */
+  --radius-xs: calc(var(--radius) - 8px);
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
-  --radius-tile: 1rem;
+  --radius-2xl: calc(var(--radius) + 6px);
+  --radius-3xl: calc(var(--radius) + 14px);
+  --radius-tile: var(--tile-radius);
+  --radius-pill: var(--pill-radius);
 
   --shadow-tile: var(--shadow-tile);
   --shadow-raised: var(--shadow-raised);
+  --shadow-xs: var(--elevation-xs);
+  --shadow-sm: var(--elevation-sm);
+  --shadow-md: var(--elevation-md);
+  --shadow-lg: var(--elevation-lg);
 
   --font-sans: var(--font-app);
   --font-display: var(--font-display-stack);
+  --font-mono: var(--font-mono-stack);
 
   /* Body copy at 15px; metadata (text-xs) stays at 12px. */
   --text-sm: 0.9375rem;
@@ -252,7 +296,8 @@
     -webkit-tap-highlight-color: transparent;
   }
   body {
-    @apply bg-background font-sans text-foreground antialiased;
+    @apply font-sans text-foreground antialiased;
+    background: var(--app-bg);
     font-feature-settings: "cv11", "ss01";
   }
 }
@@ -266,18 +311,30 @@
  * Tiles
  * ------------------------------------------------------------------------- */
 
+/*
+ * The card. Pseudo-elements: ::before belongs to the theme pack (decoration:
+ * corner marks, texture, inner glow); ::after belongs to the spotlight.
+ */
 @utility tile {
   position: relative;
-  border-radius: var(--radius-tile);
-  border: 1px solid var(--border-soft);
-  background: var(--surface-1);
-  box-shadow: var(--shadow-tile);
+  border-radius: var(--tile-radius);
+  border: var(--tile-border-width) solid var(--tile-border);
+  background: var(--tile-bg);
+  box-shadow: var(--tile-shadow);
+  clip-path: var(--tile-clip);
 }
 
 /* A tile tinted with a course colour (set --tint on the element). */
 @utility tile-tinted {
-  background: color-mix(in oklab, var(--tint) 13%, var(--surface-1));
-  border-color: color-mix(in oklab, var(--tint) 28%, var(--border-soft));
+  background: color-mix(in oklab, var(--tint) var(--tint-surface), var(--surface-1));
+  border-color: color-mix(in oklab, var(--tint) var(--tint-border), var(--tile-border));
+}
+
+/* A floating surface: sheets, menus, toasts, select popups. Radius stays with the component. */
+@utility panel {
+  border: 1px solid var(--panel-border);
+  background: var(--panel-bg);
+  box-shadow: var(--panel-shadow);
 }
 
 /*
@@ -339,8 +396,11 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Ambient background: one fixed element, two slow-drifting accent glows + grain.
- * The drift pauses while the tab is hidden (MotionRuntime sets data-tab-hidden).
+ * Ambient background: one fixed element behind every page. Its look belongs to
+ * the theme pack: ::before = the scene (glows, gradients, images), ::after = the
+ * texture (grain, scanlines, vignette), plus an optional effects component inside.
+ * Looping animations pause while the tab is hidden (MotionRuntime sets
+ * data-tab-hidden) and under subtle motion; "off" and reduced motion stop them.
  * ------------------------------------------------------------------------- */
 
 .ambient {
@@ -351,36 +411,24 @@
   pointer-events: none;
   contain: strict;
 }
-.ambient::before {
-  content: "";
-  position: absolute;
-  inset: -20%;
-  background:
-    radial-gradient(38% 32% at 22% 12%, var(--glow-a), transparent 72%),
-    radial-gradient(34% 40% at 86% 78%, var(--glow-b), transparent 72%);
-  animation: ambient-drift 52s var(--ease-in-out) infinite alternate;
-  will-change: transform;
-}
+.ambient::before,
 .ambient::after {
   content: "";
   position: absolute;
-  inset: 0;
-  background: var(--foreground);
-  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  opacity: var(--grain-opacity);
-}
-[data-tab-hidden] .ambient::before,
-[data-motion="subtle"] .ambient::before {
-  animation-play-state: paused;
+  pointer-events: none;
 }
 
-@keyframes ambient-drift {
-  from {
-    transform: translate3d(-4%, -3%, 0) rotate(0deg);
-  }
-  to {
-    transform: translate3d(5%, 4%, 0) rotate(7deg);
-  }
+/* Add `loop` to any element (or pack effect) with an infinite animation. The theme's
+   decoration layer on cards (.tile::before) pauses the same way. */
+[data-tab-hidden] .ambient::before,
+[data-tab-hidden] .ambient::after,
+[data-tab-hidden] .tile::before,
+[data-tab-hidden] .loop,
+[data-motion="subtle"] .ambient::before,
+[data-motion="subtle"] .ambient::after,
+[data-motion="subtle"] .tile::before,
+[data-motion="subtle"] .loop {
+  animation-play-state: paused;
 }
 
 /* ---------------------------------------------------------------------------
@@ -591,11 +639,11 @@
     padding: 0.25rem;
     max-height: min(20rem, 60dvh);
     overflow-y: auto;
-    border: 1px solid var(--border-soft);
+    border: 1px solid var(--panel-border);
     border-radius: var(--radius-xl);
-    background-color: var(--popover);
+    background: var(--panel-bg);
     color: var(--popover-foreground);
-    box-shadow: var(--shadow-raised);
+    box-shadow: var(--panel-shadow);
     scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
   }

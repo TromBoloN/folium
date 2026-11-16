@@ -105,7 +105,7 @@ async function Recurring() {
             <li key={tpl.key}>
               <Link
                 href={`/money/recurring/new?template=${tpl.key}`}
-                className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface-1 px-3 text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
+                className="inline-flex h-9 items-center gap-1.5 rounded-pill border border-border bg-surface-1 px-3 text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
               >
                 <Plus aria-hidden className="size-3.5" />
                 {t(tpl.label)}

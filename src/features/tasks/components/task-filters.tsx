@@ -34,7 +34,7 @@ export function TaskFilters({ current, courses }: { current: Filters; courses: C
     <div className="flex flex-col gap-3">
       <nav
         aria-label={t("Due")}
-        className="flex w-fit max-w-full flex-wrap gap-1 rounded-full border border-border-soft bg-surface-1 p-1 shadow-tile xl:grid xl:w-full xl:grid-cols-2 xl:rounded-2xl"
+        className="flex w-fit max-w-full flex-wrap gap-1 rounded-pill border border-border-soft bg-surface-1 p-1 shadow-tile xl:grid xl:w-full xl:grid-cols-2 xl:rounded-2xl"
       >
         {DUE.map((d) => {
           const active = current.due === d.value;
@@ -44,7 +44,7 @@ export function TaskFilters({ current, courses }: { current: Filters; courses: C
               href={href(current, { due: d.value })}
               aria-current={active ? "page" : undefined}
               className={cn(
-                "whitespace-nowrap rounded-full px-3.5 py-1.5 text-center font-medium text-sm transition-colors duration-(--dur-fast) xl:px-2",
+                "whitespace-nowrap rounded-pill px-3.5 py-1.5 text-center font-medium text-sm transition-colors duration-(--dur-fast) xl:px-2",
                 active
                   ? "bg-foreground text-background"
                   : "text-muted-foreground hover:bg-accent hover:text-foreground",

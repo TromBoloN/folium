@@ -118,7 +118,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
               onClick={() => {
                 if (dateRef.current) dateRef.current.value = date;
               }}
-              className="h-9 rounded-full border border-border px-3 text-sm transition-colors hover:border-foreground/25 hover:bg-accent"
+              className="h-9 rounded-pill border border-border px-3 text-sm transition-colors hover:border-foreground/25 hover:bg-accent"
             >
               {label}
             </button>
