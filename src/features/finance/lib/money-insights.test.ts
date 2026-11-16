@@ -238,3 +238,14 @@ describe("months", () => {
     expect(resolveMonth(["2026-10"], "2026-11")).toBe("2026-11");
   });
 });
+
+describe("filtersHref", () => {
+  it("keeps set filters in a fixed order and drops empty ones", async () => {
+    const { filtersHref } = await import("./filters-href");
+    expect(filtersHref({})).toBe("/money/transactions");
+    expect(filtersHref({ month: "2026-11", q: "kopi" })).toBe("/money/transactions?q=kopi&month=2026-11");
+    expect(filtersHref({ kind: "expense", month: "2026-11" }, { month: undefined })).toBe(
+      "/money/transactions?kind=expense",
+    );
+  });
+});

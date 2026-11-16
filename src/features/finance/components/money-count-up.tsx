@@ -38,7 +38,10 @@ export function MoneyCountUp({ amount, durationMs = 700 }: { amount: string; dur
     frame = requestAnimationFrame(step);
     return () => {
       cancelAnimationFrame(frame);
-      node.nodeValue = formatIdr(target);
+      // Restore what React last rendered (the sr-only twin), never this effect's own amount:
+      // when the amount changes (e.g. after adding a transaction), React writes the new text
+      // before this cleanup runs, and writing the old one back would leave a stale balance.
+      node.nodeValue = ref.current?.nextSibling?.textContent ?? node.nodeValue;
     };
   }, [amount, durationMs]);
 

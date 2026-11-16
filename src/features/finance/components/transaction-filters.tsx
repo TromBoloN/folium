@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { shiftMonth } from "../lib/compare-months";
+import { filtersHref } from "../lib/filters-href";
 import type { TransactionFilters as Filters } from "../schemas";
 import { KIND_LABELS, TRANSACTION_KINDS } from "../schemas";
 
@@ -15,18 +16,6 @@ type Option = { id: string; name: string; archived?: boolean };
 type CategoryOption = Option & { kind: "expense" | "income"; parentId: string | null };
 
 const BASE = "/money/transactions";
-
-/** A query string from filters, leaving out empty ones (and the page size: a new filter starts at the top). */
-export function filtersHref(filters: Filters, change: Partial<Record<keyof Filters, string | undefined>> = {}) {
-  const merged: Record<string, string | undefined> = { ...filters, ...change };
-  const params = new URLSearchParams();
-  for (const key of ["q", "account", "category", "kind", "month"] as const) {
-    const v = merged[key];
-    if (v) params.set(key, v);
-  }
-  const qs = params.toString();
-  return qs ? `${BASE}?${qs}` : BASE;
-}
 
 const pill =
   "h-9 rounded-full border border-border bg-surface-1 pl-3 pr-8 text-sm font-medium transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 data-[active=true]:border-primary data-[active=true]:bg-accent data-[active=true]:text-accent-foreground";

@@ -9,8 +9,9 @@ import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { ListRowsSkeleton } from "@/features/finance/components/money-skeletons";
-import { filtersHref, TransactionFilters } from "@/features/finance/components/transaction-filters";
+import { TransactionFilters } from "@/features/finance/components/transaction-filters";
 import { TransactionList } from "@/features/finance/components/transaction-list";
+import { filtersHref } from "@/features/finance/lib/filters-href";
 import { formatIdr } from "@/features/finance/lib/format-idr";
 import { localDateFor } from "@/features/finance/lib/local-date";
 import {

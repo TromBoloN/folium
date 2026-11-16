@@ -38,7 +38,9 @@ export function CountUp({ value, decimals = 0, durationMs = 700 }: Props) {
     frame = requestAnimationFrame(step);
     return () => {
       cancelAnimationFrame(frame);
-      node.nodeValue = value.toFixed(decimals);
+      // Restore what React last rendered (the sr-only twin), never this effect's own value:
+      // when the value changes, React writes the new text before this cleanup runs.
+      node.nodeValue = ref.current?.nextSibling?.textContent ?? node.nodeValue;
     };
   }, [value, decimals, durationMs]);
 
