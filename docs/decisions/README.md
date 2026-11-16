@@ -2,7 +2,7 @@
 
 Short records of real choices: what was decided, why, and what it costs. Split by side, newest first within each file, every entry with a status:
 
-- [backend.md](backend.md): data model, domain rules, settings storage, server actions, auth and security, integrations, tooling and tests.
+- [backend.md](backend.md): finance, data model, domain rules, settings storage, server actions, auth and security, integrations, tooling and tests.
 - [frontend.md](frontend.md): rendering and routing, app shell and navigation, the Today dashboard, theme and motion, forms and interaction.
 
 **Status values.** *Accepted*: in force. *Amended*: in force, changed later as the status line says. *Accepted locally*: done in this repo, still to mirror elsewhere. *Deferred*/*open*: not decided or not built yet; see Open decisions below.
@@ -12,6 +12,15 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 ## Contents by area
 
 ### Backend
+
+**Finance**
+
+- [2026-11-16: Money is integer rupiah (bigint), never floats](backend.md#2026-11-16-money-is-integer-rupiah-bigint-never-floats)
+- [2026-11-16: Finance views run as the caller (`security_invoker`)](backend.md#2026-11-16-finance-views-run-as-the-caller-security_invoker)
+- [2026-11-16: Planned transactions never count toward balances](backend.md#2026-11-16-planned-transactions-never-count-toward-balances)
+- [2026-11-16: Finance defaults are seeded lazily and idempotently](backend.md#2026-11-16-finance-defaults-are-seeded-lazily-and-idempotently)
+- [2026-11-16: Transactions are hard-deleted; undo re-inserts the same row](backend.md#2026-11-16-transactions-are-hard-deleted-undo-re-inserts-the-same-row)
+- [2026-11-16: Category kind is enforced by a composite foreign key](backend.md#2026-11-16-category-kind-is-enforced-by-a-composite-foreign-key)
 
 **Data model**
 

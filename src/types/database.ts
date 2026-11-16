@@ -23,7 +23,21 @@ export type Database = {
           }
         },"public": {
           Tables: {
-            "assessments": {
+            "accounts": {
+                  Row: {
+                    "archived_at": string | null,"color": string,"created_at": string,"currency": string,"icon": string | null,"id": string,"name": string,"opening_balance": number,"sort_order": number,"type": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"currency"?: string,"icon"?: string | null,"id"?: string,"name": string,"opening_balance"?: number,"sort_order"?: number,"type": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"currency"?: string,"icon"?: string | null,"id"?: string,"name"?: string,"opening_balance"?: number,"sort_order"?: number,"type"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"assessments": {
                   Row: {
                     "course_id": string,"created_at": string,"due_at": string | null,"id": string,"max_score": number,"name": string,"score": number | null,"updated_at": string,"user_id": string,"weight": number
                   }
@@ -73,6 +87,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "timetable_slots"
       referencedColumns: ["id","course_id","user_id"]
+    }
+                  ]
+                },"categories": {
+                  Row: {
+                    "archived_at": string | null,"color": string,"created_at": string,"icon": string | null,"id": string,"kind": string,"name": string,"parent_id": string | null,"sort_order": number,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"icon"?: string | null,"id"?: string,"kind": string,"name": string,"parent_id"?: string | null,"sort_order"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"icon"?: string | null,"id"?: string,"kind"?: string,"name"?: string,"parent_id"?: string | null,"sort_order"?: number,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "categories_parent_fk"
+      columns: ["parent_id","user_id","kind"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id","user_id","kind"]
     }
                   ]
                 },"class_breaks": {
@@ -189,6 +223,50 @@ isOneToOne: false
       referencedColumns: ["id","user_id"]
     }
                   ]
+                },"transactions": {
+                  Row: {
+                    "account_id": string,"adjustment_direction": string | null,"amount": number,"category_id": string | null,"created_at": string,"fee_amount": number,"id": string,"kind": string,"note": string | null,"occurred_on": string,"payee": string | null,"status": string,"to_account_id": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"adjustment_direction"?: string | null,"amount": number,"category_id"?: string | null,"created_at"?: string,"fee_amount"?: number,"id"?: string,"kind": string,"note"?: string | null,"occurred_on": string,"payee"?: string | null,"status"?: string,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"adjustment_direction"?: string | null,"amount"?: number,"category_id"?: string | null,"created_at"?: string,"fee_amount"?: number,"id"?: string,"kind"?: string,"note"?: string | null,"occurred_on"?: string,"payee"?: string | null,"status"?: string,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "transactions_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "account_balances"
+      referencedColumns: ["account_id","user_id"]
+    },{
+      foreignKeyName: "transactions_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "transactions_category_fk"
+      columns: ["category_id","user_id","kind"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id","user_id","kind"]
+    },{
+      foreignKeyName: "transactions_to_account_fk"
+      columns: ["to_account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "account_balances"
+      referencedColumns: ["account_id","user_id"]
+    },{
+      foreignKeyName: "transactions_to_account_fk"
+      columns: ["to_account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
                 },"user_settings": {
                   Row: {
                     "created_at": string,"dashboard_layout": NonNullable<Json>,"preferences": NonNullable<Json>,"theme": NonNullable<Json>,"updated_at": string,"user_id": string,"version": number
@@ -206,10 +284,20 @@ isOneToOne: false
                 }
           }
           Views: {
-            [_ in never]: never
+            "account_balances": {
+                  Row: {
+                    "account_id": string,"balance": number | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                }
           }
           Functions: {
-            [_ in never]: never
+            "ensure_finance_defaults":
+{ Args: Record<PropertyKey, never>; Returns: undefined
+                           }
           }
           Enums: {
             [_ in never]: never

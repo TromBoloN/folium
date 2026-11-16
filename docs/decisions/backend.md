@@ -1,8 +1,17 @@
 # Backend decisions
 
-Data, domain rules, settings storage, server actions, auth and security, integrations, tooling and tests. Newest first; each entry says what was decided, why, what it costs, and its status. Index and open questions: [README.md](README.md).
+Finance, data, domain rules, settings storage, server actions, auth and security, integrations, tooling and tests. Newest first; each entry says what was decided, why, what it costs, and its status. Index and open questions: [README.md](README.md).
 
 ## Contents
+
+**Finance**
+
+- [2026-11-16: Money is integer rupiah (bigint), never floats](#2026-11-16-money-is-integer-rupiah-bigint-never-floats)
+- [2026-11-16: Finance views run as the caller (`security_invoker`)](#2026-11-16-finance-views-run-as-the-caller-security_invoker)
+- [2026-11-16: Planned transactions never count toward balances](#2026-11-16-planned-transactions-never-count-toward-balances)
+- [2026-11-16: Finance defaults are seeded lazily and idempotently](#2026-11-16-finance-defaults-are-seeded-lazily-and-idempotently)
+- [2026-11-16: Transactions are hard-deleted; undo re-inserts the same row](#2026-11-16-transactions-are-hard-deleted-undo-re-inserts-the-same-row)
+- [2026-11-16: Category kind is enforced by a composite foreign key](#2026-11-16-category-kind-is-enforced-by-a-composite-foreign-key)
 
 **Data model**
 
@@ -51,6 +60,54 @@ Data, domain rules, settings storage, server actions, auth and security, integra
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-16: Money is integer rupiah (bigint), never floats
+
+**Status.** Accepted.
+
+**Decision.** Every amount (`amount`, `fee_amount`, `opening_balance`, balances) is a `bigint` of whole rupiah. Each account stores a `currency` (checked to be `IDR` for now).
+
+**Why.** Floats round (0.1 + 0.2), and rupiah have no minor unit in practice. Sums in SQL and JS stay exact. Don't introduce `numeric`/`float` columns or JS division on stored amounts; format to "Rp" only when displaying. The currency column lets other currencies come later by dropping one constraint, not rewriting rows.
+
+## 2026-11-16: Finance views run as the caller (`security_invoker`)
+
+**Status.** Accepted.
+
+**Decision.** `account_balances` is created `WITH (security_invoker = true)`, and only `authenticated` may select it.
+
+**Why.** A plain view runs as its owner and bypasses RLS, so every user would see every balance. With `security_invoker` the RLS policies on `accounts` and `transactions` apply to whoever queries it (pgTAP proves another user sees nothing). Any new view over user data must do the same.
+
+## 2026-11-16: Planned transactions never count toward balances
+
+**Status.** Accepted.
+
+**Decision.** `transactions.status` is `posted` or `planned`. Balances (`account_balances`) sum posted rows only; planned rows are for the future (expected rent, a scheduled transfer) and change nothing until the user posts them.
+
+**Why.** A balance must match the real account. Any new total (budgets, reports) has to decide explicitly whether it includes planned rows; the default is no.
+
+## 2026-11-16: Finance defaults are seeded lazily and idempotently
+
+**Status.** Accepted.
+
+**Decision.** Default accounts (Livin' by Mandiri, DANA, GoPay, Cash) and categories come from `ensure_finance_defaults()` (security invoker, uses `auth.uid()`), called when the finance pages load, not from the sign-up trigger. It takes an advisory lock per user and seeds only if the user has no accounts and no categories at all; archived rows count.
+
+**Why.** `handle_new_user` never runs again for existing users, so a sign-up seed would miss everyone who already has an account. The lock makes two concurrent first loads safe, and counting archived rows means archiving a default never brings it back. Don't move this into the sign-up trigger or make it re-seed missing defaults.
+
+## 2026-11-16: Transactions are hard-deleted; undo re-inserts the same row
+
+**Status.** Accepted.
+
+**Decision.** Deleting a transaction removes the row. Undo inserts it again with the same `id` (and values), like tasks. There is no `deleted_at`. Accounts and categories, in contrast, are archived (`archived_at`) once used: transaction foreign keys are `ON DELETE RESTRICT`.
+
+**Why.** Soft delete would force every balance, report and query to filter `deleted_at` forever, and one forgotten filter shows wrong money. Restricting deletes of used accounts and categories keeps history intact.
+
+## 2026-11-16: Category kind is enforced by a composite foreign key
+
+**Status.** Accepted.
+
+**Decision.** `transactions (category_id, user_id, kind) → categories (id, user_id, kind)`, and `categories (parent_id, user_id, kind) → categories (id, user_id, kind)`. Both are MATCH SIMPLE, so a NULL category or parent passes.
+
+**Why.** One declarative constraint guarantees the same owner and the same kind: an income category can't go on an expense, and a subcategory can't sit under the other kind, with no trigger to keep in sync. Transfers and adjustments have no category (a named CHECK), which also keeps them outside the FK. Don't replace the composite key with a plain `category_id` FK.
 
 ## 2026-11-16: Docs consolidated into a few files plus a map
 
