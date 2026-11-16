@@ -7,6 +7,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { SignOutButton } from "@/features/auth/components/sign-out-button";
 import { requireUser } from "@/features/auth/queries";
+import { getDisplayName } from "@/features/dashboard/queries";
+import { ProfileForm } from "@/features/settings/components/profile-form";
 import { SettingsForm } from "@/features/settings/components/settings-form";
 import { getSettings } from "@/features/settings/queries";
 import { listTimeZones } from "@/lib/dates";
@@ -25,7 +27,7 @@ export default function SettingsPage() {
 }
 
 async function SettingsContent() {
-  const [user, settings] = await Promise.all([requireUser(), getSettings()]);
+  const [user, settings, displayName] = await Promise.all([requireUser(), getSettings(), getDisplayName()]);
   return (
     <div className="flex flex-col gap-6">
       <SettingsForm settings={settings} timeZones={listTimeZones(settings.preferences.timeZone)} />
@@ -57,15 +59,18 @@ async function SettingsContent() {
         <CardHeader>
           <CardTitle>Account</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-muted-foreground text-sm">
-            Signed in as <span className="text-foreground">{user.email}</span>
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/update-password">Change password</Link>
-            </Button>
-            <SignOutButton />
+        <CardContent className="flex flex-col gap-5">
+          <ProfileForm displayName={displayName ?? ""} />
+          <div className="flex flex-wrap items-center justify-between gap-3 border-border-soft border-t pt-4">
+            <p className="text-muted-foreground text-sm">
+              Signed in as <span className="text-foreground">{user.email}</span>
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button asChild variant="outline" size="sm">
+                <Link href="/update-password">Change password</Link>
+              </Button>
+              <SignOutButton />
+            </div>
           </div>
         </CardContent>
       </Card>

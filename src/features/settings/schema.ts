@@ -135,3 +135,16 @@ export const settingsFormSchema = z.object({
   // The view switch saves coursesView on its own; the form keeps whatever is stored.
   preferences: preferencesSchema.omit({ coursesView: true }),
 });
+
+/** Your name as Folium shows it (sidebar, greeting). Blank clears it (the email shows instead). */
+export const profileFormSchema = z.object({
+  displayName: z
+    .string()
+    .trim()
+    .max(80, "Your name can be at most 80 characters.")
+    .refine(
+      (v) => ![...v].some((ch) => ch.charCodeAt(0) < 32 || ch.charCodeAt(0) === 127),
+      "Use letters, numbers and spaces.",
+    )
+    .transform((v) => v.replace(/\s+/g, " ") || null),
+});

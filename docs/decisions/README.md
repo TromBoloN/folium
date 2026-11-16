@@ -70,6 +70,7 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Tooling, testing and docs**
 
+- [2026-11-16: Hosted migrations are applied by CI after the tests pass](backend.md#2026-11-16-hosted-migrations-are-applied-by-ci-after-the-tests-pass)
 - [2026-11-16: Docs consolidated into a few files plus a map](backend.md#2026-11-16-docs-consolidated-into-a-few-files-plus-a-map)
 - [2026-11-15: The axe matrix is its own suite, on the demo account](backend.md#2026-11-15-the-axe-matrix-is-its-own-suite-on-the-demo-account)
 - [2026-11-15: Accessibility is tested with axe across every theme](backend.md#2026-11-15-accessibility-is-tested-with-axe-across-every-theme)

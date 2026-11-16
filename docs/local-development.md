@@ -102,4 +102,12 @@ The local `config.toml` does not reach a hosted project. In the Supabase dashboa
 5. Push the schema: `bunx supabase link --project-ref <ref>` then `bunx supabase db push`. **Do not** run the seed against production.
 6. Set `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` in the hosting provider (e.g. Vercel).
 
+After that first push, CI applies new migrations for you: the `migrate` job in `.github/workflows/ci.yml` runs `supabase db push` on every push to `main`, after typecheck, lint, unit tests, build and the pgTAP tests pass. It needs three repository secrets (GitHub → Settings → Secrets and variables → Actions); without them it skips:
+
+- `SUPABASE_ACCESS_TOKEN`: a personal access token (supabase.com/dashboard/account/tokens).
+- `SUPABASE_PROJECT_ID`: the project ref (the `<ref>` in `https://<ref>.supabase.co`).
+- `SUPABASE_DB_PASSWORD`: the database password (Project Settings → Database).
+
+Vercel deploys in parallel, so for a few minutes new code can run against the old schema. Write migrations that the current code tolerates (add columns before using them; remove them a release later).
+
 Once a migration has been pushed anywhere, never edit it; fix forward with a new migration.

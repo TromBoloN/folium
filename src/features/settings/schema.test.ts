@@ -111,3 +111,19 @@ describe("timeZone preference", () => {
     ).toBe("Asia/Makassar");
   });
 });
+
+describe("profileFormSchema", () => {
+  it("trims and collapses spaces", async () => {
+    const { profileFormSchema } = await import("./schema");
+    expect(profileFormSchema.parse({ displayName: "  Arif   G  " })).toEqual({ displayName: "Arif G" });
+  });
+  it("turns blank into null (clears the name)", async () => {
+    const { profileFormSchema } = await import("./schema");
+    expect(profileFormSchema.parse({ displayName: "   " })).toEqual({ displayName: null });
+  });
+  it("rejects names over 80 characters and control characters", async () => {
+    const { profileFormSchema } = await import("./schema");
+    expect(profileFormSchema.safeParse({ displayName: "a".repeat(81) }).success).toBe(false);
+    expect(profileFormSchema.safeParse({ displayName: "a\u0007b" }).success).toBe(false);
+  });
+});

@@ -61,6 +61,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Tooling, testing and docs**
 
+- [2026-11-16: Hosted migrations are applied by CI after the tests pass](#2026-11-16-hosted-migrations-are-applied-by-ci-after-the-tests-pass)
 - [2026-11-16: Docs consolidated into a few files plus a map](#2026-11-16-docs-consolidated-into-a-few-files-plus-a-map)
 - [2026-11-15: The axe matrix is its own suite, on the demo account](#2026-11-15-the-axe-matrix-is-its-own-suite-on-the-demo-account)
 - [2026-11-15: Accessibility is tested with axe across every theme](#2026-11-15-accessibility-is-tested-with-axe-across-every-theme)
@@ -180,6 +181,14 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 **Decision.** `transactions (category_id, user_id, kind) → categories (id, user_id, kind)`, and `categories (parent_id, user_id, kind) → categories (id, user_id, kind)`. Both are MATCH SIMPLE, so a NULL category or parent passes.
 
 **Why.** One declarative constraint guarantees the same owner and the same kind: an income category can't go on an expense, and a subcategory can't sit under the other kind, with no trigger to keep in sync. Transfers and adjustments have no category (a named CHECK), which also keeps them outside the FK. Don't replace the composite key with a plain `category_id` FK.
+
+## 2026-11-16: Hosted migrations are applied by CI after the tests pass
+
+**Status.** Accepted.
+
+**Decision.** The `migrate` job in `.github/workflows/ci.yml` runs `supabase link` + `supabase db push` on pushes to `main`, after the `app` and `database` (pgTAP) jobs pass. It needs `SUPABASE_ACCESS_TOKEN`, `SUPABASE_PROJECT_ID` and `SUPABASE_DB_PASSWORD` secrets and skips without them. It never runs a seed.
+
+**Why.** Pushing by hand is easy to forget, and a deploy then breaks on a missing column. Gating on pgTAP means a migration that fails locally never reaches the hosted database. Cost: Vercel deploys in parallel, so migrations must be backward compatible for a few minutes (expand first, contract later).
 
 ## 2026-11-16: Docs consolidated into a few files plus a map
 

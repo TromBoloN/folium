@@ -11,6 +11,7 @@ import {
   DEFAULT_PREFERENCES,
   DEFAULT_THEME,
   diffFromDefaults,
+  profileFormSchema,
   resolveSettings,
   SETTINGS_VERSION,
   settingsFormSchema,
@@ -64,6 +65,34 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
   // The theme lives on <html> in the root layout, so re-render from the top.
   revalidatePath("/", "layout");
   return { ok: true };
+}
+
+/** Change the display name (profiles.display_name). Blank clears it. */
+export async function updateProfile(_prev: FormState, formData: FormData): Promise<FormState> {
+  const values = formValues(formData);
+  const parsed = profileFormSchema.safeParse({ displayName: formData.get("displayName") ?? "" });
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0].message,
+      fieldErrors: { displayName: parsed.error.issues[0].message },
+      values,
+    };
+  }
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, error: "Your session has ended. Sign in again.", values };
+  const { error } = await supabase
+    .from("profiles")
+    .update({ display_name: parsed.data.displayName })
+    .eq("user_id", auth.user.id);
+  if (error) {
+    console.error("[settings] profile save failed", error.code, error.message);
+    return { ok: false, error: "Couldn't save your name. Please try again.", values };
+  }
+  // The name shows in the sidebar and the greeting on every page.
+  revalidatePath("/", "layout");
+  return { ok: true, result: { message: parsed.data.displayName ? "Name saved" : "Name cleared" } };
 }
 
 /** Remember which view /courses opens in. Fire-and-forget from the view switch. */
