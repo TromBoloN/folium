@@ -12,7 +12,7 @@ export function FormFooter({ children, error }: { children: React.ReactNode; err
   return (
     <div
       className={cn(
-        "sticky z-10 -mx-5 mt-2 flex flex-col gap-2 border-border-soft border-t bg-popover/95 px-5 py-3 backdrop-blur",
+        "sticky z-10 -mx-5 mt-2 flex flex-col gap-2 border-border-soft border-t bg-popover px-5 py-3 shadow-[0_-8px_16px_-12px_var(--shadow-color)]",
         sheet ? "-mb-5 bottom-0" : "bottom-[calc(4rem+1px+env(safe-area-inset-bottom))] rounded-b-tile md:bottom-0",
       )}
     >

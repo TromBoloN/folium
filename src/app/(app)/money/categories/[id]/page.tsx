@@ -10,10 +10,10 @@ import { listCategories } from "@/features/finance/queries";
 
 export const metadata: Metadata = { title: "Edit category" };
 
-export default function EditCategoryPage({ params }: PageProps<"/settings/categories/[id]">) {
+export default function EditCategoryPage({ params }: PageProps<"/money/categories/[id]">) {
   return (
     <div className="mx-auto w-full max-w-xl">
-      <PageHeader title="Edit category" back={<BackLink href="/settings/categories">Categories</BackLink>} />
+      <PageHeader title="Edit category" back={<BackLink href="/money/categories">Categories</BackLink>} />
       <Suspense fallback={<FormSkeleton />}>
         <Edit params={params} />
       </Suspense>
@@ -21,7 +21,7 @@ export default function EditCategoryPage({ params }: PageProps<"/settings/catego
   );
 }
 
-async function Edit({ params }: Pick<PageProps<"/settings/categories/[id]">, "params">) {
+async function Edit({ params }: Pick<PageProps<"/money/categories/[id]">, "params">) {
   await requireUser();
   const { id } = await params;
   const categories = await listCategories();

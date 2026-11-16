@@ -51,6 +51,7 @@ async function AccountDetail({ params, searchParams }: Props) {
             type: account.type,
             color: account.color,
             icon: account.icon ?? "",
+            isSpendable: account.isSpendable,
             openingBalance:
               account.openingBalance < 0n ? `-${grouped(-account.openingBalance)}` : grouped(account.openingBalance),
           }}

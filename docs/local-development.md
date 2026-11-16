@@ -110,4 +110,11 @@ After that first push, CI applies new migrations for you: the `migrate` job in `
 
 Vercel deploys in parallel, so for a few minutes new code can run against the old schema. Write migrations that the current code tolerates (add columns before using them; remove them a release later).
 
+### Money reminders (Vercel Cron)
+
+Bills show in-app without any of this. For email (opt-in per user under Settings → Money emails):
+
+- Locally: set `CRON_SECRET`, `SUPABASE_SECRET_KEY` (from `bunx supabase status`) and `MAILPIT_URL=http://127.0.0.1:54324` in `.env.local`, restart `bun dev`, then `curl -H "Authorization: Bearer $CRON_SECRET" http://127.0.0.1:3000/api/cron/reminders` and read the email in Mailpit.
+- Vercel: add `CRON_SECRET`, `SUPABASE_SECRET_KEY`, `RESEND_API_KEY` and `EMAIL_FROM` (server-only, never `NEXT_PUBLIC_`). `vercel.json` schedules the route daily at 00:00 UTC (08:00 WITA). Check your plan's cron limits.
+
 Once a migration has been pushed anywhere, never edit it; fix forward with a new migration.

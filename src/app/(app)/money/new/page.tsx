@@ -17,12 +17,13 @@ export default function NewTransactionPage({ searchParams }: PageProps<"/money/n
 }
 
 async function New({ searchParams }: Pick<PageProps<"/money/new">, "searchParams">) {
-  const { kind, account } = await searchParams;
+  const { kind, account, to } = await searchParams;
   return (
     <NewTransactionScreen
       variant="page"
       kind={typeof kind === "string" ? kind : undefined}
       account={typeof account === "string" ? account : undefined}
+      to={typeof to === "string" ? to : undefined}
     />
   );
 }

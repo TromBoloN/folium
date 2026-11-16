@@ -3,7 +3,20 @@ import { isCivilDate } from "@/lib/dates";
 import { isMoneyIcon } from "../lib/money-palette";
 import { parseAmount } from "../lib/parse-amount";
 
-export const TRANSACTION_KINDS = ["expense", "income", "transfer", "adjustment"] as const;
+export const TRANSACTION_KINDS = [
+  "expense",
+  "income",
+  "transfer",
+  "adjustment",
+  "lend",
+  "repay",
+  "borrow",
+  "payback",
+] as const;
+/** Debts: real money moving to or from a person. Never spending or income in reports. */
+export const DEBT_KINDS = ["lend", "repay", "borrow", "payback"] as const;
+export type DebtKind = (typeof DEBT_KINDS)[number];
+export const isDebtKind = (kind: string): kind is DebtKind => (DEBT_KINDS as readonly string[]).includes(kind);
 export const TRANSACTION_STATUSES = ["posted", "planned"] as const;
 export const ACCOUNT_TYPES = ["bank", "ewallet", "cash", "savings"] as const;
 export const CATEGORY_KINDS = ["expense", "income"] as const;
@@ -18,6 +31,10 @@ export const KIND_LABELS: Record<TransactionKind, string> = {
   income: "Income",
   transfer: "Transfer",
   adjustment: "Adjustment",
+  lend: "Lent",
+  repay: "Got paid back",
+  borrow: "Borrowed",
+  payback: "Paid back",
 };
 export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
   bank: "Bank",
@@ -101,6 +118,12 @@ export const transactionFormSchema = z
       .string()
       .transform((v) => (v === "" ? null : v))
       .refine((v) => v === null || v === "in" || v === "out", "Choose in or out."),
+    /** Debt kinds: an existing person… */
+    personId: z.preprocess((v) => v ?? "", optionalId),
+    /** …or a new name (created on save). */
+    personName: z.preprocess((v) => v ?? "", optionalText(60, "Name")),
+    /** Expenses only: books, printing, lab fees for a course. */
+    courseId: z.preprocess((v) => v ?? "", optionalId),
   })
   .superRefine((t, ctx) => {
     // Mirrors the database's named CHECKs, so the message lands on the right field.
@@ -112,6 +135,9 @@ export const transactionFormSchema = z
     }
     if (t.kind === "adjustment" && !t.adjustmentDirection) {
       ctx.addIssue({ code: "custom", path: ["adjustmentDirection"], message: "Is money going in or out?" });
+    }
+    if (isDebtKind(t.kind) && !t.personId && !t.personName) {
+      ctx.addIssue({ code: "custom", path: ["personId"], message: "Who is it with?" });
     }
   })
   .transform((t) => ({
@@ -126,6 +152,9 @@ export const transactionFormSchema = z
     note: t.note,
     occurredOn: t.occurredOn,
     adjustmentDirection: t.kind === "adjustment" ? (t.adjustmentDirection as "in" | "out") : null,
+    personId: isDebtKind(t.kind) ? t.personId : null,
+    personName: isDebtKind(t.kind) && !t.personId ? t.personName : null,
+    courseId: t.kind === "expense" ? t.courseId : null,
   }));
 
 export type TransactionInput = z.infer<typeof transactionFormSchema>;
@@ -144,6 +173,8 @@ export function transactionRow(t: TransactionInput) {
     note: t.note,
     occurred_on: t.occurredOn,
     adjustment_direction: t.adjustmentDirection,
+    person_id: t.personId,
+    course_id: t.courseId,
   };
 }
 
@@ -183,7 +214,11 @@ export const categoryFormSchema = z.object({
 /** List filters from the URL. Junk falls back to "no filter" instead of an error page. */
 export const transactionFiltersSchema = z.object({
   account: z.uuid().optional().catch(undefined),
-  category: z.uuid().optional().catch(undefined),
+  /** A category id, or "none" for uncategorised income and expenses. */
+  category: z
+    .union([z.uuid(), z.literal("none")])
+    .optional()
+    .catch(undefined),
   kind: z.enum(TRANSACTION_KINDS).optional().catch(undefined),
   month: z
     .string()

@@ -48,7 +48,7 @@ const COMMANDS: { label: string; href: string; icon: LucideIcon; group: string }
   { label: "Money", href: "/money", icon: Wallet, group: "Go to" },
   { label: "All transactions", href: "/money/transactions", icon: Wallet, group: "Go to" },
   { label: "Money accounts", href: "/money/accounts", icon: Wallet, group: "Go to" },
-  { label: "Money categories", href: "/settings/categories", icon: Wallet, group: "Go to" },
+  { label: "Money categories", href: "/money/categories", icon: Wallet, group: "Go to" },
   { label: "Tasks", href: "/tasks", icon: ListChecks, group: "Go to" },
   { label: "Overdue tasks", href: "/tasks?due=overdue", icon: AlarmClock, group: "Go to" },
   { label: "Courses", href: "/courses", icon: BookOpen, group: "Go to" },

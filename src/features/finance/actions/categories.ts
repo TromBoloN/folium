@@ -10,7 +10,7 @@ import { categoryFormSchema } from "../schemas";
 
 function refresh() {
   revalidatePath("/money", "layout");
-  revalidatePath("/settings/categories");
+  revalidatePath("/money/categories");
 }
 
 export async function saveCategory(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -51,7 +51,7 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
     return { ok: false, error: message, values };
   }
   refresh();
-  redirect("/settings/categories");
+  redirect("/money/categories");
 }
 
 export async function setCategoryArchived(_prev: FormState, formData: FormData): Promise<FormState> {

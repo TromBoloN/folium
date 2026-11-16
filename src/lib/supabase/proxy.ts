@@ -14,6 +14,8 @@ const PUBLIC_PATHS = [
   "/apple-icon",
   "/sw.js",
   "/offline.html",
+  // Vercel Cron: no session; the route checks its own CRON_SECRET bearer token.
+  "/api/cron",
 ];
 /** Pages a logged-in user has no reason to see. */
 const GUEST_ONLY_PATHS = ["/login", "/signup"];

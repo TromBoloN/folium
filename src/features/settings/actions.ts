@@ -37,6 +37,8 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
       timeZone: formData.get("timeZone"),
       gradeScale: parseGradeScaleField(formData.get("gradeScale")),
       attendanceTarget: Number(formData.get("attendanceTarget") ?? DEFAULT_PREFERENCES.attendanceTarget),
+      billReminderEmails: formData.get("billReminderEmails") === "on",
+      weeklySummaryEmail: formData.get("weeklySummaryEmail") === "on",
     },
   });
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message, values };

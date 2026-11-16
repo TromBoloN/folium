@@ -35,6 +35,13 @@ export function effectOn(accountId: string, row: SeriesRow): bigint {
       return row.accountId === accountId ? row.amount : 0n;
     case "expense":
       return row.accountId === accountId ? -row.amount : 0n;
+    // Debts move real money: repay/borrow come in, lend/payback go out.
+    case "repay":
+    case "borrow":
+      return row.accountId === accountId ? row.amount : 0n;
+    case "lend":
+    case "payback":
+      return row.accountId === accountId ? -row.amount : 0n;
     case "adjustment":
       if (row.accountId !== accountId) return 0n;
       return row.adjustmentDirection === "in" ? row.amount : row.adjustmentDirection === "out" ? -row.amount : 0n;

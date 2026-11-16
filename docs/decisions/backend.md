@@ -6,6 +6,13 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Finance**
 
+- [2026-11-16: Debts are transaction kinds, not a separate ledger](#2026-11-16-debts-are-transaction-kinds-not-a-separate-ledger)
+- [2026-11-16: Recurring rules generate planned rows lazily](#2026-11-16-recurring-rules-generate-planned-rows-lazily)
+- [2026-11-16: Safe to spend: spendable accounts, payday from planned income](#2026-11-16-safe-to-spend-spendable-accounts-payday-from-planned-income)
+- [2026-11-16: Reminders: in-app first, email by Vercel Cron](#2026-11-16-reminders-in-app-first-email-by-vercel-cron)
+- [2026-11-16: CSV import dedupes by key and undoes by batch](#2026-11-16-csv-import-dedupes-by-key-and-undoes-by-batch)
+- [2026-11-16: Budgets: parent includes children; rollover is one month](#2026-11-16-budgets-parent-includes-children-rollover-is-one-month)
+- [2026-11-16: Money categories live under /money](#2026-11-16-money-categories-live-under-money)
 - [2026-11-16: Sparklines work backwards from `account_balances`](#2026-11-16-sparklines-work-backwards-from-account_balances)
 - [2026-11-16: Spending charts leave out transfers and adjustments](#2026-11-16-spending-charts-leave-out-transfers-and-adjustments)
 - [2026-11-16: Transaction filters are GET parameters first, JavaScript second](#2026-11-16-transaction-filters-are-get-parameters-first-javascript-second)
@@ -69,6 +76,58 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-16: Debts are transaction kinds, not a separate ledger
+
+**Status.** Accepted.
+
+**Decision.** Four kinds move real money and name a person (`people` table, composite FK `transactions.person_id`): `lend` and `payback` go out, `borrow` and `repay` come in. A CHECK requires a person exactly for these kinds and forbids a category. `account_balances` counts them; `person_balances` (security_invoker) gives positive = they owe you. Reports, budgets and month totals never count them as spending or income. Splitting a bill = your share as an expense + one `lend` per friend (`splitBill` → `splitEvenly`).
+
+**Why.** Every balance must come from transactions; a separate debts ledger would drift from the cash. **Cost:** anything that switches on `kind` must handle the four (they're in `effectOn`, `spendableEffect`, `netWorthEffect`, the transaction row and form).
+
+## 2026-11-16: Recurring rules generate planned rows lazily
+
+**Status.** Accepted.
+
+**Decision.** `recurring_rules` generate PLANNED transactions up to 45 days ahead when Money or Today loads (`ensureRecurringGenerated`), no cron. Unique `(recurring_rule_id, due_on)` makes it idempotent and `generated_through` stops a deleted (skipped) occurrence coming back. Editing or pausing a rule deletes its future planned rows and regenerates; posted history never changes. Deleting a rule keeps posted rows (FK `on delete set null (recurring_rule_id)`) and removes its planned ones (and their open tasks), a deliberate change from the blueprint's "unlink planned", which would leave orphan bills. Due days past a month's end clamp to its last day; dates are the user's local calendar.
+
+**Why.** Balances, budgets ("committed") and safe-to-spend all read planned rows, so bills must exist as rows. Lazy generation needs no infrastructure.
+
+## 2026-11-16: Safe to spend: spendable accounts, payday from planned income
+
+**Status.** Accepted.
+
+**Decision.** `(liquid − planned outflows before payday) / max(days to payday, 1)`. Liquid = accounts with `is_spendable` (savings off by default, toggle per account). Payday = the next planned income on or after today, else month end. Outflows due ON payday aren't counted (paid from the new money); overdue planned rows are. A negative result is shown as "over by". Pure functions in `lib/safe-to-spend.ts`.
+
+**Why.** It answers "can I afford this today?" for students paid monthly.
+
+## 2026-11-16: Reminders: in-app first, email by Vercel Cron
+
+**Status.** Accepted.
+
+**Decision.** Bills due show in-app on Overview and Today (no cron). Email is opt-in per user (`billReminderEmails`, `weeklySummaryEmail` preferences, off by default). Vercel Cron calls `/api/cron/reminders` daily at 00:00 UTC (08:00 WITA) with `Authorization: Bearer $CRON_SECRET`; the route uses the secret-key admin client. Each reminder is claimed in `notification_log` (unique `user_id, kind, ref_key, channel`) before sending and released if the send fails, so retries never double-send. Sender: Resend (`RESEND_API_KEY`) in production, Mailpit's API (`MAILPIT_URL`) locally.
+
+**Why.** TypeScript beside the app, testable with curl + Mailpit; pg_cron would have to call an email service from the database. **Cost:** Hobby crons run about once a day; bills come from rows generated on visits, so someone who hasn't opened Folium for 45 days gets no bill emails.
+
+## 2026-11-16: CSV import dedupes by key and undoes by batch
+
+**Status.** Accepted.
+
+**Decision.** Each imported row gets `import_key` = date|signed amount|payee (+ `#n` for the nth identical row in a file); unique `(account_id, import_key)` with `ignoreDuplicates` makes re-importing a file add nothing. Rows carry `import_batch_id`; deleting the batch cascades to its transactions ("Undo this import"). Columns are mapped by the user (no bank formats assumed); nothing is written before "Import".
+
+**Why.** Backfilling is the biggest reason people quit; it must be safe to retry and to undo.
+
+## 2026-11-16: Budgets: parent includes children; rollover is one month
+
+**Status.** Accepted.
+
+**Decision.** A budget (expense categories only, enforced by an FK through `category_kind`) counts posted spending in the category and its children. Planned expenses show separately as "committed"; left = limit − spent − committed. Rollover (opt-in) carries last month's leftover or overspend one month forward, not chained further. Labels say "82% used" / "Over by Rp 40.000", never colour alone.
+
+## 2026-11-16: Money categories live under /money
+
+**Status.** Accepted.
+
+**Decision.** `/money/categories` (+ `/[id]`); `/settings/categories` redirects there (next.config). Accounts, categories and import/export sit behind the Money tab bar's gear menu.
 
 ## 2026-11-16: Sparklines work backwards from `account_balances`
 

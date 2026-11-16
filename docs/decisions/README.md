@@ -15,6 +15,13 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Finance**
 
+- [2026-11-16: Debts are transaction kinds, not a separate ledger](backend.md#2026-11-16-debts-are-transaction-kinds-not-a-separate-ledger)
+- [2026-11-16: Recurring rules generate planned rows lazily](backend.md#2026-11-16-recurring-rules-generate-planned-rows-lazily)
+- [2026-11-16: Safe to spend: spendable accounts, payday from planned income](backend.md#2026-11-16-safe-to-spend-spendable-accounts-payday-from-planned-income)
+- [2026-11-16: Reminders: in-app first, email by Vercel Cron](backend.md#2026-11-16-reminders-in-app-first-email-by-vercel-cron)
+- [2026-11-16: CSV import dedupes by key and undoes by batch](backend.md#2026-11-16-csv-import-dedupes-by-key-and-undoes-by-batch)
+- [2026-11-16: Budgets: parent includes children; rollover is one month](backend.md#2026-11-16-budgets-parent-includes-children-rollover-is-one-month)
+- [2026-11-16: Money categories live under /money](backend.md#2026-11-16-money-categories-live-under-money)
 - [2026-11-16: Sparklines work backwards from `account_balances`](backend.md#2026-11-16-sparklines-work-backwards-from-account_balances)
 - [2026-11-16: Spending charts leave out transfers and adjustments](backend.md#2026-11-16-spending-charts-leave-out-transfers-and-adjustments)
 - [2026-11-16: Transaction filters are GET parameters first, JavaScript second](backend.md#2026-11-16-transaction-filters-are-get-parameters-first-javascript-second)
@@ -120,13 +127,11 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 Questions that need a choice before code. Each lists the options known so far.
 
-### Reminders (email or push)
+### Reminders for classes and deadlines
 
-**Status.** Open. The app is installable, but nothing reminds you of a class or deadline.
+**Status.** Open. Money reminders are decided ([backend.md: Reminders: in-app first, email by Vercel Cron](backend.md#2026-11-16-reminders-in-app-first-email-by-vercel-cron)); classes and task deadlines still have none.
 
-**Needs deciding.** A scheduler (Supabase `pg_cron` calling an Edge Function, or an external cron), a sender (an email provider such as Resend, or Web Push with VAPID keys and a `push_subscriptions` table with RLS and a pgTAP test), what triggers a reminder (deadline lead time, class start, attendance prompt) and per-user opt-in settings (new preferences, no migration). Quiet hours should follow `preferences.timeZone`.
-
-**Context.** [frontend.md: Installable app now; reminders not yet](frontend.md#2026-11-15-installable-app-now-reminders-not-yet).
+**Needs deciding.** Whether to reuse the same cron, `notification_log` and preferences for deadline and class reminders, or add Web Push (VAPID keys, a `push_subscriptions` table with RLS and pgTAP). Quiet hours should follow `preferences.timeZone`.
 
 ### Hosted setup (Supabase project and hosting)
 

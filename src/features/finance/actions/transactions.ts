@@ -13,6 +13,7 @@ import { formatIdr } from "../lib/format-idr";
 import { parseQuickTransaction } from "../lib/parse-quick-transaction";
 import { LAST_ACCOUNT_COOKIE, lastUsedAccountId, listAccounts, listCategories } from "../queries";
 import { transactionFormSchema, transactionRow } from "../schemas";
+import { personIdFor } from "./debts";
 
 export type TransactionSnapshot = Tables<"transactions">;
 
@@ -57,6 +58,9 @@ export async function saveTransaction(_prev: FormState, formData: FormData): Pro
     note: formData.get("note") ?? "",
     occurredOn: formData.get("occurredOn") ?? "",
     adjustmentDirection: formData.get("adjustmentDirection") ?? "",
+    personId: formData.get("personId") ?? "",
+    personName: formData.get("personName") ?? "",
+    courseId: formData.get("courseId") ?? "",
   });
   if (!parsed.success) {
     return {
@@ -80,9 +84,18 @@ export async function saveTransaction(_prev: FormState, formData: FormData): Pro
       };
     }
   }
+  // A debt with a new name: create (or find) the person first.
+  let personId = parsed.data.personId;
+  if (!personId && parsed.data.personName) {
+    const person = await personIdFor(parsed.data.personName);
+    if (!person.ok) {
+      return { ok: false, error: "Check the highlighted fields.", fieldErrors: { personName: person.error }, values };
+    }
+    personId = person.id;
+  }
   const id = z.uuid().safeParse(formData.get("id"));
   const supabase = await createClient();
-  const row = transactionRow(parsed.data);
+  const row = { ...transactionRow(parsed.data), person_id: personId };
   const { data, error } = id.success
     ? await supabase.from("transactions").update(row).eq("id", id.data).select("id")
     : await supabase.from("transactions").insert(row).select("id");
@@ -125,6 +138,13 @@ const snapshotSchema = z.object({
   note: z.string().nullable(),
   occurred_on: z.string(),
   adjustment_direction: z.string().nullable(),
+  person_id: z.uuid().nullable().default(null),
+  recurring_rule_id: z.uuid().nullable().default(null),
+  due_on: z.string().nullable().default(null),
+  course_id: z.uuid().nullable().default(null),
+  task_id: z.uuid().nullable().default(null),
+  import_batch_id: z.uuid().nullable().default(null),
+  import_key: z.string().nullable().default(null),
   created_at: z.string(),
 });
 

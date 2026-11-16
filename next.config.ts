@@ -18,7 +18,12 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: ["127.0.0.1"],
   async redirects() {
     // The timetable became a view of /courses. The query (?week=) is passed through.
-    return [{ source: "/courses/timetable", destination: "/courses?view=week", permanent: false }];
+    return [
+      { source: "/courses/timetable", destination: "/courses?view=week", permanent: false },
+      // Categories moved under Money (finance-specific; keeps the Money tabs visible).
+      { source: "/settings/categories", destination: "/money/categories", permanent: false },
+      { source: "/settings/categories/:id", destination: "/money/categories/:id", permanent: false },
+    ];
   },
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];

@@ -646,7 +646,11 @@
   .tx-form:has([name="kind"][value="expense"]:checked) [data-kinds~="expense"],
   .tx-form:has([name="kind"][value="income"]:checked) [data-kinds~="income"],
   .tx-form:has([name="kind"][value="transfer"]:checked) [data-kinds~="transfer"],
-  .tx-form:has([name="kind"][value="adjustment"]:checked) [data-kinds~="adjustment"] {
+  .tx-form:has([name="kind"][value="adjustment"]:checked) [data-kinds~="adjustment"],
+  .tx-form:has([name="kind"][value="lend"]:checked) [data-kinds~="lend"],
+  .tx-form:has([name="kind"][value="repay"]:checked) [data-kinds~="repay"],
+  .tx-form:has([name="kind"][value="borrow"]:checked) [data-kinds~="borrow"],
+  .tx-form:has([name="kind"][value="payback"]:checked) [data-kinds~="payback"] {
     display: block;
   }
 }

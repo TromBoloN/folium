@@ -87,7 +87,8 @@ export function Sheet({ title, children }: { title: string; children: React.Reac
               <X aria-hidden className="size-5" />
             </button>
           </header>
-          <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
+          {/* scroll-padding: a focused field scrolls clear of the sticky form footer. */}
+          <div className="flex-1 scroll-pb-28 overflow-y-auto px-5 py-5">{children}</div>
         </div>
       </dialog>
     </SheetContext.Provider>

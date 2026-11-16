@@ -42,7 +42,7 @@ async function SettingsContent() {
           </p>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href="/settings/categories">Categories</Link>
+              <Link href="/money/categories">Categories</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
               <Link href="/money/accounts">Accounts</Link>

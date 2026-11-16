@@ -313,6 +313,32 @@ function SettingsFields({
               </p>
             </div>
             <GradeScaleEditor initial={submitted?.gradeScale ?? preferences.gradeScale} onEdit={onChange} />
+            <fieldset className="flex flex-col gap-2">
+              <legend className="mb-1 font-medium text-sm">Money emails</legend>
+              {(
+                [
+                  ["billReminderEmails", "Remind me before a bill is due", preferences.billReminderEmails],
+                  [
+                    "weeklySummaryEmail",
+                    "A Monday summary: spent, left, and what's due",
+                    preferences.weeklySummaryEmail,
+                  ],
+                ] as const
+              ).map(([name, label, saved]) => (
+                <label key={name} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    name={name}
+                    defaultChecked={submitted ? submitted[name] === "on" : saved}
+                    className="size-4 accent-primary"
+                  />
+                  {label}
+                </label>
+              ))}
+              <p className="text-muted-foreground text-xs">
+                Off unless you turn them on. Bills always show on Today and in Money.
+              </p>
+            </fieldset>
           </CardContent>
         </Card>
       </div>

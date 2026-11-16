@@ -1,6 +1,7 @@
 "use client";
 
 import { CornerDownLeft, Sparkles } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/toast/toaster";
 import { motionLevel } from "@/lib/motion";
@@ -27,7 +28,9 @@ export const QUICK_EXAMPLES = [
  * action that parses the line again, so it works without JavaScript; with it,
  * chips preview the line as you type and the unclear ones open a picker.
  */
-export function QuickAddBar({ context, initialText = "" }: { context: QuickMoneyContext; initialText?: string }) {
+export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
+  // ?quick= prefills the bar (the example links, without JavaScript).
+  const initialText = useSearchParams().get("quick")?.slice(0, 300) ?? "";
   const [state, action, pending] = useActionState(quickAddForm, null);
   const [text, setText] = useState(state && !state.ok ? (state.values?.text ?? initialText) : initialText);
   const [picking, setPicking] = useState<FixType | null>(null);
@@ -156,7 +159,9 @@ export function QuickAddBar({ context, initialText = "" }: { context: QuickMoney
             <span
               key={hint}
               aria-hidden
-              className="quick-hint pointer-events-none absolute inset-y-0 left-2 flex items-center truncate text-base text-muted-foreground"
+              // Both edges pinned (it must stop at the input, not run under the button) and a
+              // block with the input's line height, so `truncate` can add the ellipsis.
+              className="quick-hint pointer-events-none absolute inset-x-2 top-0 block h-11 truncate text-base text-muted-foreground leading-11"
             >
               Try “{QUICK_EXAMPLES[hint]}”
             </span>

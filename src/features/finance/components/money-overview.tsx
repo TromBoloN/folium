@@ -22,6 +22,26 @@ function Sparkline({ points }: { points: SeriesPoint[] }) {
     max === min ? h / 2 : pad + (1 - (v - min) / span) * (h - pad * 2),
   ]);
   const line = xy.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
+  if (max === min) {
+    // No change: a faint dashed baseline instead of a filled band.
+    return (
+      <svg
+        aria-hidden
+        viewBox={`0 0 ${w} ${h}`}
+        preserveAspectRatio="none"
+        className="h-7 w-full text-border"
+        focusable="false"
+      >
+        <path
+          d={`M0 ${h / 2} L${w} ${h / 2}`}
+          stroke="currentColor"
+          strokeWidth="1.5"
+          strokeDasharray="4 4"
+          vectorEffect="non-scaling-stroke"
+        />
+      </svg>
+    );
+  }
   return (
     <svg
       aria-hidden
@@ -69,12 +89,21 @@ export function AccountCards({ accounts, series }: { accounts: Account[]; series
             <MoneyCountUp amount={total.toString()} durationMs={900} />
           </p>
         </div>
-        <Link
-          href="/money/accounts"
-          className="rounded-sm text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
-        >
-          Manage accounts
-        </Link>
+        <div className="flex items-center gap-1">
+          <Link
+            href="/money/accounts"
+            className="rounded-md px-2 py-1.5 text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+          >
+            Manage accounts
+          </Link>
+          <Link
+            href="/money/accounts/new"
+            className="flex items-center gap-1 rounded-md px-2 py-1.5 font-medium text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+          >
+            <Plus aria-hidden className="size-4" />
+            Add<span className="sr-only"> account</span>
+          </Link>
+        </div>
       </div>
       <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {active.map((a, i) => {
@@ -117,15 +146,6 @@ export function AccountCards({ accounts, series }: { accounts: Account[]; series
             </li>
           );
         })}
-        <li>
-          <Link
-            href="/money/accounts/new"
-            className="flex h-full min-h-28 flex-col items-center justify-center gap-1.5 rounded-tile border border-border border-dashed p-4 text-muted-foreground text-sm transition-colors duration-(--dur-fast) hover:border-foreground/30 hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
-          >
-            <Plus aria-hidden className="size-4" />
-            Add account
-          </Link>
-        </li>
       </ul>
     </section>
   );

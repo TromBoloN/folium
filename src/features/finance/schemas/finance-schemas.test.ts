@@ -34,8 +34,22 @@ describe("transactionFormSchema", () => {
       note: null,
       occurredOn: "2026-11-16",
       adjustmentDirection: null,
+      personId: null,
+      personName: null,
+      courseId: null,
     });
     expect(transactionRow(t)).toMatchObject({ amount: 32000, fee_amount: 0, account_id: A, category_id: C });
+  });
+
+  it("needs a person for debt kinds, and drops person and course where they don't belong", () => {
+    const missing = transactionFormSchema.safeParse({ ...base, kind: "lend" });
+    expect(missing.success).toBe(false);
+    expect(missing.error?.issues[0]).toMatchObject({ path: ["personId"], message: "Who is it with?" });
+    const lend = transactionFormSchema.parse({ ...base, kind: "lend", personName: " Budi ", courseId: B });
+    expect(lend).toMatchObject({ kind: "lend", personId: null, personName: "Budi", courseId: null, payee: null });
+    const expense = transactionFormSchema.parse({ ...base, personId: B, courseId: C });
+    expect(expense).toMatchObject({ personId: null, courseId: C });
+    expect(transactionRow(expense)).toMatchObject({ person_id: null, course_id: C });
   });
 
   it("gives amount errors in words", () => {

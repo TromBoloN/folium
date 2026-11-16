@@ -28,6 +28,7 @@ Each of these has already cost time once.
 
 - React 19 resets uncontrolled fields after a form action, even on error. Always echo `values` back (see [architecture.md](architecture.md#forms-and-server-actions)).
 - In production, a **no-JS** submission doesn't render the action's returned state into the HTML (no error text or "Saved."). The action still runs. With JS everything works.
+- A form whose success removes its own row (Mark paid, Mark settled) can't toast from a `useEffect` on the action state: the row unmounts in the same commit. `ToastForm` (finance) toasts from its `onSubmit` path instead and keeps the server action as the no-JS `action`. Don't wrap a server action in a client function for `useActionState`: the form then posts nowhere without JavaScript.
 
 ## Data
 

@@ -6,12 +6,14 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { BackLink } from "@/components/back-link";
 import { EmptyState } from "@/components/empty-state";
+import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { ListSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { CourseActions } from "@/features/courses/components/course-actions";
 import { type CourseWithSlots, getCourse, listActiveSlots } from "@/features/courses/queries";
 import { mailtoLink, whatsappLink } from "@/features/courses/schema";
+import { CourseSpending } from "@/features/finance/components/course-spending";
 import { attendanceStats } from "@/features/schedule/attendance";
 import { AttendancePanel } from "@/features/schedule/components/attendance-panel";
 import { OccurrenceRow } from "@/features/schedule/components/occurrence-row";
@@ -146,6 +148,11 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
 
       <div className="flex flex-col gap-8">
         {course.archivedAt ? null : <CourseSchedule course={course} preferences={preferences} />}
+        <SectionErrorBoundary label="Course spending">
+          <Suspense fallback={null}>
+            <CourseSpending courseId={course.id} courseName={course.name} />
+          </Suspense>
+        </SectionErrorBoundary>
       </div>
     </div>
   );

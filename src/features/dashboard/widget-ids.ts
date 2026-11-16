@@ -12,6 +12,7 @@ export const WIDGET_IDS = [
   "due-soon",
   "overdue",
   "grades",
+  "money",
   "quick-add",
 ] as const;
 export type WidgetId = (typeof WIDGET_IDS)[number];

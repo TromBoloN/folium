@@ -8,10 +8,12 @@ import {
   Plus,
   Sparkles,
   Sun,
+  Wallet,
 } from "lucide-react";
 import type { WidgetId, WidgetSize } from "./widget-ids";
 import { ClassesWidget } from "./widgets/classes-widget";
 import { GradesWidget } from "./widgets/grades-widget";
+import { MoneyWidget } from "./widgets/money-widget";
 import { NextUpWidget } from "./widgets/next-up-widget";
 import { QuickAddWidget } from "./widgets/quick-add-widget";
 import { StatsWidget } from "./widgets/stats-widget";
@@ -111,6 +113,17 @@ export const WIDGETS: Record<WidgetId, WidgetDefinition> = {
     size: "small",
     frame: "tile",
     href: "/grades",
+    skeletonRows: 3,
+  },
+  money: {
+    title: "Money",
+    description: "Safe to spend, bills due this week, and budgets running out.",
+    icon: Wallet,
+    Component: MoneyWidget,
+    size: "small",
+    frame: "tile",
+    href: "/money",
+    hrefLabel: "Open money",
     skeletonRows: 3,
   },
   "quick-add": {

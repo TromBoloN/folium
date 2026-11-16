@@ -1,11 +1,9 @@
-import { Plus, Receipt, SearchX } from "lucide-react";
+import { Receipt, SearchX } from "lucide-react";
 import type { Metadata } from "next";
 import { io } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
-import { BackLink } from "@/components/back-link";
 import { EmptyState } from "@/components/empty-state";
-import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { ListRowsSkeleton } from "@/features/finance/components/money-skeletons";
@@ -22,6 +20,7 @@ import {
   listTransactions,
   summarizeTransactions,
 } from "@/features/finance/queries";
+import { listPeople } from "@/features/finance/queries/people";
 import { transactionFiltersSchema } from "@/features/finance/schemas";
 import { getSettings } from "@/features/settings/queries";
 
@@ -32,23 +31,9 @@ const MAX = 1000;
 
 export default function TransactionsPage({ searchParams }: PageProps<"/money/transactions">) {
   return (
-    <>
-      <PageHeader
-        title="Transactions"
-        back={<BackLink href="/money">Money</BackLink>}
-        action={
-          <Button asChild size="sm">
-            <Link href="/money/new">
-              <Plus aria-hidden />
-              Add transaction
-            </Link>
-          </Button>
-        }
-      />
-      <Suspense fallback={<ListRowsSkeleton rows={6} label="Loading transactions" />}>
-        <Transactions searchParams={searchParams} />
-      </Suspense>
-    </>
+    <Suspense fallback={<ListRowsSkeleton rows={6} label="Loading transactions" />}>
+      <Transactions searchParams={searchParams} />
+    </Suspense>
   );
 }
 
@@ -68,13 +53,14 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
   const requested = Number.parseInt(one(params.limit) ?? "", 10);
   const limit = Number.isFinite(requested) ? Math.min(MAX, Math.max(PAGE, requested)) : PAGE;
 
-  const [{ rows, more }, summary, accounts, categories, { preferences }, any] = await Promise.all([
+  const [{ rows, more }, summary, accounts, categories, { preferences }, any, people] = await Promise.all([
     listTransactions(filters, limit),
     summarizeTransactions(filters),
     listAccounts(),
     listCategories(),
     getSettings(),
     hasAnyTransaction(),
+    listPeople(),
   ]);
   await io();
   const today = localDateFor(new Date(), preferences.timeZone);
@@ -119,7 +105,13 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
           </Button>
         </EmptyState>
       ) : (
-        <TransactionList transactions={rows} accounts={accounts} categories={categories} today={today} />
+        <TransactionList
+          transactions={rows}
+          accounts={accounts}
+          categories={categories}
+          people={people}
+          today={today}
+        />
       )}
       {more && limit < MAX ? (
         <div className="flex justify-center">

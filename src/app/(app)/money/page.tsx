@@ -1,27 +1,22 @@
-import { Download, Plus, Receipt } from "lucide-react";
+import { Receipt } from "lucide-react";
 import type { Metadata } from "next";
 import { io } from "next/cache";
 import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
-import { PageHeader } from "@/components/page-header";
 import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
-import { getQuickMoneyContext } from "@/features/finance/actions/transactions";
 import { AccountCards, MonthOverview } from "@/features/finance/components/money-overview";
-import {
-  AccountsSkeleton,
-  ListRowsSkeleton,
-  PanelSkeleton,
-  QuickAddSkeleton,
-} from "@/features/finance/components/money-skeletons";
-import { QuickAddBar, QuickExamples } from "@/features/finance/components/quick-add-bar";
+import { AccountsSkeleton, ListRowsSkeleton, PanelSkeleton } from "@/features/finance/components/money-skeletons";
+import { BudgetWatchCard, SafeToSpendCard, UpcomingBillsCard } from "@/features/finance/components/planning-cards";
+import { QuickExamples } from "@/features/finance/components/quick-add-bar";
 import { SpendingByCategory } from "@/features/finance/components/spending-by-category";
 import { TransactionList } from "@/features/finance/components/transaction-list";
 import { balanceSeries } from "@/features/finance/lib/balance-series";
 import { compareMonths, resolveMonth, shiftMonth } from "@/features/finance/lib/compare-months";
 import { addDays, localDateFor } from "@/features/finance/lib/local-date";
+import { upcomingBills } from "@/features/finance/lib/reminders";
 import { rollupByCategory } from "@/features/finance/lib/rollup-by-category";
 import {
   ensureFinanceDefaults,
@@ -32,6 +27,11 @@ import {
   listPostedSince,
   listTransactions,
 } from "@/features/finance/queries";
+import { loadBudgetProgress } from "@/features/finance/queries/budget-progress";
+import { listPeople } from "@/features/finance/queries/people";
+import { ensureRecurringGenerated, listBills } from "@/features/finance/queries/planning";
+import { loadSafeToSpend } from "@/features/finance/queries/safe-to-spend";
+import { moneyToday } from "@/features/finance/queries/today";
 import { monthBounds, monthTotals } from "@/features/finance/schemas/money-math";
 import { getSettings } from "@/features/settings/queries";
 import { formatDate } from "@/lib/dates";
@@ -45,33 +45,14 @@ const SPARK_DAYS = 7;
 export default function MoneyPage({ searchParams }: PageProps<"/money">) {
   return (
     <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Money"
-        action={
-          <div className="flex flex-wrap items-center gap-2">
-            <Button asChild size="sm" variant="ghost">
-              <a href="/money/export.csv" download>
-                <Download aria-hidden />
-                Export CSV
-              </a>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/money/new">
-                <Plus aria-hidden />
-                Add transaction
-              </Link>
-            </Button>
-          </div>
-        }
-      />
-      <SectionErrorBoundary label="Quick add">
-        <Suspense fallback={<QuickAddSkeleton />}>
-          <Quick searchParams={searchParams} />
-        </Suspense>
-      </SectionErrorBoundary>
       <SectionErrorBoundary label="Accounts">
         <Suspense fallback={<AccountsSkeleton />}>
           <Accounts />
+        </Suspense>
+      </SectionErrorBoundary>
+      <SectionErrorBoundary label="Planning">
+        <Suspense fallback={<PanelSkeleton label="Loading bills and budgets" rows={3} />}>
+          <Planning />
         </Suspense>
       </SectionErrorBoundary>
       <div className="grid gap-6 lg:grid-cols-2">
@@ -108,13 +89,30 @@ async function pageMonth(searchParams: Search["searchParams"]) {
 const monthLabel = (month: string, withYear: boolean) =>
   formatDate(`${month}-01`, withYear ? { month: "long", year: "numeric" } : { month: "long" });
 
-async function Quick({ searchParams }: Search) {
+/** Safe to spend, bills due soon and the budgets closest to their limit (generates planned bills first). */
+async function Planning() {
   await requireUser();
   await ensureFinanceDefaults();
-  const [context, params] = await Promise.all([getQuickMoneyContext(), searchParams]);
-  if (!context.ok) throw new Error(context.error);
-  const quick = typeof params.quick === "string" ? params.quick.slice(0, 300) : "";
-  return <QuickAddBar context={context.data} initialText={quick} />;
+  const { today, timeZone } = await moneyToday();
+  await ensureRecurringGenerated(today, timeZone);
+  const month = today.slice(0, 7);
+  const [stats, bills, categories, budgets] = await Promise.all([
+    loadSafeToSpend(today),
+    listBills(),
+    listCategories(),
+    loadBudgetProgress(month),
+  ]);
+  const { overdue, soon } = upcomingBills(
+    bills.map((b) => ({ ...b, dueOn: b.dueOn ?? b.occurredOn })),
+    today,
+  );
+  return (
+    <div className="grid gap-6 lg:grid-cols-3">
+      <SafeToSpendCard safe={stats.safe} points={stats.points} firstNegative={stats.firstNegative} today={today} />
+      <UpcomingBillsCard overdue={overdue} soon={soon} today={today} categories={categories} />
+      <BudgetWatchCard items={budgets.items} month={month} />
+    </div>
+  );
 }
 
 async function Accounts() {
@@ -145,12 +143,12 @@ async function Month({ searchParams }: Search) {
   ]);
   const totals = monthTotals(thisRows);
   const last = monthTotals(lastRows);
-  const sameYear = month.slice(0, 4) === current.slice(0, 4);
   return (
     <MonthOverview
       summary={{
         month,
-        label: month === current ? "This month" : monthLabel(month, !sameYear),
+        // Always the month's name, so the arrows beside it make sense.
+        label: monthLabel(month, true),
         income: totals.income,
         expense: totals.expense,
         comparison: compareMonths(totals.expense, last.expense),
@@ -181,11 +179,12 @@ async function Recent({ searchParams }: Search) {
   await requireUser();
   await ensureFinanceDefaults();
   const { today, month, current } = await pageMonth(searchParams);
-  const [{ rows: transactions, more }, accounts, categories, any] = await Promise.all([
+  const [{ rows: transactions, more }, accounts, categories, any, people] = await Promise.all([
     listTransactions({ month }, 15),
     listAccounts(),
     listCategories(),
     hasAnyTransaction(),
+    listPeople(),
   ]);
   const listHref = `/money/transactions?month=${month}`;
 
@@ -212,7 +211,13 @@ async function Recent({ searchParams }: Search) {
       ) : transactions.length === 0 ? (
         <EmptyState icon={Receipt} title="Nothing this month" description="No transactions in this month yet." />
       ) : (
-        <TransactionList transactions={transactions} accounts={accounts} categories={categories} today={today} />
+        <TransactionList
+          transactions={transactions}
+          accounts={accounts}
+          categories={categories}
+          people={people}
+          today={today}
+        />
       )}
     </section>
   );

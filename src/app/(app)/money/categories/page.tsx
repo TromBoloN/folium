@@ -19,9 +19,9 @@ export default function CategoriesPage() {
   return (
     <div className="mx-auto w-full max-w-4xl">
       <PageHeader
-        title="Money categories"
+        title="Categories"
         description="Archived categories disappear from pickers but keep their history."
-        back={<BackLink href="/settings">Settings</BackLink>}
+        back={<BackLink href="/money">Money</BackLink>}
       />
       <Suspense fallback={<ListSkeleton rows={4} label="Loading categories" />}>
         <Categories />
@@ -82,7 +82,7 @@ function CategoryTree({ categories }: { categories: Category[] }) {
               {c.archived ? " (archived)" : ""}
             </span>
             <Button asChild size="icon" variant="ghost">
-              <Link href={`/settings/categories/${c.id}`} aria-label={`Edit ${c.name}`}>
+              <Link href={`/money/categories/${c.id}`} aria-label={`Edit ${c.name}`}>
                 <Pencil aria-hidden />
               </Link>
             </Button>

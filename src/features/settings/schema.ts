@@ -54,6 +54,10 @@ export const preferencesSchema = z.object({
   coursesView: z.enum(COURSES_VIEWS),
   /** Minimum attendance (percent of all classes) the campus requires; warnings use it. */
   attendanceTarget: z.number().int().min(0, "Use 0–100.").max(100, "Use 0–100."),
+  /** Email a reminder before a recurring bill is due (its own "remind me" days). Quiet by default. */
+  billReminderEmails: z.boolean(),
+  /** A Monday email: spent, left to spend, what's due. Quiet by default. */
+  weeklySummaryEmail: z.boolean(),
 });
 
 export type Theme = z.infer<typeof themeSchema>;
@@ -77,6 +81,8 @@ export const DEFAULT_PREFERENCES: Preferences = {
   gradeScale: DEFAULT_GRADE_SCALE,
   coursesView: "cards",
   attendanceTarget: 75,
+  billReminderEmails: false,
+  weeklySummaryEmail: false,
 };
 
 export const DEFAULT_SETTINGS: Settings = {

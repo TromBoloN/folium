@@ -146,7 +146,7 @@ test.describe("signed-in pages", () => {
           `/grades/${ids.courseId}/assessments/new`,
           ids.assessmentEdit,
           "/settings",
-          "/settings/categories",
+          "/money/categories",
           "/money",
           "/money/transactions",
           "/money/new",

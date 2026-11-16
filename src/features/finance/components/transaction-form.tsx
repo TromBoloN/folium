@@ -9,6 +9,7 @@ import { CancelButton, SheetFormBridge, useSheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { saveTransaction } from "../actions/transactions";
@@ -51,6 +52,10 @@ export type TransactionDefaults = {
   note: string;
   occurredOn: string;
   adjustmentDirection: string;
+  /** Debt kinds: the person's name (found or created on save). */
+  personName?: string;
+  /** Expenses: an optional course tag. */
+  courseId?: string;
 };
 
 type Props = {
@@ -61,6 +66,8 @@ type Props = {
   accounts: FormAccount[];
   categories: FormCategory[];
   history: { payee: string; categoryId: string; occurredOn: string }[];
+  people?: { id: string; name: string }[];
+  courses?: { id: string; name: string; code: string | null }[];
 };
 
 const KINDS: { value: TransactionKind; label: string; tone: string }[] = [
@@ -76,6 +83,13 @@ const KINDS: { value: TransactionKind; label: string; tone: string }[] = [
   },
   { value: "transfer", label: "Transfer", tone: "has-checked:border-foreground/40 has-checked:bg-muted" },
   { value: "adjustment", label: "Adjust", tone: "has-checked:border-foreground/40 has-checked:bg-muted" },
+];
+
+const DEBT_CHOICES: { value: TransactionKind; label: string }[] = [
+  { value: "lend", label: "I lent" },
+  { value: "borrow", label: "I borrowed" },
+  { value: "repay", label: "Paid me back" },
+  { value: "payback", label: "I paid back" },
 ];
 
 const chip =
@@ -94,11 +108,20 @@ function ErrorText({ id, error }: { id: string; error?: string }) {
  * are hidden by CSS on the checked kind (works without JavaScript) and dropped
  * by the schema. Amounts accept "25k", "25.000", "1,5jt".
  */
-export function TransactionForm({ id, defaults, today, accounts, categories, history }: Props) {
+export function TransactionForm({
+  id,
+  defaults,
+  today,
+  accounts,
+  categories,
+  history,
+  people = [],
+  courses = [],
+}: Props) {
   const [state, action, pending] = useActionState(saveTransaction, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const submitted = state && !state.ok ? state.values : undefined;
-  const value = (name: keyof TransactionDefaults) => submitted?.[name] ?? defaults[name];
+  const value = (name: keyof TransactionDefaults) => submitted?.[name] ?? defaults[name] ?? "";
   const [kind, setKind] = useState<TransactionKind>(value("kind") as TransactionKind);
   const [amountText, setAmountText] = useState(value("amount"));
   const [suggested, setSuggested] = useState<string | null>(null);
@@ -144,7 +167,7 @@ export function TransactionForm({ id, defaults, today, accounts, categories, his
   const accountChips = (name: "accountId" | "toAccountId", legend: React.ReactNode) => (
     <fieldset className="flex min-w-0 flex-col gap-2" aria-describedby={errors[name] ? `${name}-error` : undefined}>
       <legend className="mb-1.5 font-medium text-sm">{legend}</legend>
-      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+      <div className="grid grid-cols-2 gap-2">
         {accounts.map((a) => {
           const balance = BigInt(a.balance);
           return (
@@ -247,6 +270,24 @@ export function TransactionForm({ id, defaults, today, accounts, categories, his
             </label>
           ))}
         </div>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <span className="text-muted-foreground text-xs">With a person:</span>
+          {DEBT_CHOICES.map((k) => (
+            <label
+              key={k.value}
+              className="flex h-8 cursor-pointer select-none items-center rounded-full border border-border bg-surface-1 px-3 text-xs transition-colors duration-(--dur-fast) hover:border-foreground/25 has-checked:border-foreground/40 has-checked:bg-muted has-checked:font-medium has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30"
+            >
+              <input
+                type="radio"
+                name="kind"
+                value={k.value}
+                defaultChecked={value("kind") === k.value}
+                className="sr-only"
+              />
+              {k.label}
+            </label>
+          ))}
+        </div>
         <ErrorText id="kind" error={errors.kind} />
       </fieldset>
 
@@ -292,7 +333,7 @@ export function TransactionForm({ id, defaults, today, accounts, categories, his
       {accountChips(
         "accountId",
         <>
-          <span data-kinds="expense income adjustment">Account</span>
+          <span data-kinds="expense income adjustment lend repay borrow payback">Account</span>
           <span data-kinds="transfer">From</span>
         </>,
       )}
@@ -325,6 +366,39 @@ export function TransactionForm({ id, defaults, today, accounts, categories, his
             </p>
             <ErrorText id="feeAmount" error={errors.feeAmount} />
           </div>
+        </div>
+      </div>
+
+      <div data-kinds="lend repay borrow payback">
+        <div className="grid gap-1.5">
+          <label htmlFor="personName" className="font-medium text-sm">
+            Person
+          </label>
+          <Input
+            id="personName"
+            name="personName"
+            list="tx-people"
+            defaultValue={value("personName")}
+            autoComplete="off"
+            maxLength={60}
+            placeholder="e.g. Budi"
+            aria-invalid={errors.personId || errors.personName ? true : undefined}
+            aria-describedby={errors.personId || errors.personName ? "personName-error" : "personName-hint"}
+          />
+          <datalist id="tx-people">
+            {people.map((p) => (
+              <option key={p.id} value={p.name} />
+            ))}
+          </datalist>
+          {errors.personId || errors.personName ? (
+            <p id="personName-error" className="text-destructive text-xs">
+              {errors.personId ?? errors.personName}
+            </p>
+          ) : (
+            <p id="personName-hint" className="text-muted-foreground text-xs">
+              A new name is added to your people. Debts never count as spending or income.
+            </p>
+          )}
         </div>
       </div>
 
@@ -381,6 +455,21 @@ export function TransactionForm({ id, defaults, today, accounts, categories, his
             {categoryGrid("income")}
             <ErrorText id="categoryId" error={errors.categoryId} />
           </fieldset>
+          {courses.length > 0 && kind === "expense" ? (
+            <div className="grid gap-1.5 sm:max-w-xs">
+              <label htmlFor="courseId" className="font-medium text-sm">
+                For a course <span className="font-normal text-muted-foreground">(optional)</span>
+              </label>
+              <NativeSelect id="courseId" name="courseId" defaultValue={value("courseId")}>
+                <option value="">None</option>
+                {courses.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.code ? `${c.code} · ${c.name}` : c.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+          ) : null}
         </div>
       </div>
 

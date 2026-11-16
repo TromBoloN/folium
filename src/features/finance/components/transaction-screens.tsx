@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
+import { listCourseOptions } from "@/features/courses/queries";
 import { getSettings } from "@/features/settings/queries";
 import { localDateFor } from "../lib/local-date";
 import {
@@ -13,6 +14,7 @@ import {
   listCategories,
   listPayeeHistory,
 } from "../queries";
+import { listPeople } from "../queries/people";
 import { TRANSACTION_KINDS, type TransactionKind } from "../schemas";
 import { type TransactionDefaults, TransactionForm } from "./transaction-form";
 
@@ -23,7 +25,13 @@ const grouped = (n: bigint) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, "."
 
 async function formData(keepIds: (string | null)[] = []) {
   await ensureFinanceDefaults();
-  const [accounts, categories, history] = await Promise.all([listAccounts(), listCategories(), listPayeeHistory()]);
+  const [accounts, categories, history, people, courses] = await Promise.all([
+    listAccounts(),
+    listCategories(),
+    listPayeeHistory(),
+    listPeople(),
+    listCourseOptions(),
+  ]);
   // Archived ones are hidden from pickers, unless the transaction being edited uses them.
   return {
     accounts: accounts
@@ -40,14 +48,24 @@ async function formData(keepIds: (string | null)[] = []) {
       .filter((c) => !c.archived || keepIds.includes(c.id))
       .map((c) => ({ id: c.id, name: c.name, kind: c.kind, parentId: c.parentId, color: c.color, icon: c.icon })),
     history,
+    people: people.filter((p) => !p.archived || keepIds.includes(p.id)).map((p) => ({ id: p.id, name: p.name })),
+    peopleById: new Map(people.map((p) => [p.id, p.name])),
+    courses: courses
+      .filter((c) => !c.archived || keepIds.includes(c.id))
+      .map((c) => ({ id: c.id, name: c.name, code: c.code })),
     allAccounts: accounts,
   };
 }
 
 /** ?kind= and ?account= preselect (e.g. "Adjust" on an account opens an adjustment for it). */
-export async function NewTransactionScreen({ kind, account, variant }: { kind?: string; account?: string } & Variant) {
+export async function NewTransactionScreen({
+  kind,
+  account,
+  to,
+  variant,
+}: { kind?: string; account?: string; to?: string } & Variant) {
   await requireUser();
-  const [{ accounts, categories, history, allAccounts }, { preferences }] = await Promise.all([
+  const [{ accounts, categories, history, allAccounts, people, courses }, { preferences }] = await Promise.all([
     formData(),
     getSettings(),
   ]);
@@ -59,7 +77,8 @@ export async function NewTransactionScreen({ kind, account, variant }: { kind?: 
     amount: "",
     accountId:
       allAccounts.find((a) => a.id === account && !a.archived)?.id ?? (await lastUsedAccountId(allAccounts)) ?? "",
-    toAccountId: "",
+    // "Add money" on a goal: a transfer into its savings account.
+    toAccountId: allAccounts.find((a) => a.id === to && !a.archived)?.id ?? "",
     feeAmount: "",
     categoryId: "",
     payee: "",
@@ -78,6 +97,8 @@ export async function NewTransactionScreen({ kind, account, variant }: { kind?: 
         accounts={accounts}
         categories={categories}
         history={history}
+        people={people}
+        courses={courses}
       />
     </>
   );
@@ -87,8 +108,14 @@ export async function EditTransactionScreen({ id, variant }: { id: string } & Va
   await requireUser();
   const transaction = await getTransaction(id);
   if (!transaction) notFound();
-  const [{ accounts, categories, history }, { preferences }] = await Promise.all([
-    formData([transaction.accountId, transaction.toAccountId, transaction.categoryId]),
+  const [{ accounts, categories, history, people, peopleById, courses }, { preferences }] = await Promise.all([
+    formData([
+      transaction.accountId,
+      transaction.toAccountId,
+      transaction.categoryId,
+      transaction.personId,
+      transaction.courseId,
+    ]),
     getSettings(),
   ]);
   await io();
@@ -105,6 +132,8 @@ export async function EditTransactionScreen({ id, variant }: { id: string } & Va
     note: transaction.note ?? "",
     occurredOn: transaction.occurredOn,
     adjustmentDirection: transaction.adjustmentDirection ?? "",
+    personName: transaction.personId ? (peopleById.get(transaction.personId) ?? "") : "",
+    courseId: transaction.courseId ?? "",
   };
   return (
     <>
@@ -118,6 +147,8 @@ export async function EditTransactionScreen({ id, variant }: { id: string } & Va
         accounts={accounts}
         categories={categories}
         history={history}
+        people={people}
+        courses={courses}
       />
     </>
   );

@@ -32,7 +32,7 @@ export function SidebarNav() {
             href={href}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "relative isolate flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-sm transition-colors duration-(--dur-fast)",
+              "relative isolate flex items-center gap-3 rounded-xl px-3 py-2.5 font-medium text-sm outline-none transition-colors duration-(--dur-fast) focus-visible:ring-[3px] focus-visible:ring-ring/40",
               active ? "text-sidebar-active-foreground" : "text-muted-foreground hover:text-foreground",
             )}
           >
@@ -68,7 +68,7 @@ export function BottomNav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative isolate flex h-16 flex-col items-center justify-center gap-1 font-medium text-[0.6875rem] transition-colors duration-(--dur-fast)",
+                  "relative isolate flex h-16 flex-col items-center justify-center gap-1 rounded-lg font-medium text-[0.6875rem] outline-none transition-colors duration-(--dur-fast) focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:ring-inset",
                   active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >

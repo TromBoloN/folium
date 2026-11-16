@@ -61,7 +61,8 @@ export function TransactionFilters({
   };
 
   const accountName = accounts.find((a) => a.id === filters.account)?.name;
-  const categoryName = categories.find((c) => c.id === filters.category)?.name;
+  const categoryName =
+    filters.category === "none" ? "Uncategorised" : categories.find((c) => c.id === filters.category)?.name;
   const monthName = filters.month
     ? formatDate(`${filters.month}-01`, {
         month: "long",
@@ -162,6 +163,7 @@ export function TransactionFilters({
               className={pill}
             >
               <option value="">All categories</option>
+              <option value="none">Uncategorised</option>
               {(["expense", "income"] as const).map((kind) => (
                 <optgroup key={kind} label={kind === "expense" ? "Expense" : "Income"}>
                   {categories

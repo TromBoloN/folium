@@ -4,8 +4,15 @@ import { formatIdr } from "../lib/format-idr";
 import { OTHER, type Slice, UNCATEGORISED } from "../lib/rollup-by-category";
 
 function hrefFor(slice: Slice, month: string) {
-  if (slice.id === OTHER || slice.id === UNCATEGORISED) return `/money/transactions?kind=expense&month=${month}`;
+  if (slice.id === UNCATEGORISED) return `/money/transactions?category=none&kind=expense&month=${month}`;
+  if (slice.id === OTHER) return `/money/transactions?kind=expense&month=${month}`;
   return `/money/transactions?category=${slice.id}&month=${month}`;
+}
+
+/** Uncategorised is a light neutral nudge, not a category colour; Other is mid grey. */
+function colorOf(slice: Slice) {
+  if (slice.id === UNCATEGORISED) return "var(--border)";
+  return slice.color ?? "var(--muted-foreground)";
 }
 
 /**
@@ -38,7 +45,7 @@ export function SpendingByCategory({ slices, total, month }: { slices: Slice[]; 
                 <span
                   key={s.id}
                   className="money-accent h-full first:rounded-l-full last:rounded-r-full"
-                  style={{ width: `${s.percent}%`, "--c": s.color ?? "var(--muted-foreground)" } as React.CSSProperties}
+                  style={{ width: `${s.percent}%`, "--c": colorOf(s) } as React.CSSProperties}
                 />
               ) : null,
             )}
@@ -53,9 +60,16 @@ export function SpendingByCategory({ slices, total, month }: { slices: Slice[]; 
                   <span
                     aria-hidden
                     className="money-accent size-2.5 shrink-0 rounded-full"
-                    style={{ "--c": s.color ?? "var(--muted-foreground)" } as React.CSSProperties}
+                    style={{ "--c": colorOf(s) } as React.CSSProperties}
                   />
-                  <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                  {s.id === UNCATEGORISED ? (
+                    <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                      <span className="truncate text-muted-foreground">{s.name}</span>
+                      <span className="font-medium text-primary text-xs underline underline-offset-2">Categorise</span>
+                    </span>
+                  ) : (
+                    <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                  )}
                   <span className="tabular-nums">{formatIdr(s.amount)}</span>
                   <span className="w-10 text-right text-muted-foreground tabular-nums">{s.percent}%</span>
                 </Link>

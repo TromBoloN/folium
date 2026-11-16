@@ -25,14 +25,14 @@ export type Database = {
           Tables: {
             "accounts": {
                   Row: {
-                    "archived_at": string | null,"color": string,"created_at": string,"currency": string,"icon": string | null,"id": string,"name": string,"opening_balance": number,"sort_order": number,"type": string,"updated_at": string,"user_id": string
+                    "archived_at": string | null,"color": string,"created_at": string,"currency": string,"icon": string | null,"id": string,"is_spendable": boolean,"name": string,"opening_balance": number,"sort_order": number,"type": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"currency"?: string,"icon"?: string | null,"id"?: string,"name": string,"opening_balance"?: number,"sort_order"?: number,"type": string,"updated_at"?: string,"user_id"?: string
+                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"currency"?: string,"icon"?: string | null,"id"?: string,"is_spendable"?: boolean,"name": string,"opening_balance"?: number,"sort_order"?: number,"type": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"currency"?: string,"icon"?: string | null,"id"?: string,"name"?: string,"opening_balance"?: number,"sort_order"?: number,"type"?: string,"updated_at"?: string,"user_id"?: string
+                    "archived_at"?: string | null,"color"?: string,"created_at"?: string,"currency"?: string,"icon"?: string | null,"id"?: string,"is_spendable"?: boolean,"name"?: string,"opening_balance"?: number,"sort_order"?: number,"type"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -87,6 +87,26 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "timetable_slots"
       referencedColumns: ["id","course_id","user_id"]
+    }
+                  ]
+                },"budgets": {
+                  Row: {
+                    "amount": number,"category_id": string,"category_kind": string,"created_at": string,"id": string,"month": string,"rollover": boolean,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "amount": number,"category_id": string,"category_kind"?: string,"created_at"?: string,"id"?: string,"month": string,"rollover"?: boolean,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "amount"?: number,"category_id"?: string,"category_kind"?: string,"created_at"?: string,"id"?: string,"month"?: string,"rollover"?: boolean,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "budgets_category_fk"
+      columns: ["category_id","user_id","category_kind"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id","user_id","kind"]
     }
                   ]
                 },"categories": {
@@ -163,6 +183,80 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"goals": {
+                  Row: {
+                    "account_id": string,"account_type": string,"created_at": string,"id": string,"name": string,"target_amount": number,"target_on": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"account_type"?: string,"created_at"?: string,"id"?: string,"name": string,"target_amount": number,"target_on"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"account_type"?: string,"created_at"?: string,"id"?: string,"name"?: string,"target_amount"?: number,"target_on"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "goals_account_fk"
+      columns: ["account_id","user_id","account_type"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id","type"]
+    }
+                  ]
+                },"import_batches": {
+                  Row: {
+                    "account_id": string,"created_at": string,"filename": string | null,"id": string,"row_count": number,"source": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"created_at"?: string,"filename"?: string | null,"id"?: string,"row_count"?: number,"source"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"created_at"?: string,"filename"?: string | null,"id"?: string,"row_count"?: number,"source"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "import_batches_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "account_balances"
+      referencedColumns: ["account_id","user_id"]
+    },{
+      foreignKeyName: "import_batches_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id"]
+    }
+                  ]
+                },"notification_log": {
+                  Row: {
+                    "channel": string,"created_at": string,"id": string,"kind": string,"ref_key": string,"sent_at": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "channel"?: string,"created_at"?: string,"id"?: string,"kind": string,"ref_key": string,"sent_at"?: string,"updated_at"?: string,"user_id": string
+                  }
+                  Update: {
+                    "channel"?: string,"created_at"?: string,"id"?: string,"kind"?: string,"ref_key"?: string,"sent_at"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
+                },"people": {
+                  Row: {
+                    "archived_at": string | null,"created_at": string,"id": string,"name": string,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "archived_at"?: string | null,"created_at"?: string,"id"?: string,"name": string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "archived_at"?: string | null,"created_at"?: string,"id"?: string,"name"?: string,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    
+                  ]
                 },"profiles": {
                   Row: {
                     "avatar_url": string | null,"campus": string | null,"created_at": string,"display_name": string | null,"updated_at": string,"user_id": string
@@ -176,6 +270,50 @@ isOneToOne: false
                   }
                   Relationships: [
                     
+                  ]
+                },"recurring_rules": {
+                  Row: {
+                    "account_id": string,"active": boolean,"amount": number,"cadence": string,"category_id": string | null,"create_task": boolean,"created_at": string,"due_day": number | null,"ends_on": string | null,"generated_through": string | null,"id": string,"instalments_total": number | null,"interval_count": number,"is_estimate": boolean,"kind": string,"name": string,"paused_until": string | null,"payee": string | null,"remind_days_before": number,"starts_on": string,"to_account_id": string | null,"updated_at": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_id": string,"active"?: boolean,"amount": number,"cadence": string,"category_id"?: string | null,"create_task"?: boolean,"created_at"?: string,"due_day"?: number | null,"ends_on"?: string | null,"generated_through"?: string | null,"id"?: string,"instalments_total"?: number | null,"interval_count"?: number,"is_estimate"?: boolean,"kind": string,"name": string,"paused_until"?: string | null,"payee"?: string | null,"remind_days_before"?: number,"starts_on": string,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Update: {
+                    "account_id"?: string,"active"?: boolean,"amount"?: number,"cadence"?: string,"category_id"?: string | null,"create_task"?: boolean,"created_at"?: string,"due_day"?: number | null,"ends_on"?: string | null,"generated_through"?: string | null,"id"?: string,"instalments_total"?: number | null,"interval_count"?: number,"is_estimate"?: boolean,"kind"?: string,"name"?: string,"paused_until"?: string | null,"payee"?: string | null,"remind_days_before"?: number,"starts_on"?: string,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "recurring_rules_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "account_balances"
+      referencedColumns: ["account_id","user_id"]
+    },{
+      foreignKeyName: "recurring_rules_account_fk"
+      columns: ["account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "recurring_rules_category_fk"
+      columns: ["category_id","user_id","kind"]
+isOneToOne: false
+      referencedRelation: "categories"
+      referencedColumns: ["id","user_id","kind"]
+    },{
+      foreignKeyName: "recurring_rules_to_account_fk"
+      columns: ["to_account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "account_balances"
+      referencedColumns: ["account_id","user_id"]
+    },{
+      foreignKeyName: "recurring_rules_to_account_fk"
+      columns: ["to_account_id","user_id"]
+isOneToOne: false
+      referencedRelation: "accounts"
+      referencedColumns: ["id","user_id"]
+    }
                   ]
                 },"tasks": {
                   Row: {
@@ -225,14 +363,14 @@ isOneToOne: false
                   ]
                 },"transactions": {
                   Row: {
-                    "account_id": string,"adjustment_direction": string | null,"amount": number,"category_id": string | null,"created_at": string,"fee_amount": number,"id": string,"kind": string,"note": string | null,"occurred_on": string,"payee": string | null,"status": string,"to_account_id": string | null,"updated_at": string,"user_id": string
+                    "account_id": string,"adjustment_direction": string | null,"amount": number,"category_id": string | null,"course_id": string | null,"created_at": string,"due_on": string | null,"fee_amount": number,"id": string,"import_batch_id": string | null,"import_key": string | null,"kind": string,"note": string | null,"occurred_on": string,"payee": string | null,"person_id": string | null,"recurring_rule_id": string | null,"status": string,"task_id": string | null,"to_account_id": string | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_id": string,"adjustment_direction"?: string | null,"amount": number,"category_id"?: string | null,"created_at"?: string,"fee_amount"?: number,"id"?: string,"kind": string,"note"?: string | null,"occurred_on": string,"payee"?: string | null,"status"?: string,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "account_id": string,"adjustment_direction"?: string | null,"amount": number,"category_id"?: string | null,"course_id"?: string | null,"created_at"?: string,"due_on"?: string | null,"fee_amount"?: number,"id"?: string,"import_batch_id"?: string | null,"import_key"?: string | null,"kind": string,"note"?: string | null,"occurred_on": string,"payee"?: string | null,"person_id"?: string | null,"recurring_rule_id"?: string | null,"status"?: string,"task_id"?: string | null,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "account_id"?: string,"adjustment_direction"?: string | null,"amount"?: number,"category_id"?: string | null,"created_at"?: string,"fee_amount"?: number,"id"?: string,"kind"?: string,"note"?: string | null,"occurred_on"?: string,"payee"?: string | null,"status"?: string,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "account_id"?: string,"adjustment_direction"?: string | null,"amount"?: number,"category_id"?: string | null,"course_id"?: string | null,"created_at"?: string,"due_on"?: string | null,"fee_amount"?: number,"id"?: string,"import_batch_id"?: string | null,"import_key"?: string | null,"kind"?: string,"note"?: string | null,"occurred_on"?: string,"payee"?: string | null,"person_id"?: string | null,"recurring_rule_id"?: string | null,"status"?: string,"task_id"?: string | null,"to_account_id"?: string | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -253,6 +391,42 @@ isOneToOne: false
 isOneToOne: false
       referencedRelation: "categories"
       referencedColumns: ["id","user_id","kind"]
+    },{
+      foreignKeyName: "transactions_course_fk"
+      columns: ["course_id","user_id"]
+isOneToOne: false
+      referencedRelation: "courses"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "transactions_import_batch_fk"
+      columns: ["import_batch_id","user_id"]
+isOneToOne: false
+      referencedRelation: "import_batches"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "transactions_person_fk"
+      columns: ["person_id","user_id"]
+isOneToOne: false
+      referencedRelation: "people"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "transactions_person_fk"
+      columns: ["person_id","user_id"]
+isOneToOne: false
+      referencedRelation: "person_balances"
+      referencedColumns: ["person_id","user_id"]
+    },{
+      foreignKeyName: "transactions_recurring_rule_fk"
+      columns: ["recurring_rule_id","user_id"]
+isOneToOne: false
+      referencedRelation: "recurring_rules"
+      referencedColumns: ["id","user_id"]
+    },{
+      foreignKeyName: "transactions_task_fk"
+      columns: ["task_id","user_id"]
+isOneToOne: false
+      referencedRelation: "tasks"
+      referencedColumns: ["id","user_id"]
     },{
       foreignKeyName: "transactions_to_account_fk"
       columns: ["to_account_id","user_id"]
@@ -287,6 +461,14 @@ isOneToOne: false
             "account_balances": {
                   Row: {
                     "account_id": string,"balance": number | null,"user_id": string
+                  }
+                  ComputedFields: never
+                  Relationships: [
+                    
+                  ]
+                },"person_balances": {
+                  Row: {
+                    "balance": number | null,"person_id": string,"user_id": string
                   }
                   ComputedFields: never
                   Relationships: [

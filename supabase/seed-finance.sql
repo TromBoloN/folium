@@ -21,6 +21,11 @@ begin
   end if;
 
   delete from public.transactions where user_id = v_user;
+  delete from public.import_batches where user_id = v_user;
+  delete from public.recurring_rules where user_id = v_user;
+  delete from public.budgets where user_id = v_user;
+  delete from public.goals where user_id = v_user;
+  delete from public.people where user_id = v_user;
   delete from public.categories where user_id = v_user and parent_id is not null;
   delete from public.categories where user_id = v_user;
   delete from public.accounts where user_id = v_user;
@@ -117,5 +122,37 @@ begin
     ('transfer',  500000, a_livin, null,     null,              55, null, a_save, 0, null, 'Nabung'),
     ('adjustment',  6500, a_cash,  null,     null,              16, null, null, null, 'out', 'Uang receh hilang')
   ) as t(kind, amount, account, category, payee, days_ago, status, to_account, fee, direction, note);
+
+  -- Phase 2: recurring rules (the app generates their planned rows on the next visit),
+  -- budgets for this month, a savings goal and a couple of debts.
+  insert into public.recurring_rules (user_id, name, kind, amount, account_id, category_id, cadence, due_day, starts_on, remind_days_before, is_estimate, instalments_total, to_account_id) values
+    (v_user, 'Kos',       'expense',  900000, a_livin, c_kos,    'monthly', 1,  date_trunc('month', v_today)::date, 5, false, null, null),
+    (v_user, 'Spotify',   'expense',   54990, a_dana,  c_subs,   'monthly', 20, v_today - 40, 3, false, null, null),
+    (v_user, 'Netflix',   'expense',   65000, a_livin, c_subs,   'monthly', 18, v_today - 40, 3, false, null, null),
+    (v_user, 'Data XL',   'expense',   75000, a_gopay, c_shop,   'monthly', 25, v_today - 40, 3, true,  null, null),
+    (v_user, 'UKT Genap', 'expense', 1200000, a_livin, c_ukt,    'monthly', 10, v_today,      7, false, 4,    null),
+    (v_user, 'Allowance', 'income',  1500000, a_livin, c_allow,  'monthly', 28, v_today - 40, 0, false, null, null);
+  insert into public.recurring_rules (user_id, name, kind, amount, account_id, to_account_id, cadence, due_day, starts_on, remind_days_before) values
+    (v_user, 'Nabung bulanan', 'transfer', 300000, a_livin, a_save, 'monthly', 2, v_today, 0);
+
+  insert into public.budgets (user_id, category_id, month, amount, rollover) values
+    (v_user, c_food,      date_trunc('month', v_today)::date, 600000, true),
+    (v_user, c_transport, date_trunc('month', v_today)::date, 150000, false),
+    (v_user, c_subs,      date_trunc('month', v_today)::date, 120000, false),
+    (v_user, c_shop,      date_trunc('month', v_today)::date, 100000, false);
+
+  insert into public.goals (user_id, name, target_amount, target_on, account_id) values
+    (v_user, 'Laptop baru', 8000000, (v_today + 240), a_save);
+
+  insert into public.people (user_id, name) values (v_user, 'Budi'), (v_user, 'Sari');
+  insert into public.transactions (user_id, kind, amount, account_id, person_id, occurred_on, note)
+  select v_user, t.kind, t.amount, a_gopay, p.id, v_today - t.days_ago, t.note
+  from (values
+    ('lend',    45000, 'Budi', 6, 'Patungan pizza'),
+    ('borrow',  20000, 'Sari', 3, 'Fotokopi modul'),
+    ('lend',    30000, 'Sari', 9, 'Tiket bioskop'),
+    ('repay',   30000, 'Sari', 2, null)
+  ) as t(kind, amount, name, days_ago, note)
+  join public.people p on p.user_id = v_user and p.name = t.name;
 end;
 $$;

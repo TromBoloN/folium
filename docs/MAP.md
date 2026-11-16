@@ -65,15 +65,28 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 
 ## Money (finance) — `features/finance/`
 
-**The rules:** amounts are bigint rupiah (read as `::text`, never floats); balances come only from the `account_balances` view; planned rows never count; pure logic in `lib/` takes `now` and `timeZone` as arguments.
+**The rules:** amounts are bigint rupiah (read as `::text`, never floats); balances come only from the `account_balances` view; planned rows never count toward balances; transfers, adjustments and the debt kinds (`lend`, `repay`, `borrow`, `payback`) are never spending or income; pure logic in `lib/` takes `now`/`today` and `timeZone` as arguments.
 
-Routes `/money` (quick-add bar, total + account cards with 7-day sparklines, month overview, spending by category, recent; `?month=YYYY-MM` for the whole page, `?quick=` prefills the bar), `/money/transactions` (pill filters `?q&account&category&kind&month`, `?limit=` for Load more), `/money/new` (`?kind=&account=`) and `/money/[id]/edit` (also sheets), `/money/accounts` (cards with Match balance / Adjust), `/money/accounts/new`, `/money/accounts/[id]` (edit with colour and icon pickers, archive, `#reconcile` with `?real=` preview), `/settings/categories` (+ `/[id]`), `/money/export.csv`.
+**Shell.** `app/(app)/money/layout.tsx` + `components/money-chrome.tsx`: one header (Add transaction, gear menu: Accounts, Categories, Import and export), a tab bar (`TABS`: Overview, Transactions, Recurring, Budgets, Goals, Debts, Reports; add a tab only when its page exists) and the quick-add bar on the tabs. Full-page forms (`/money/new`, `/money/[id]/edit`) get no chrome.
 
-Files: `lib/` (`parse-amount`, `format-idr`, `split-evenly`, `local-date`, `parse-quick-transaction`, `quick-line` (picker fixes), `suggest-category`, `to-csv`, `balance-series`, `rollup-by-category`, `compare-months` (+ `shiftMonth`, `resolveMonth`), `money-palette` (stored colours and icon keys)), `schemas/` (form schemas, `money-math.ts`: reconcile, adjustment, month range, grouping), `queries/` (`ensureFinanceDefaults` first, accounts with balances, categories, `listTransactions` → `{rows, more}`, `summarizeTransactions`, `listPostedInOut`, `listPostedSince`, last-used account cookie), `actions/` (`transactions.ts` incl. `quickAddForm`, palette quick add, delete/restore for Undo; `accounts.ts`; `categories.ts`).
+**Routes.**
+- `/money`: quick add, total + account cards (7-day sparklines), safe to spend + 30-day forecast, upcoming bills, budgets closest to the limit, month overview, spending by category, recent. `?month=YYYY-MM`, `?quick=` prefills the bar.
+- `/money/transactions`: pill filters `?q&account&category&kind&month` (`category=none` = uncategorised), `?limit=` for Load more.
+- `/money/new` (`?kind=&account=&to=`), `/money/[id]/edit` (also sheets).
+- `/money/recurring` (bills by Overdue / This week / Later this month, Mark paid), `/money/recurring/new?template=` (subscription, kos, ukt, data, service, allowance, sinking), `/money/recurring/[id]` (edit, pause, delete).
+- `/money/budgets?month=`, `/money/goals`, `/money/debts` (balances per person, Mark settled, split a bill), `/money/reports`.
+- Manage: `/money/accounts` (+ `/new`, `/[id]` with `#reconcile`), `/money/categories` (+ `/[id]`; `/settings/categories` redirects), `/money/import` (CSV import with undo, exports, delete all).
+- `/money/export.csv`, `/money/export.json`, `/api/cron/reminders` (Vercel Cron, `CRON_SECRET`).
 
-Components: `quick-add-bar.tsx` (the bar, cycling hint, chip pickers, example lines), `money-overview.tsx` (account cards, sparkline, month overview, month nav), `spending-by-category.tsx`, `transaction-list.tsx` (the one shared row), `transaction-form.tsx` (kind segmented control, hero amount, account and category chips; fields per kind via the `.tx-form` rule in `globals.css`), `transaction-filters.tsx`, `money-icon.tsx` (glyphs, `IconBadge`), `appearance-fields.tsx`, `new-row-mark.tsx`, `money-skeletons.tsx`, `quick-money.tsx` (shared preview; palette: `$ …` anywhere, N on `/money` focuses the bar). Colours: `--money-in` / `--money-out` and `.money-ink` / `.money-badge` / `.money-accent` in `globals.css`.
+**Files.**
+- `lib/`: `parse-amount`, `format-idr`, `split-evenly`, `local-date`, `parse-quick-transaction`, `quick-line`, `suggest-category`, `to-csv`, `balance-series`, `rollup-by-category`, `compare-months`, `money-palette`, `filters-href`, `recurrence` (due dates, clamping), `rule-templates`, `budgets`, `safe-to-spend` (+ forecast), `goals-debts` (pace, splitBill, settlement), `reports`, `csv-import`, `reminders`. Tests: `*.test.ts` beside them (`phase2.test.ts` for the planning helpers).
+- `schemas/`: transaction/account/category forms, `planning.ts` (rules, budgets, goals), `money-math.ts`.
+- `queries/`: `index.ts` (defaults, accounts, categories, transactions, filters), `planning.ts` (rules + lazy generation, bills, budgets, goals, course spending), `people.ts`, `budget-progress.ts`, `safe-to-spend.ts`, `imports.ts` (+ JSON backup), `today.ts`.
+- `actions/`: `transactions.ts` (save, quick add, delete/restore), `accounts.ts`, `categories.ts`, `planning.ts` (rules, mark paid, budgets, goals), `debts.ts` (people, settle, split), `data.ts` (CSV import, undo, delete all).
+- `reminders-job.ts` (the cron's work); `src/lib/email.ts` (Resend / Mailpit), `src/lib/supabase/admin.ts` (secret key, cron only).
+- Components: `money-chrome`, `quick-add-bar`, `money-overview`, `planning-cards`, `bills`, `budget-list`, `spending-by-category`, `transaction-list` (shared row), `transaction-form`, `transaction-filters`, `rule-form`, `import-form`, `toast-form` (one-click actions with a toast), `money-icon`, `appearance-fields`, `course-spending` (on the course page). Today widget: `features/dashboard/widgets/money-widget.tsx`.
 
-Database: `supabase/migrations/*_finance.sql`, `supabase/tests/database/finance.test.sql`. Demo money (dev only, not in `db reset` or CI): `bun run db:seed && bun run db:seed:finance` (`supabase/seed-finance.sql`, guarded by `scripts/seed-finance.mjs`).
+**Database.** `supabase/migrations/*_finance*.sql` (1a ledger; recurring; budgets, goals, spendable; debts + `person_balances`; import batches, task/course links, `notification_log`). Tests: `supabase/tests/database/finance.test.sql`, `finance_phase2.test.sql`. Demo money (dev only, not in `db reset` or CI): `bun run db:seed && bun run db:seed:finance`.
 
 ## Search and command palette — `features/search/`
 

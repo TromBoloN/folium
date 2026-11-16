@@ -20,12 +20,13 @@ export type AccountDefaults = {
   color: string;
   icon: string;
   openingBalance: string;
+  isSpendable?: boolean;
 };
 
 export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
   const [state, action, pending] = useActionState(saveAccount, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
-  const value = (name: keyof AccountDefaults) => state?.values?.[name] ?? defaults[name] ?? "";
+  const value = (name: Exclude<keyof AccountDefaults, "isSpendable">) => state?.values?.[name] ?? defaults[name] ?? "";
   return (
     <form key={JSON.stringify(state)} action={action} className="flex flex-col gap-6" noValidate>
       {defaults.id ? <input type="hidden" name="id" value={defaults.id} /> : null}
@@ -68,6 +69,20 @@ export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
             aria-describedby={describedBy("openingBalance", errors.openingBalance, "hint")}
           />
         </Field>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            name="isSpendable"
+            defaultChecked={state && !state.ok ? state.values?.isSpendable === "on" : (defaults.isSpendable ?? true)}
+            className="mt-0.5 size-4 accent-primary"
+          />
+          <span>
+            Count it in “safe to spend”
+            <span className="block text-muted-foreground text-xs">
+              Leave savings out so they aren't treated as spending money.
+            </span>
+          </span>
+        </label>
         <AppearanceFields color={value("color")} icon={value("icon")} errors={errors} />
       </FormSection>
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>

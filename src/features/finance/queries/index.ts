@@ -22,6 +22,8 @@ export type Account = {
   icon: string | null;
   sortOrder: number;
   archived: boolean;
+  /** Counted by safe to spend (savings are off by default). */
+  isSpendable: boolean;
   openingBalance: bigint;
   balance: bigint;
 };
@@ -50,6 +52,10 @@ export type Transaction = {
   note: string | null;
   occurredOn: string;
   adjustmentDirection: "in" | "out" | null;
+  personId: string | null;
+  recurringRuleId: string | null;
+  dueOn: string | null;
+  courseId: string | null;
   createdAt: string;
 };
 
@@ -71,6 +77,7 @@ type AccountRow = {
   icon: string | null;
   sort_order: number;
   archived_at: string | null;
+  is_spendable: boolean;
   opening_balance: string;
 };
 
@@ -79,7 +86,7 @@ export const listAccounts = cache(async (): Promise<Account[]> => {
   const [accounts, balances] = await Promise.all([
     supabase
       .from("accounts")
-      .select("id, name, type, color, icon, sort_order, archived_at, opening_balance::text")
+      .select("id, name, type, color, icon, sort_order, archived_at, is_spendable, opening_balance::text")
       .order("sort_order")
       .order("name"),
     supabase.from("account_balances").select("account_id, balance::text"),
@@ -100,6 +107,7 @@ export const listAccounts = cache(async (): Promise<Account[]> => {
     icon: a.icon,
     sortOrder: a.sort_order,
     archived: a.archived_at !== null,
+    isSpendable: a.is_spendable,
     openingBalance: BigInt(a.opening_balance),
     balance: balanceOf.get(a.id) ?? BigInt(a.opening_balance),
   }));
@@ -126,10 +134,10 @@ export const listCategories = cache(async (): Promise<Category[]> => {
   }));
 });
 
-const TX_COLUMNS =
-  "id, kind, status, amount::text, fee_amount::text, account_id, to_account_id, category_id, payee, note, occurred_on, adjustment_direction, created_at";
+export const TX_COLUMNS =
+  "id, kind, status, amount::text, fee_amount::text, account_id, to_account_id, category_id, payee, note, occurred_on, adjustment_direction, person_id, recurring_rule_id, due_on, course_id, created_at";
 
-type TxRow = {
+export type TxRow = {
   id: string;
   kind: TransactionKind;
   status: "posted" | "planned";
@@ -142,10 +150,14 @@ type TxRow = {
   note: string | null;
   occurred_on: string;
   adjustment_direction: "in" | "out" | null;
+  person_id: string | null;
+  recurring_rule_id: string | null;
+  due_on: string | null;
+  course_id: string | null;
   created_at: string;
 };
 
-function toTransaction(r: TxRow): Transaction {
+export function toTransaction(r: TxRow): Transaction {
   return {
     id: r.id,
     kind: r.kind,
@@ -159,6 +171,10 @@ function toTransaction(r: TxRow): Transaction {
     note: r.note,
     occurredOn: r.occurred_on,
     adjustmentDirection: r.adjustment_direction,
+    personId: r.person_id,
+    recurringRuleId: r.recurring_rule_id,
+    dueOn: r.due_on,
+    courseId: r.course_id,
     createdAt: r.created_at,
   };
 }
@@ -174,13 +190,14 @@ type Filterable = {
   or(f: string): Filterable;
   eq(c: string, v: string): Filterable;
   in(c: string, v: string[]): Filterable;
+  is(c: string, v: null): Filterable;
   gte(c: string, v: string): Filterable;
   lte(c: string, v: string): Filterable;
 };
 
 /** A category and its children (a parent's filter includes them: they roll up into it). */
 async function categoryWithChildren(id: string | undefined): Promise<string[]> {
-  if (!id) return [];
+  if (!id || id === "none") return [];
   return [id, ...(await listCategories()).filter((c) => c.parentId === id).map((c) => c.id)];
 }
 
@@ -197,7 +214,9 @@ function applyFilters<Q>(query: Q, filters: TransactionFilters, categoryIds: str
   if (filters.q) groups.push(`payee.ilike.${quotedLike(filters.q)},note.ilike.${quotedLike(filters.q)}`);
   if (groups.length === 1) q = q.or(groups[0]);
   if (groups.length === 2) q = q.or(`and(or(${groups[0]}),or(${groups[1]}))`);
-  if (filters.category) q = q.in("category_id", categoryIds);
+  // "none": uncategorised income and expenses (transfers and adjustments never have a category).
+  if (filters.category === "none") q = q.is("category_id", null).in("kind", ["expense", "income"]);
+  else if (filters.category) q = q.in("category_id", categoryIds);
   if (filters.kind) q = q.eq("kind", filters.kind);
   if (filters.month) {
     const { from, to } = monthBounds(filters.month);

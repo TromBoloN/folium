@@ -1,4 +1,4 @@
-import { Pencil } from "lucide-react";
+import { HandCoins, Pencil } from "lucide-react";
 import Link from "next/link";
 import { Pill } from "@/components/ui/pill";
 import { formatDate } from "@/lib/dates";
@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 import { formatIdr } from "../lib/format-idr";
 import { addDays } from "../lib/local-date";
 import type { Account, Category, Transaction } from "../queries";
-import { KIND_LABELS } from "../schemas";
+import { isDebtKind, KIND_LABELS } from "../schemas";
 import { groupByDay } from "../schemas/money-math";
 import { DeleteTransactionButton } from "./delete-transaction-button";
 import { categoryGlyph, IconBadge, KIND_ICONS } from "./money-icon";
@@ -16,8 +16,18 @@ type Props = {
   transactions: Transaction[];
   accounts: Account[];
   categories: Category[];
+  /** Names for debt rows ("Lent to Budi"). */
+  people?: { id: string; name: string }[];
   today: string;
 };
+
+/** "Lent to Budi", "Budi paid you back"… */
+function debtTitle(kind: string, name: string) {
+  if (kind === "lend") return `Lent to ${name}`;
+  if (kind === "repay") return `${name} paid you back`;
+  if (kind === "borrow") return `Borrowed from ${name}`;
+  return `Paid ${name} back`;
+}
 
 /** "Today", "Yesterday", a weekday within the last week, else a date (with the year if it isn't this one). */
 export function dayLabel(date: string, today: string) {
@@ -41,9 +51,10 @@ function dayNet(rows: readonly Transaction[]) {
 }
 
 /** Transactions grouped by day, newest first. Used on /money and /money/transactions. */
-export function TransactionList({ transactions, accounts, categories, today }: Props) {
+export function TransactionList({ transactions, accounts, categories, people = [], today }: Props) {
   const account = new Map(accounts.map((a) => [a.id, a]));
   const category = new Map(categories.map((c) => [c.id, c]));
+  const person = new Map(people.map((p) => [p.id, p.name]));
   return (
     <ol className="flex flex-col gap-5">
       {groupByDay(transactions).map((group) => {
@@ -62,7 +73,7 @@ export function TransactionList({ transactions, accounts, categories, today }: P
             </h3>
             <ul className="tile flex flex-col divide-y divide-border-soft overflow-hidden">
               {group.rows.map((t) => (
-                <TransactionRow key={t.id} t={t} account={account} category={category} />
+                <TransactionRow key={t.id} t={t} account={account} category={category} person={person} />
               ))}
             </ul>
           </li>
@@ -77,17 +88,23 @@ export function TransactionRow({
   t,
   account,
   category,
+  person = new Map(),
 }: {
   t: Transaction;
   account: Map<string, Account>;
   category: Map<string, Category>;
+  person?: Map<string, string>;
 }) {
+  const debt = isDebtKind(t.kind);
   const cat = t.categoryId ? category.get(t.categoryId) : undefined;
   const from = account.get(t.accountId);
   const to = t.toAccountId ? account.get(t.toAccountId) : undefined;
   const planned = t.status === "planned";
   const sign: "+" | "−" | "" =
-    t.kind === "income" || (t.kind === "adjustment" && t.adjustmentDirection === "in")
+    t.kind === "income" ||
+    t.kind === "repay" ||
+    t.kind === "borrow" ||
+    (t.kind === "adjustment" && t.adjustmentDirection === "in")
       ? "+"
       : t.kind === "transfer"
         ? ""
@@ -98,10 +115,13 @@ export function TransactionRow({
       ? `${from?.name ?? "?"} → ${to?.name ?? "?"}`
       : t.kind === "adjustment"
         ? "Balance adjustment"
-        : (t.payee ?? cat?.name ?? KIND_LABELS[t.kind]);
+        : debt
+          ? debtTitle(t.kind, (t.personId && person.get(t.personId)) || "someone")
+          : (t.payee ?? cat?.name ?? KIND_LABELS[t.kind]);
 
-  const fallback =
-    t.kind === "transfer"
+  const fallback = debt
+    ? HandCoins
+    : t.kind === "transfer"
       ? KIND_ICONS.transfer
       : t.kind === "adjustment"
         ? t.adjustmentDirection === "in"
