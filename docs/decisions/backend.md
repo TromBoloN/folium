@@ -6,6 +6,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Finance**
 
+- [2026-11-16: Bills never create tasks; tasks are for class assignments](#2026-11-16-bills-never-create-tasks-tasks-are-for-class-assignments)
 - [2026-11-16: Debts are transaction kinds, not a separate ledger](#2026-11-16-debts-are-transaction-kinds-not-a-separate-ledger)
 - [2026-11-16: Recurring rules generate planned rows lazily](#2026-11-16-recurring-rules-generate-planned-rows-lazily)
 - [2026-11-16: Safe to spend: spendable accounts, payday from planned income](#2026-11-16-safe-to-spend-spendable-accounts-payday-from-planned-income)
@@ -77,6 +78,14 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
 
+## 2026-11-16: Bills never create tasks; tasks are for class assignments
+
+**Status.** Accepted. Replaces the opt-in "Pay …" task per bill from phase 2.
+
+**Decision.** Recurring rules never create, complete or delete tasks. Bills live in Money (Recurring tab, upcoming bills on Overview) and in the Money widget on Today. Migration `*_bills_never_create_tasks.sql` deleted only tasks a transaction linked to through `transactions.task_id` (the one reliable marker; never matched by title), via `cleanup_bill_tasks()`, which pgTAP proves leaves unlinked tasks alone. `transactions.task_id` and `recurring_rules.create_task` stay, unused, until a later migration drops them; undo never restores a `task_id`.
+
+**Why.** Tasks is the list of class work; bills there were noise.
+
 ## 2026-11-16: Debts are transaction kinds, not a separate ledger
 
 **Status.** Accepted.
@@ -89,7 +98,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Status.** Accepted.
 
-**Decision.** `recurring_rules` generate PLANNED transactions up to 45 days ahead when Money or Today loads (`ensureRecurringGenerated`), no cron. Unique `(recurring_rule_id, due_on)` makes it idempotent and `generated_through` stops a deleted (skipped) occurrence coming back. Editing or pausing a rule deletes its future planned rows and regenerates; posted history never changes. Deleting a rule keeps posted rows (FK `on delete set null (recurring_rule_id)`) and removes its planned ones (and their open tasks), a deliberate change from the blueprint's "unlink planned", which would leave orphan bills. Due days past a month's end clamp to its last day; dates are the user's local calendar.
+**Decision.** `recurring_rules` generate PLANNED transactions up to 45 days ahead when Money or Today loads (`ensureRecurringGenerated`), no cron. Unique `(recurring_rule_id, due_on)` makes it idempotent and `generated_through` stops a deleted (skipped) occurrence coming back. Editing or pausing a rule deletes its future planned rows and regenerates; posted history never changes. Deleting a rule keeps posted rows (FK `on delete set null (recurring_rule_id)`) and removes its planned ones, a deliberate change from the blueprint's "unlink planned", which would leave orphan bills. Due days past a month's end clamp to its last day; dates are the user's local calendar.
 
 **Why.** Balances, budgets ("committed") and safe-to-spend all read planned rows, so bills must exist as rows. Lazy generation needs no infrastructure.
 

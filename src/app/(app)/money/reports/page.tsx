@@ -47,8 +47,8 @@ const short = (n: bigint) => {
 async function Reports() {
   await requireUser();
   await ensureFinanceDefaults();
-  const { today, timeZone } = await moneyToday();
-  await ensureRecurringGenerated(today, timeZone);
+  const { today } = await moneyToday();
+  await ensureRecurringGenerated(today);
   const current = today.slice(0, 7);
   const months = Array.from({ length: 12 }, (_, i) => shiftMonth(current, i - 11));
   const firstEnd = monthBounds(months[0]).from;

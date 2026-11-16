@@ -24,8 +24,9 @@ export function SidebarNav() {
   const pathname = usePagePath();
   return (
     <nav aria-label="Main" className="flex flex-col gap-1">
-      {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-        const active = isActive(pathname, href);
+      {NAV_ITEMS.map((item) => {
+        const { href, label, icon: Icon } = item;
+        const active = isActive(pathname, item);
         return (
           <Link
             key={href}
@@ -59,16 +60,17 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-border-soft border-t bg-surface-1 pb-[env(safe-area-inset-bottom)] shadow-raised md:hidden"
     >
-      <ul className="grid grid-cols-6 px-0.5">
-        {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
-          const active = isActive(pathname, href);
+      <ul className="grid grid-cols-4 px-0.5">
+        {NAV_ITEMS.map((item) => {
+          const { href, label, icon: Icon } = item;
+          const active = isActive(pathname, item);
           return (
             <li key={href}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative isolate flex h-16 flex-col items-center justify-center gap-1 rounded-lg font-medium text-[0.6875rem] outline-none transition-colors duration-(--dur-fast) focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:ring-inset",
+                  "relative isolate flex h-16 flex-col items-center justify-center gap-1 rounded-lg font-medium text-xs outline-none transition-colors duration-(--dur-fast) focus-visible:ring-[3px] focus-visible:ring-ring/40 focus-visible:ring-inset",
                   active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >

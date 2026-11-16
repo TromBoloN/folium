@@ -1,6 +1,5 @@
 import "server-only";
 import { cache } from "react";
-import { dueAtFrom } from "@/features/tasks/due";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, type IsoDate } from "../lib/local-date";
 import { type Cadence, occurrencesBetween } from "../lib/recurrence";
@@ -34,12 +33,11 @@ export type Rule = {
   remindDaysBefore: number;
   active: boolean;
   pausedUntil: IsoDate | null;
-  createTask: boolean;
   generatedThrough: IsoDate | null;
 };
 
 const RULE_COLUMNS =
-  "id, name, kind, amount::text, is_estimate, account_id, to_account_id, category_id, payee, cadence, interval_count, due_day, starts_on, ends_on, instalments_total, remind_days_before, active, paused_until, create_task, generated_through";
+  "id, name, kind, amount::text, is_estimate, account_id, to_account_id, category_id, payee, cadence, interval_count, due_day, starts_on, ends_on, instalments_total, remind_days_before, active, paused_until, generated_through";
 
 type RuleRow = {
   id: string;
@@ -60,7 +58,6 @@ type RuleRow = {
   remind_days_before: number;
   active: boolean;
   paused_until: string | null;
-  create_task: boolean;
   generated_through: string | null;
 };
 
@@ -84,7 +81,6 @@ function toRule(r: RuleRow): Rule {
     remindDaysBefore: r.remind_days_before,
     active: r.active,
     pausedUntil: r.paused_until,
-    createTask: r.create_task,
     generatedThrough: r.generated_through,
   };
 }
@@ -104,9 +100,9 @@ export async function getRule(id: string): Promise<Rule | null> {
  * Create the planned rows each active rule owes, from where it was last
  * generated up to today + HORIZON_DAYS. Idempotent: unique (rule, due date) in
  * SQL, and `generated_through` so a deleted (skipped) occurrence stays gone.
- * Cached per request; pass the user's today.
+ * Cached per request; pass the user's today. Bills never create or touch tasks.
  */
-export const ensureRecurringGenerated = cache(async (today: IsoDate, timeZone: string): Promise<void> => {
+export const ensureRecurringGenerated = cache(async (today: IsoDate): Promise<void> => {
   const rules = (await listRules()).filter((r) => r.active);
   const to = addDays(today, HORIZON_DAYS);
   const supabase = await createClient();
@@ -117,43 +113,25 @@ export const ensureRecurringGenerated = cache(async (today: IsoDate, timeZone: s
     // biome-ignore lint/complexity/useMathMinMax: ISO date strings, not numbers.
     const dates = occurrencesBetween(rule, start > floor ? start : floor, to);
     if (dates.length > 0) {
-      const { data, error } = await supabase
-        .from("transactions")
-        .upsert(
-          dates.map((d) => ({
-            kind: rule.kind,
-            status: "planned",
-            amount: Number(rule.amount),
-            account_id: rule.accountId,
-            to_account_id: rule.toAccountId,
-            category_id: rule.categoryId,
-            payee: rule.kind === "transfer" ? null : (rule.payee ?? rule.name),
-            note: rule.kind === "transfer" ? rule.name : null,
-            occurred_on: d,
-            due_on: d,
-            recurring_rule_id: rule.id,
-          })),
-          { onConflict: "recurring_rule_id,due_on", ignoreDuplicates: true },
-        )
-        .select("id, due_on");
+      const { error } = await supabase.from("transactions").upsert(
+        dates.map((d) => ({
+          kind: rule.kind,
+          status: "planned",
+          amount: Number(rule.amount),
+          account_id: rule.accountId,
+          to_account_id: rule.toAccountId,
+          category_id: rule.categoryId,
+          payee: rule.kind === "transfer" ? null : (rule.payee ?? rule.name),
+          note: rule.kind === "transfer" ? rule.name : null,
+          occurred_on: d,
+          due_on: d,
+          recurring_rule_id: rule.id,
+        })),
+        { onConflict: "recurring_rule_id,due_on", ignoreDuplicates: true },
+      );
       if (error) {
         console.error("[finance] generate", rule.id, error.code, error.message);
         continue;
-      }
-      if (rule.createTask && data) {
-        for (const row of data) {
-          const { data: task } = await supabase
-            .from("tasks")
-            .insert({
-              title: `Pay ${rule.name}`.slice(0, 200),
-              due_at: dueAtFrom(row.due_on as string, null, timeZone),
-              due_has_time: false,
-              priority: "high",
-            })
-            .select("id")
-            .single();
-          if (task) await supabase.from("transactions").update({ task_id: task.id }).eq("id", row.id);
-        }
       }
     }
     await supabase.from("recurring_rules").update({ generated_through: to }).eq("id", rule.id);

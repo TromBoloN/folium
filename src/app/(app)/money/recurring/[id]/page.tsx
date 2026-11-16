@@ -64,7 +64,6 @@ async function Edit({ params }: Pick<PageProps<"/money/recurring/[id]">, "params
             endsOn: rule.endsOn ?? "",
             instalmentsTotal: rule.instalmentsTotal ? String(rule.instalmentsTotal) : "",
             remindDaysBefore: String(rule.remindDaysBefore),
-            createTask: rule.createTask,
           }}
           accounts={accounts
             .filter((a) => !a.archived || a.id === rule.accountId)

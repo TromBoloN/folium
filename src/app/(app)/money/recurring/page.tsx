@@ -45,8 +45,8 @@ function Group({ title, children, count }: { title: string; children: React.Reac
 async function Recurring() {
   await requireUser();
   await ensureFinanceDefaults();
-  const { today, timeZone } = await moneyToday();
-  await ensureRecurringGenerated(today, timeZone);
+  const { today } = await moneyToday();
+  await ensureRecurringGenerated(today);
   const { from, to: monthEnd } = monthBounds(today.slice(0, 7));
   const [bills, rules, categories, paid] = await Promise.all([
     listBills(),

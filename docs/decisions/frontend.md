@@ -14,6 +14,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **App shell, navigation and PWA**
 
+- [2026-11-16: School is a route group with one tab bar; one paths constant](#2026-11-16-school-is-a-route-group-with-one-tab-bar-one-paths-constant)
 - [2026-11-15: The Courses view is remembered in preferences, the URL wins](#2026-11-15-the-courses-view-is-remembered-in-preferences-the-url-wins)
 - [2026-11-15: Installable app now; reminders not yet](#2026-11-15-installable-app-now-reminders-not-yet)
 - [2026-11-15: Grades is a fifth top-level section](#2026-11-15-grades-is-a-fifth-top-level-section)
@@ -38,6 +39,14 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 - [2026-11-16: Forms share primitives and only enhance a real form](#2026-11-16-forms-share-primitives-and-only-enhance-a-real-form)
 - [2026-11-15: Settings apply instantly; the action is called directly](#2026-11-15-settings-apply-instantly-the-action-is-called-directly)
 - [2026-11-15: Forms echo submitted values back on error](#2026-11-15-forms-echo-submitted-values-back-on-error)
+
+## 2026-11-16: School is a route group with one tab bar; one paths constant
+
+**Status.** Accepted.
+
+**Decision.** The sidebar is Today, School, Money, Settings. Courses, Tasks and Grades live in `app/(app)/(school)/` with one `layout.tsx` rendering `SectionTabs` (shared with Money's tab bar). A route group, so every URL (`/courses`, `/tasks`, `/grades` and below) is unchanged and needs no redirects. `src/lib/sections.ts` holds `SCHOOL_TABS`/`SCHOOL_PATHS` (and `MONEY_TABS`): the ONE source for both the sidebar's active state and the tab bars; `isUnder` matches nested routes but not look-alikes (`/courses-archive`).
+
+**Why.** Six top-level items crowded the phone tab bar; the three school sections belong together. **Cost:** add a school page under `(school)` or it loses the tabs; add a section path in `sections.ts`, not in the nav.
 
 ## 2026-11-16: One class-time form adds several weekdays
 

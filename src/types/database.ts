@@ -477,7 +477,10 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "ensure_finance_defaults":
+            "cleanup_bill_tasks":
+{ Args: Record<PropertyKey, never>; Returns: number
+                           },
+"ensure_finance_defaults":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            }
           }

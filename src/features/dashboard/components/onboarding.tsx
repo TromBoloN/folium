@@ -18,7 +18,7 @@ export async function Onboarding() {
     {
       done: courses.length > 0,
       title: "Add your first course",
-      detail: "Name, code and a colour. Colours follow the course everywhere.",
+      detail: "In School: name, code and a colour. Colours follow the course everywhere.",
       href: "/courses/new",
       cta: "Add a course",
     },
@@ -31,8 +31,8 @@ export async function Onboarding() {
     },
     {
       done: anyTask,
-      title: "Add a task",
-      detail: "Type it in one line: “Essay outline tomorrow 5pm #ING101”. Press N anywhere.",
+      title: "Add an assignment",
+      detail: "A task for a class, in one line: “Essay outline tomorrow 5pm #ING101”. Press N anywhere.",
       href: "/tasks/new",
       cta: "Add a task",
     },

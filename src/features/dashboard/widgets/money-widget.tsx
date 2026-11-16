@@ -15,8 +15,8 @@ import { cn } from "@/lib/utils";
 export async function MoneyWidget() {
   await requireUser();
   await ensureFinanceDefaults();
-  const { today, timeZone } = await moneyToday();
-  await ensureRecurringGenerated(today, timeZone);
+  const { today } = await moneyToday();
+  await ensureRecurringGenerated(today);
   const [stats, bills, budgets] = await Promise.all([
     loadSafeToSpend(today),
     listBills(),

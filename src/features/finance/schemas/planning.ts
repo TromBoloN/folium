@@ -53,7 +53,6 @@ export const ruleFormSchema = z
     endsOn: optionalDate,
     instalmentsTotal: optionalInt(1, 120, "From 1 to 120 payments."),
     remindDaysBefore: optionalInt(0, 60, "0 to 60 days.").transform((v) => v ?? 3),
-    createTask: z.boolean(),
   })
   .superRefine((r, ctx) => {
     if (r.cadence !== "weekly" && !r.dueDay) {

@@ -21,7 +21,7 @@ Where to look before you change something. One section per feature: its routes, 
 ## Shell and shared UI
 
 - `app/layout.tsx`: fonts, theme attributes on `<html>` from settings (`instant = false`), PWA metadata. `app/(app)/layout.tsx`: app shell + `@modal` slot.
-- `components/app-shell/`: `app-shell.tsx` (sidebar, main, bottom nav, providers), `app-nav.tsx` + `nav-items.ts` (five sections), `page-transition.tsx`, `use-page-path.ts` (the page under an open sheet).
+- `components/app-shell/`: `app-shell.tsx` (sidebar, main, bottom nav, providers), `app-nav.tsx` + `nav-items.ts` (Today, School, Money, Settings; School lights up for `SCHOOL_PATHS`), `section-tabs.tsx` (the shared tab bar for School and Money). `src/lib/sections.ts`: `SCHOOL_TABS`/`SCHOOL_PATHS`, `MONEY_TABS`, `isUnder` (one source for sidebar and tabs), `page-transition.tsx`, `use-page-path.ts` (the page under an open sheet).
 - `components/sheet.tsx`: `Sheet` (native `<dialog>`, side/bottom sheet), `useSheet()` (`close`, `setTint`), `SheetFormBridge`, `CancelButton`.
 - `components/toast/toaster.tsx`: `useToast()` with an optional action (Undo).
 - `components/form/`: `FormSection` + `MoreDetails`, `ChipGroup`, `Stepper`, `FormFooter`. `components/ui/field.tsx` (self-checking field), `ui/control.ts` (the shared control look), `ui/native-select.tsx` (+ the "Selects" block in `globals.css`).
@@ -36,6 +36,10 @@ Routes `/login`, `/signup`, `/forgot-password`, `/update-password`, `app/auth/co
 ## Settings — `features/settings/`
 
 Route `/settings`. `schema.ts` (theme + preferences, defaults, merge/diff, `SETTINGS_VERSION`), `theme.ts` (`themeAttributes`, `accentTokens`), `queries.ts` (`getSettings`, cached, never throws), `actions.ts` (`updateSettings`; `rememberCoursesView`), `components/settings-form.tsx` (applies instantly, saves after 500 ms, Undo). Preferences include time zone, week start, time format, grade scale, `coursesView`, `attendanceTarget`.
+
+## School (Courses, Tasks, Grades)
+
+Routes live in `app/(app)/(school)/` (a route group: URLs unchanged) with one `layout.tsx` showing the School tab bar. Tasks is for class assignments only; bills never create tasks.
 
 ## Courses — `features/courses/`
 
@@ -81,7 +85,7 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 **Files.**
 - `lib/`: `parse-amount`, `format-idr`, `split-evenly`, `local-date`, `parse-quick-transaction`, `quick-line`, `suggest-category`, `to-csv`, `balance-series`, `rollup-by-category`, `compare-months`, `money-palette`, `filters-href`, `recurrence` (due dates, clamping), `rule-templates`, `budgets`, `safe-to-spend` (+ forecast), `goals-debts` (pace, splitBill, settlement), `reports`, `csv-import`, `reminders`. Tests: `*.test.ts` beside them (`phase2.test.ts` for the planning helpers).
 - `schemas/`: transaction/account/category forms, `planning.ts` (rules, budgets, goals), `money-math.ts`.
-- `queries/`: `index.ts` (defaults, accounts, categories, transactions, filters), `planning.ts` (rules + lazy generation, bills, budgets, goals, course spending), `people.ts`, `budget-progress.ts`, `safe-to-spend.ts`, `imports.ts` (+ JSON backup), `today.ts`.
+- `queries/`: `index.ts` (defaults, accounts, categories, transactions, filters), `planning.ts` (rules + lazy generation, bills, budgets, goals, course spending; bills never touch tasks), `people.ts`, `budget-progress.ts`, `safe-to-spend.ts`, `imports.ts` (+ JSON backup), `today.ts`.
 - `actions/`: `transactions.ts` (save, quick add, delete/restore), `accounts.ts`, `categories.ts`, `planning.ts` (rules, mark paid, budgets, goals), `debts.ts` (people, settle, split), `data.ts` (CSV import, undo, delete all).
 - `reminders-job.ts` (the cron's work); `src/lib/email.ts` (Resend / Mailpit), `src/lib/supabase/admin.ts` (secret key, cron only).
 - Components: `money-chrome`, `quick-add-bar`, `money-overview`, `planning-cards`, `bills`, `budget-list`, `spending-by-category`, `transaction-list` (shared row), `transaction-form`, `transaction-filters`, `rule-form`, `import-form`, `toast-form` (one-click actions with a toast), `money-icon`, `appearance-fields`, `course-spending` (on the course page). Today widget: `features/dashboard/widgets/money-widget.tsx`.
@@ -94,7 +98,7 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 
 ## Database — `supabase/`
 
-`migrations/` (initial schema; task due time; grades; schedule changes; attendance and links), `tests/database/` (`rls`, `schema_rules`, `grades`, `schedule`), `seed.sql` (demo account; safe to re-run, never against production), `templates/` (auth emails), `config.toml`.
+`migrations/` (initial schema; task due time; grades; schedule changes; attendance and links; finance; bills-never-create-tasks cleanup), `tests/database/` (`rls`, `schema_rules`, `grades`, `schedule`), `seed.sql` (demo account; safe to re-run, never against production), `templates/` (auth emails), `config.toml`.
 
 ## How do I…
 
@@ -104,7 +108,7 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 
 **Add a table.** `bunx supabase migration new <name>`; in the same file: `user_id … default auth.uid()`, timestamps + `set_updated_at` trigger, named CHECKs, composite FKs, RLS enabled, `revoke all … from anon, authenticated`, explicit grants, one policy per operation. A pgTAP isolation test in `supabase/tests/database/`. `migration up`, `bun run db:types`, maybe extend the seed.
 
-**Add a feature.** `features/<name>/` with `schema.ts`, `queries.ts` (`import "server-only"`), `actions.ts` (`"use server"`, the action contract), pure logic + tests, `components/`. Thin routes in `app/(app)/<name>/`. A nav entry goes in `nav-items.ts` (the bottom nav fits five). Add its pages to `e2e/accessibility.spec.ts`.
+**Add a feature.** `features/<name>/` with `schema.ts`, `queries.ts` (`import "server-only"`), `actions.ts` (`"use server"`, the action contract), pure logic + tests, `components/`. Thin routes in `app/(app)/<name>/` (school pages in `app/(app)/(school)/`). A nav entry goes in `nav-items.ts` (the bottom nav fits five); a tab in `src/lib/sections.ts`. Add its pages to `e2e/accessibility.spec.ts`.
 
 **Add a page.** Static parts (header) in the page, data in a Suspense'd async child that calls `requireUser()`, awaits `params`/`searchParams`, and calls `notFound()` when needed. Give it loading, empty and error states. `bun run typecheck` regenerates `PageProps`. For a sheet version, add `app/(app)/@modal/(.)<route>/page.tsx` rendering the same screen with `variant="sheet"`.
 

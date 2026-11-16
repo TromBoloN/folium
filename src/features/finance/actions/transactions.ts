@@ -142,7 +142,8 @@ const snapshotSchema = z.object({
   recurring_rule_id: z.uuid().nullable().default(null),
   due_on: z.string().nullable().default(null),
   course_id: z.uuid().nullable().default(null),
-  task_id: z.uuid().nullable().default(null),
+  // Old bill tasks are gone (bills never create tasks): an undo never re-links one.
+  task_id: z.unknown().transform(() => null),
   import_batch_id: z.uuid().nullable().default(null),
   import_key: z.string().nullable().default(null),
   created_at: z.string(),

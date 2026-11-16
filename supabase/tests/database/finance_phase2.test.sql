@@ -2,7 +2,7 @@
 -- import batches, task/course links, notification log. Shapes, composite FKs,
 -- balances and cross-user isolation.
 begin;
-select plan(29);
+select plan(32);
 
 insert into auth.users (id, email) values
   ('e1000000-0000-4000-8000-000000000001', 'p2-a@test.local'),
@@ -150,6 +150,22 @@ insert into public.notification_log (user_id, kind, ref_key) values
 select throws_ok(
   $$ insert into public.notification_log (user_id, kind, ref_key) values ('e1000000-0000-4000-8000-000000000001', 'bill_due', 'tx-1') $$,
   '23505', null, 'a reminder is logged (and sent) once');
+
+-- ---------------------------------------------------------------- bill-task cleanup (3)
+-- A task linked from a transaction (the old bill marker) and an ordinary task with the
+-- same title and no link. Only the linked one may go.
+insert into public.tasks (id, user_id, title) values
+  ('e7000000-0000-4000-8000-000000000001', 'e1000000-0000-4000-8000-000000000001', 'Pay Kos'),
+  ('e7000000-0000-4000-8000-000000000002', 'e1000000-0000-4000-8000-000000000001', 'Pay Kos');
+update public.transactions set task_id = 'e7000000-0000-4000-8000-000000000001'
+  where id = 'ef000000-0000-4000-8000-000000000001';
+select is(public.cleanup_bill_tasks(), 1, 'the cleanup deletes only the task a bill links to');
+select ok(
+  exists (select 1 from public.tasks where id = 'e7000000-0000-4000-8000-000000000002'),
+  'a task without the bill link survives, even with the same title');
+select is(
+  (select task_id from public.transactions where id = 'ef000000-0000-4000-8000-000000000001'), null,
+  'the transaction''s link is cleared, the transaction stays');
 
 -- ---------------------------------------------------------------- isolation as B (7)
 set local role authenticated;

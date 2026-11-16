@@ -27,18 +27,15 @@ async function today() {
   return localDateFor(new Date(), preferences.timeZone);
 }
 
-/** Drop a rule's future planned rows (and the tasks made for them), so they're generated again from the rule. */
+/** Drop a rule's future planned rows, so they're generated again from the rule. (Bills never touch tasks.) */
 async function clearFuturePlanned(ruleId: string, from: string) {
   const supabase = await createClient();
-  const { data } = await supabase
+  await supabase
     .from("transactions")
     .delete()
     .eq("recurring_rule_id", ruleId)
     .eq("status", "planned")
-    .gte("due_on", from)
-    .select("task_id");
-  const tasks = (data ?? []).map((r) => r.task_id).filter((id): id is string => Boolean(id));
-  if (tasks.length) await supabase.from("tasks").delete().in("id", tasks).neq("status", "done");
+    .gte("due_on", from);
 }
 
 // ---------------------------------------------------------------- recurring
@@ -62,7 +59,6 @@ export async function saveRule(_prev: FormState, formData: FormData): Promise<Fo
     endsOn: formData.get("endsOn") ?? "",
     instalmentsTotal: formData.get("instalmentsTotal") ?? "",
     remindDaysBefore: formData.get("remindDaysBefore") ?? "",
-    createTask: formData.get("createTask") === "on",
   });
   if (!parsed.success) {
     return {
@@ -100,7 +96,6 @@ export async function saveRule(_prev: FormState, formData: FormData): Promise<Fo
     ends_on: r.endsOn,
     instalments_total: r.instalmentsTotal,
     remind_days_before: r.remindDaysBefore,
-    create_task: r.createTask,
   };
   const id = z.uuid().safeParse(formData.get("id"));
   const supabase = await createClient();
@@ -135,7 +130,7 @@ function ruleError(error: { code: string; message: string }, values: Record<stri
   return { ok: false, error: "Couldn't save. Please try again.", values };
 }
 
-/** Delete a rule: its posted history stays (unlinked); its planned rows (and their open tasks) go. */
+/** Delete a rule: its posted history stays (unlinked); its planned rows go. */
 export async function deleteRule(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
   const id = z.uuid().safeParse(formData.get("id"));
@@ -170,7 +165,7 @@ export async function pauseRule(_prev: FormState, formData: FormData): Promise<F
 
 /**
  * Mark a planned bill as paid: it becomes a posted transaction dated today
- * (with the real amount when the rule was an estimate), and its task is done.
+ * (with the real amount when the rule was an estimate).
  */
 export async function markPaid(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
@@ -180,7 +175,7 @@ export async function markPaid(_prev: FormState, formData: FormData): Promise<Fo
   const supabase = await createClient();
   const { data: row } = await supabase
     .from("transactions")
-    .select("amount::text, task_id, payee, note, kind")
+    .select("amount::text, payee, note, kind")
     .eq("id", id.data)
     .eq("status", "planned")
     .maybeSingle();
@@ -204,12 +199,6 @@ export async function markPaid(_prev: FormState, formData: FormData): Promise<Fo
     .update({ status: "posted", amount: Number(amount), occurred_on: await today() })
     .eq("id", id.data);
   if (error) return { ok: false, error: "Couldn't mark it paid. Please try again.", values };
-  if (row.task_id) {
-    await supabase
-      .from("tasks")
-      .update({ status: "done", completed_at: new Date().toISOString() })
-      .eq("id", row.task_id);
-  }
   refresh();
   const what = row.kind === "income" ? "Received" : row.kind === "transfer" ? "Moved" : "Paid";
   return {

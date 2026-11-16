@@ -4,30 +4,14 @@ import { Download, Landmark, Plus, Settings2, Tags } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { SectionTabs, tabClass } from "@/components/section-tabs";
 import { Button } from "@/components/ui/button";
+import { isMoneyManagePath, MONEY_TABS } from "@/lib/sections";
 import { cn } from "@/lib/utils";
-
-/** Tabs appear only once their page exists (no empty tabs). Add Recurring, Budgets… here as they ship. */
-const TABS = [
-  { href: "/money", label: "Overview" },
-  { href: "/money/transactions", label: "Transactions" },
-  { href: "/money/recurring", label: "Recurring" },
-  { href: "/money/budgets", label: "Budgets" },
-  { href: "/money/goals", label: "Goals" },
-  { href: "/money/debts", label: "Debts" },
-  { href: "/money/reports", label: "Reports" },
-] as const;
-
-/** Setup pages behind the gear menu: they show "Manage" as the current tab. */
-const MANAGE = ["/money/accounts", "/money/categories", "/money/import"];
 
 /** Full-page forms (no-JS fallback for the sheets) get no chrome: they have their own header and back link. */
 const isFormPage = (path: string) => path === "/money/new" || /^\/money\/[^/]+\/edit$/.test(path);
-const isTab = (path: string) => TABS.some((t) => t.href === path);
-/** The tab a page belongs to: exact for Overview, by prefix for the rest (e.g. /money/recurring/new). */
-const tabFor = (path: string) =>
-  path === "/money" ? "/money" : (TABS.find((t) => t.href !== "/money" && path.startsWith(t.href))?.href ?? null);
-const isManage = (path: string) => MANAGE.some((m) => path === m || path.startsWith(`${m}/`));
+const isTab = (path: string) => MONEY_TABS.some((t) => t.href === path.replace(/\/+$/, ""));
 
 /**
  * The shared /money shell: title and actions, a tab bar, and the quick-add bar
@@ -55,56 +39,22 @@ export function MoneyChrome({ quick, children }: { quick: React.ReactNode; child
             </div>
           </div>
         ) : null}
-        <MoneyTabs pathname={pathname} manageActive={isManage(pathname)} />
+        <SectionTabs
+          label="Money"
+          items={MONEY_TABS}
+          extra={
+            isMoneyManagePath(pathname) ? (
+              <span aria-current="page" className={cn(tabClass, "border-primary")}>
+                <Settings2 aria-hidden className="size-4" />
+                Manage
+              </span>
+            ) : null
+          }
+        />
       </div>
       {tab ? quick : null}
       {children}
     </div>
-  );
-}
-
-function MoneyTabs({ pathname, manageActive }: { pathname: string; manageActive: boolean }) {
-  const active = useRef<HTMLAnchorElement>(null);
-  // Keep the active tab in view when the bar scrolls sideways on a phone.
-  useEffect(() => {
-    if (pathname) active.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
-  }, [pathname]);
-  return (
-    <nav aria-label="Money" className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
-      <ul className="flex min-w-max items-center gap-1 border-border-soft border-b">
-        {TABS.map((t) => {
-          const current = tabFor(pathname) === t.href;
-          return (
-            <li key={t.href}>
-              <Link
-                ref={current ? active : undefined}
-                href={t.href}
-                aria-current={current ? (pathname === t.href ? "page" : "true") : undefined}
-                className={cn(
-                  "-mb-px flex h-10 items-center border-b-2 px-3 font-medium text-sm outline-none transition-colors duration-(--dur-fast) focus-visible:rounded-md focus-visible:ring-[3px] focus-visible:ring-ring/30",
-                  current
-                    ? "border-primary text-foreground"
-                    : "border-transparent text-muted-foreground hover:text-foreground",
-                )}
-              >
-                {t.label}
-              </Link>
-            </li>
-          );
-        })}
-        {manageActive ? (
-          <li>
-            <span
-              aria-current="page"
-              className="-mb-px flex h-10 items-center gap-1.5 border-primary border-b-2 px-3 font-medium text-sm"
-            >
-              <Settings2 aria-hidden className="size-4" />
-              Manage
-            </span>
-          </li>
-        ) : null}
-      </ul>
-    </nav>
   );
 }
 

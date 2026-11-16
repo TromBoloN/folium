@@ -93,8 +93,8 @@ const monthLabel = (month: string, withYear: boolean) =>
 async function Planning() {
   await requireUser();
   await ensureFinanceDefaults();
-  const { today, timeZone } = await moneyToday();
-  await ensureRecurringGenerated(today, timeZone);
+  const { today } = await moneyToday();
+  await ensureRecurringGenerated(today);
   const month = today.slice(0, 7);
   const [stats, bills, categories, budgets] = await Promise.all([
     loadSafeToSpend(today),

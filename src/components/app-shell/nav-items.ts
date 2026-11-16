@@ -1,17 +1,25 @@
-import { BookOpen, GraduationCap, ListChecks, type LucideIcon, Settings, Sun, Wallet } from "lucide-react";
+import { GraduationCap, type LucideIcon, Settings, Sun, Wallet } from "lucide-react";
+import { isUnder, SCHOOL_PATHS } from "@/lib/sections";
 
-export type NavItem = { href: string; label: string; icon: LucideIcon };
+export type NavItem = {
+  href: string;
+  label: string;
+  icon: LucideIcon;
+  /** Paths that light this item up (default: its own href and below). */
+  match?: readonly string[];
+};
 
 /** The app's top-level sections, shared by the sidebar and the bottom nav. */
 export const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Today", icon: Sun },
-  { href: "/courses", label: "Courses", icon: BookOpen },
-  { href: "/tasks", label: "Tasks", icon: ListChecks },
+  // School = Courses, Tasks and Grades (one tab bar inside); opens on Courses.
+  { href: "/courses", label: "School", icon: GraduationCap, match: SCHOOL_PATHS },
   { href: "/money", label: "Money", icon: Wallet },
-  { href: "/grades", label: "Grades", icon: GraduationCap },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export function isActive(pathname: string, href: string) {
-  return href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(`${href}/`);
+export function isActive(pathname: string, item: NavItem | string) {
+  const { href, match } = typeof item === "string" ? { href: item, match: undefined } : item;
+  if (href === "/") return pathname === "/";
+  return (match ?? [href]).some((p) => isUnder(pathname, p));
 }

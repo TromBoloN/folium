@@ -27,7 +27,6 @@ export type RuleDefaults = {
   endsOn: string;
   instalmentsTotal: string;
   remindDaysBefore: string;
-  createTask: boolean;
 };
 
 type Option = { id: string; name: string };
@@ -52,8 +51,7 @@ export function RuleForm({
     const sent = state && !state.ok ? state.values?.[name] : undefined;
     return sent ?? String(defaults[name] ?? "");
   };
-  const checked = (name: "isEstimate" | "createTask") =>
-    state && !state.ok ? state.values?.[name] === "on" : defaults[name];
+  const checked = (name: "isEstimate") => (state && !state.ok ? state.values?.[name] === "on" : defaults[name]);
   const [kind, setKind] = useState(v("kind"));
   const [cadence, setCadence] = useState(v("cadence"));
   const field = (name: keyof RuleDefaults, hint?: string) => ({
@@ -181,15 +179,6 @@ export function RuleForm({
           <Input {...field("payee")} maxLength={120} placeholder="Shown on the transaction" />
         </Field>
       </div>
-      <label className="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          name="createTask"
-          defaultChecked={checked("createTask")}
-          className="size-4 accent-primary"
-        />
-        Also add a “Pay …” task on each due date (done when you mark it paid)
-      </label>
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : defaults.id ? "Save changes" : "Add"}

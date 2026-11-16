@@ -10,6 +10,7 @@ const DEFAULT_TITLES = [
   "Due soon",
   "Overdue",
   "Grades",
+  "Money",
   "Quick add",
 ];
 
@@ -107,7 +108,7 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
 
   // Hide "Overdue", move "Quick add" to the top with the buttons.
   await page.getByLabel("Show Overdue").uncheck();
-  for (let i = 0; i < 7; i++) await page.getByRole("button", { name: "Move Quick add up" }).click();
+  for (let i = 0; i < 8; i++) await page.getByRole("button", { name: "Move Quick add up" }).click();
   await expect(page.getByRole("button", { name: "Move Quick add up" })).toBeDisabled();
 
   // Keyboard drag: pick up "Due soon", move it up one place, drop.
@@ -115,9 +116,9 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
   await page.getByRole("button", { name: "Reorder Due soon" }).focus();
   await page.keyboard.press("Space");
   // The live region keeps only the latest message; picking up reports the starting position.
-  await expect(page.getByText("Due soon is now at position 6 of 8.")).toBeAttached();
+  await expect(page.getByText("Due soon is now at position 6 of 9.")).toBeAttached();
   await page.keyboard.press("ArrowUp");
-  await expect(page.getByText("Due soon is now at position 5 of 8.")).toBeAttached();
+  await expect(page.getByText("Due soon is now at position 5 of 9.")).toBeAttached();
   await page.keyboard.press("Space");
   await expect(page.getByText("Due soon dropped at position 5.")).toBeAttached();
   const rows = page.locator("form ul > li");
@@ -125,7 +126,16 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
 
   await page.getByRole("button", { name: "Save layout" }).click();
   await expect(page).toHaveURL(/\/$/);
-  const expected = ["Quick add", "Next up", "At a glance", "Today's classes", "Due soon", "This week", "Grades"];
+  const expected = [
+    "Quick add",
+    "Next up",
+    "At a glance",
+    "Today's classes",
+    "Due soon",
+    "This week",
+    "Grades",
+    "Money",
+  ];
   await expect.poll(() => widgetTitles(page)).toEqual(expected);
 
   await page.reload();

@@ -15,6 +15,7 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Finance**
 
+- [2026-11-16: Bills never create tasks; tasks are for class assignments](backend.md#2026-11-16-bills-never-create-tasks-tasks-are-for-class-assignments)
 - [2026-11-16: Debts are transaction kinds, not a separate ledger](backend.md#2026-11-16-debts-are-transaction-kinds-not-a-separate-ledger)
 - [2026-11-16: Recurring rules generate planned rows lazily](backend.md#2026-11-16-recurring-rules-generate-planned-rows-lazily)
 - [2026-11-16: Safe to spend: spendable accounts, payday from planned income](backend.md#2026-11-16-safe-to-spend-spendable-accounts-payday-from-planned-income)
@@ -98,6 +99,7 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **App shell, navigation and PWA**
 
+- [2026-11-16: School is a route group with one tab bar; one paths constant](frontend.md#2026-11-16-school-is-a-route-group-with-one-tab-bar-one-paths-constant)
 - [2026-11-15: The Courses view is remembered in preferences, the URL wins](frontend.md#2026-11-15-the-courses-view-is-remembered-in-preferences-the-url-wins)
 - [2026-11-15: Installable app now; reminders not yet](frontend.md#2026-11-15-installable-app-now-reminders-not-yet)
 - [2026-11-15: Grades is a fifth top-level section](frontend.md#2026-11-15-grades-is-a-fifth-top-level-section)

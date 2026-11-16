@@ -28,7 +28,6 @@ export type TemplateDefaults = {
   startsOn: IsoDate;
   instalmentsTotal: string;
   remindDaysBefore: string;
-  createTask: boolean;
 };
 
 function find(items: readonly Named[], re: RegExp) {
@@ -53,7 +52,6 @@ export function ruleTemplate(
     startsOn: ctx.today,
     instalmentsTotal: "",
     remindDaysBefore: "3",
-    createTask: false,
   };
   switch (key) {
     case "subscription":
@@ -72,7 +70,6 @@ export function ruleTemplate(
         name: "UKT",
         instalmentsTotal: "6",
         remindDaysBefore: "7",
-        createTask: true,
         categoryId: find(ctx.expense, /ukt|tuition|kuliah/),
       };
     case "data":
@@ -88,7 +85,6 @@ export function ruleTemplate(
         name: "Motorbike service",
         intervalCount: "3",
         remindDaysBefore: "7",
-        createTask: true,
         startsOn: addDays(ctx.today, 1),
         categoryId: find(ctx.expense, /transport/),
       };
