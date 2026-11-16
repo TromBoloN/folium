@@ -27,7 +27,7 @@ export const viewport: Viewport = {
 
 // The saved theme goes on <html> in the server render so the first paint is
 // already right (no flash). That means the root layout reads the session and
-// blocks; see docs/decisions.md.
+// blocks; see docs/decisions/frontend.md.
 export const instant = false;
 
 const geist = Geist({ variable: "--font-geist", subsets: ["latin"], display: "swap" });

@@ -41,12 +41,12 @@ usefulness, fast workflows, customizable theme, preferences and widgets.
   (default Asia/Makassar). Never hardcode a zone.
 - **Protected:** never hand-edit `src/types/database.ts`. Leave the
   `<!-- BEGIN:nextjs-agent-rules -->` block untouched.
-- Read the gotchas doc in `docs/documentation/` before touching sheets, toasts,
+- Read `docs/gotchas.md` before touching sheets, toasts,
   hydration or Cache Components.
 
 ## Workflow
 - Never run state-changing git commands (commit, push, branch, reset, stash). The user commits.
-- Record real decisions in `docs/documentation/decisions.md`.
+- Record real decisions in `docs/decisions/` (`backend.md` or `frontend.md`, newest first, with a status line); open questions go in its `README.md`.
 - Before finishing: `bun run typecheck`, `bunx biome check .`, `bun run test` and
   `bunx supabase test db` pass. Also `bun run build` if you added or changed routes.
 - When a task is done, end with one suggested Conventional Commits line.

@@ -1,6 +1,6 @@
 # Architecture
 
-How Folium is put together and the rules every change follows. Where things are: [../MAP.md](../MAP.md). Why: [decisions.md](decisions.md). Traps: [gotchas.md](gotchas.md).
+How Folium is put together and the rules every change follows. Where things are: [../MAP.md](../MAP.md). Why: [decisions/](decisions/README.md). Traps: [gotchas.md](gotchas.md).
 
 ## Stack
 

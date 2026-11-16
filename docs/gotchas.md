@@ -19,7 +19,7 @@ Each of these has already cost time once.
 - `notFound()` inside Suspense returns **status 200** with the not-found UI and `noindex`. Accepted: pages are private.
 - Error boundaries use `retry()`, not `reset()`.
 - **A server component can't pass a function as a child to a client component** (e.g. render props). It fails at render with "Functions are not valid as a child of Client Components".
-- **Dev-only 500**: in `next dev`, a no-JS form submission whose action returns an error state can throw `InvariantError: … cookies or mutableCookies`. The check exists only in Next's dev code path; production is fine. Re-test after upgrading Next.
+- **Dev-only 500 on no-JavaScript form errors** (a known Next.js dev-mode bug, moved here from the decision log on 2026-11-16). In `next dev` only, submitting a form with JavaScript off, when the action returns an error state, can end in a 500 with `InvariantError: Received an underlying cookies object that does not match either cookies or mutableCookies`. The check lives in `makeUntrackedCookiesWithDevWarnings` (`next/dist/server/request/cookies.js`), which production doesn't use; the same requests pass against `next start`. No action in app code. Re-test after upgrading Next.
 
 - **A `"use server"` file must not import from a `"use client"` file.** On the server, a client module's exports are client references, not callable functions. Shared helpers go in plain modules (e.g. `parseGradeScaleField` lives in `grades/scale.ts`).
 - **Comparing settings values with `!==`** treats arrays/objects as always changed; `diffFromDefaults` compares by JSON for that reason.
@@ -58,7 +58,7 @@ Each of these has already cost time once.
 
 ## Sheets, shortcuts and client state
 
-- **No catch-all page in `@modal`.** `[...catchAll]/page.tsx` caused an endless segment-prefetch loop in Next 16.4. Sheets close themselves when the pathname changes instead (see [decisions.md](decisions.md)).
+- **No catch-all page in `@modal`.** `[...catchAll]/page.tsx` caused an endless segment-prefetch loop in Next 16.4. Sheets close themselves when the pathname changes instead (see [decisions/frontend.md](decisions/frontend.md#2026-11-15-add-and-edit-happen-in-sheets-intercepted-routes-with-no-catch-all-in-the-slot)).
 - **`usePathname()` changes when a sheet opens.** Use `usePagePath()` for anything about the page underneath (nav highlight, page transition key).
 - **Don't update React context right after hydration.** It makes still-hydrating Suspense boundaries client-render (hidden duplicate content). Use the external `client-data-store`.
 - **Forms remount after each result** (`key={state}`), so effects that react to a result must start from an empty ref, not the current state.
