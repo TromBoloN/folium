@@ -19,11 +19,12 @@ import { Button } from "@/components/ui/button";
 import { Pill } from "@/components/ui/pill";
 import { requireUser } from "@/features/auth/queries";
 import { listCourses } from "@/features/courses/queries";
-import { whatsappLink } from "@/features/courses/schema";
+import { mailtoLink, whatsappLink } from "@/features/courses/schema";
 import { getSettings } from "@/features/settings/queries";
 import { formatDue } from "@/features/tasks/due";
 import { listOpenTasks } from "@/features/tasks/queries";
 import { formatDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { safeHttpsUrl } from "@/lib/safe-links";
 import { cn } from "@/lib/utils";
 import { formatTime } from "../../timetable/logic";
 import { occurrenceChips, placementLabel, timeRange } from "../format";
@@ -55,6 +56,9 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
   const tasks = (await listOpenTasks()).filter((t) => t.courseId === occurrence.courseId).slice(0, 4);
   const cancelled = occurrence.status === "cancelled";
   const back = `/courses?view=day&week=${occurrence.date}`;
+  const whatsapp = whatsappLink(course?.lecturerPhone);
+  const mailto = mailtoLink(course?.lecturerEmail);
+  const meeting = safeHttpsUrl(occurrence.meetingUrl);
 
   return (
     <div className="flex flex-col gap-6" style={{ "--tint": occurrence.course.color } as React.CSSProperties}>
@@ -92,9 +96,9 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
             Usually {placementLabel(occurrence.from, fmt)}–{formatTime(occurrence.from.endTime, fmt)}
           </p>
         ) : null}
-        {occurrence.meetingUrl && isLive(occurrence) ? (
+        {meeting && isLive(occurrence) ? (
           <Button asChild size="sm" className="w-fit">
-            <a href={occurrence.meetingUrl} target="_blank" rel="noopener noreferrer">
+            <a href={meeting} target="_blank" rel="noopener noreferrer">
               <Video aria-hidden />
               Open meeting link
               <ExternalLink aria-hidden className="opacity-70" />
@@ -157,21 +161,16 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
             label="Edit the weekly time"
           />
         ) : null}
-        {course?.lecturerPhone ? (
+        {whatsapp && course ? (
           <LinkRow
-            href={whatsappLink(course.lecturerPhone)}
+            href={whatsapp}
             icon={MessageCircle}
             label={`WhatsApp ${course.lecturer ? course.lecturer.split(",")[0] : "the lecturer"}`}
             external
           />
         ) : null}
-        {course?.lecturerEmail ? (
-          <LinkRow
-            href={`mailto:${course.lecturerEmail}`}
-            icon={Mail}
-            label={`Email ${course.lecturerEmail}`}
-            external
-          />
+        {mailto && course?.lecturerEmail ? (
+          <LinkRow href={mailto} icon={Mail} label={`Email ${course.lecturerEmail}`} external />
         ) : null}
       </nav>
     </div>

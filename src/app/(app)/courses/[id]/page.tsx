@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { CourseActions } from "@/features/courses/components/course-actions";
 import { type CourseWithSlots, getCourse, listActiveSlots } from "@/features/courses/queries";
-import { whatsappLink } from "@/features/courses/schema";
+import { mailtoLink, whatsappLink } from "@/features/courses/schema";
 import { attendanceStats } from "@/features/schedule/attendance";
 import { AttendancePanel } from "@/features/schedule/components/attendance-panel";
 import { OccurrenceRow } from "@/features/schedule/components/occurrence-row";
@@ -48,6 +48,9 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
 
   // Archived courses aren't in the timetable, so they can't clash with anything.
   const conflicts = course.archivedAt ? new Map<string, TimetableSlot[]>() : findConflicts(activeSlots);
+  // Only well-formed contacts become links (rows can be written outside the app's forms).
+  const whatsapp = whatsappLink(course.lecturerPhone);
+  const mailto = mailtoLink(course.lecturerEmail);
   const details = [
     ["Lecturer", course.lecturer],
     ["Room", course.room],
@@ -86,19 +89,19 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
               ))}
             </dl>
           ) : null}
-          {course.lecturerPhone || course.lecturerEmail ? (
+          {whatsapp || mailto ? (
             <div className="relative flex flex-wrap gap-2">
-              {course.lecturerPhone ? (
+              {whatsapp ? (
                 <Button asChild size="sm" variant="outline">
-                  <a href={whatsappLink(course.lecturerPhone)} target="_blank" rel="noopener noreferrer">
+                  <a href={whatsapp} target="_blank" rel="noopener noreferrer">
                     <MessageCircle aria-hidden />
                     WhatsApp
                   </a>
                 </Button>
               ) : null}
-              {course.lecturerEmail ? (
+              {mailto ? (
                 <Button asChild size="sm" variant="outline">
-                  <a href={`mailto:${course.lecturerEmail}`}>
+                  <a href={mailto}>
                     <Mail aria-hidden />
                     Email
                   </a>

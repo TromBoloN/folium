@@ -150,3 +150,46 @@ describe("semesters", () => {
     ).toEqual(["2026 Ganjil", "2026 Genap"]);
   });
 });
+
+describe("links in course and class-time forms", () => {
+  const course = { name: "Calculus", color: "#2f9e44" };
+  const slot = { courseId: "0b9f4b8e-1c2d-4e5f-8a9b-0c1d2e3f4a5b", weekday: "1", startTime: "08:00", endTime: "09:40" };
+
+  it("meeting links must be https; javascript:, data: and http are rejected", () => {
+    for (const meetingUrl of [
+      "javascript:alert(1)",
+      "JAVASCRIPT:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "data:text/html;base64,PHNjcmlwdD4=",
+      "http://meet.example/abc",
+      "https://meet.example/a\nb",
+    ]) {
+      const result = slotInputSchema.safeParse({ ...slot, meetingUrl });
+      expect(result.success, meetingUrl).toBe(false);
+      expect(result.error?.issues[0].path).toEqual(["meetingUrl"]);
+    }
+    expect(slotInputSchema.parse({ ...slot, meetingUrl: "https://Meet.Google.com/abc" }).meetingUrl).toBe(
+      "https://meet.google.com/abc",
+    );
+  });
+
+  it("WhatsApp numbers are stored as digits (with an optional +); anything else is rejected", () => {
+    expect(courseInputSchema.parse({ ...course, lecturerPhone: "+62 812-3456 (7890)" }).lecturerPhone).toBe(
+      "+6281234567890",
+    );
+    for (const lecturerPhone of ["javascript:alert(1)", "data:text/plain,0812", "0812;3456", "call me"]) {
+      expect(courseInputSchema.safeParse({ ...course, lecturerPhone }).success, lecturerPhone).toBe(false);
+    }
+  });
+
+  it("emails are plain addresses: no schemes, no mailto parameters", () => {
+    for (const lecturerEmail of [
+      "javascript:alert(1)@x.co",
+      "data:text/html,a@b.co",
+      "a@b.co?cc=c@d.co",
+      "a@b.co&body=x",
+    ]) {
+      expect(courseInputSchema.safeParse({ ...course, lecturerEmail }).success, lecturerEmail).toBe(false);
+    }
+  });
+});

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
+import { safeHttpsUrl } from "@/lib/safe-links";
 import { createClient } from "@/lib/supabase/server";
 import { trimSeconds } from "../timetable/logic";
 import type { TimetableSlot } from "../timetable/types";
@@ -62,7 +63,8 @@ function toCourse(row: Row): CourseWithSlots {
       startsOn: s.starts_on,
       endsOn: s.ends_on,
       online: s.is_online,
-      meetingUrl: s.meeting_url,
+      // Rows can be written outside the app's forms: only a safe https link reaches an href or the .ics.
+      meetingUrl: safeHttpsUrl(s.meeting_url),
       course,
     })),
   };

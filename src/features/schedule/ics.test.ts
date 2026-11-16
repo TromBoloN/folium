@@ -65,10 +65,80 @@ describe("buildIcs", () => {
   });
 
   it("escapes and folds text", () => {
-    expect(escapeText("a,b;c\\d\ne")).toBe("a\\,b;c\\\\d\\ne");
+    expect(escapeText("a,b;c\\d\ne")).toBe("a\\,b\\;c\\\\d\\ne");
     const long = `DESCRIPTION:${"x".repeat(200)}`;
     const folded = foldLine(long);
     expect(folded.split("\r\n ").every((part) => new TextEncoder().encode(part).length <= 75)).toBe(true);
     expect(folded.replace(/\r\n /g, "")).toBe(long);
+  });
+});
+
+describe("escaping in the .ics output", () => {
+  it("escapes each special character in TEXT values", () => {
+    expect(escapeText("a,b")).toBe("a\\,b");
+    expect(escapeText("a;b")).toBe(String.raw`a\;b`);
+    expect(escapeText("a\\b")).toBe("a\\\\b");
+    expect(escapeText("a\nb")).toBe("a\\nb");
+    expect(escapeText("a\r\nb")).toBe("a\\nb");
+    expect(escapeText("a\rb")).toBe("a\\nb");
+    // The backslash is escaped first, so an escape sequence typed by the user stays literal.
+    expect(escapeText("\\n")).toBe("\\\\n");
+    expect(escapeText("a\u0000b\u0007c\tdone")).toBe("abc\tdone");
+  });
+
+  it("a note, room or name can't break out of its line", () => {
+    const hostile: ScheduleSlot = {
+      ...mon,
+      course: { ...COURSE, name: "Calc; I, \\ part\nBEGIN:VEVENT" },
+      location: "B2.04\r\nATTENDEE:mailto:x@y.z",
+      meetingUrl: "https://meet.example/a\nURL:javascript:alert(1)",
+    };
+    const occ = buildSchedule(
+      {
+        slots: [hostile],
+        changes: [change({ kind: "moved", location: "B1\rX:Y", note: "x\r\nEND:VCALENDAR" })],
+        breaks: [],
+      },
+      { from: "2026-11-23", to: "2026-11-23" },
+    );
+    const ics = buildIcs(occ, options);
+    // Every physical line is a property, a folded continuation, or a BEGIN/END we wrote.
+    const lines = ics.split("\r\n").filter(Boolean);
+    expect(ics.replace(/\r\n/g, "")).not.toMatch(/[\r\n]/);
+    expect(lines.filter((l) => l === "BEGIN:VEVENT")).toHaveLength(1);
+    expect(lines.filter((l) => l === "END:VCALENDAR")).toHaveLength(1);
+    expect(lines.some((l) => l.startsWith("ATTENDEE"))).toBe(false);
+    expect(ics).toContain(String.raw`SUMMARY:Calc\; I\, \\ part\nBEGIN:VEVENT`);
+    expect(ics).toContain("LOCATION:B1\\nX:Y");
+    // A meeting link with a line break isn't a safe https link: no URL line at all.
+    expect(lines.some((l) => l.startsWith("URL:"))).toBe(false);
+    expect(ics).not.toContain("javascript");
+  });
+
+  it("keeps a safe meeting link as the URL", () => {
+    const online: ScheduleSlot = { ...mon, online: true, meetingUrl: "https://meet.example/abc-defg" };
+    const ics = buildIcs(
+      buildSchedule({ slots: [online], changes: [], breaks: [] }, { from: "2026-11-16", to: "2026-11-16" }),
+      options,
+    );
+    expect(ics).toContain("URL:https://meet.example/abc-defg");
+  });
+
+  it("drops javascript: and data: meeting links", () => {
+    for (const meetingUrl of [
+      "javascript:alert(1)",
+      "data:text/html,<script>alert(1)</script>",
+      "http://meet.example/x",
+    ]) {
+      const ics = buildIcs(
+        buildSchedule(
+          { slots: [{ ...mon, meetingUrl }], changes: [], breaks: [] },
+          { from: "2026-11-16", to: "2026-11-16" },
+        ),
+        options,
+      );
+      expect(ics, meetingUrl).not.toContain("URL:");
+      expect(ics, meetingUrl).not.toContain(meetingUrl.slice(0, 10));
+    }
   });
 });

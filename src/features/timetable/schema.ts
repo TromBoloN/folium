@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isCivilDate } from "@/lib/dates";
+import { safeHttpsUrl } from "@/lib/safe-links";
 import { toMinutes } from "./logic";
 
 const time = z.string().regex(/^([01]\d|2[0-3]):[0-5]\d(:00)?$/, "Enter a time like 08:00.");
@@ -35,7 +36,9 @@ export const slotInputSchema = z
       .transform((v) => (v === "" ? null : v))
       .nullable()
       .default(null)
-      .refine((v) => v === null || /^https?:\/\/\S+$/.test(v), "Paste a full link starting with https://"),
+      // https only: no http, javascript:, data: or line breaks. Stored normalised.
+      .refine((v) => v === null || safeHttpsUrl(v) !== null, "Paste a full link starting with https://")
+      .transform((v) => (v === null ? null : safeHttpsUrl(v))),
   })
   // The database enforces these too; checking here gives a clear message on the right field.
   .refine((s) => toMinutes(s.endTime) > toMinutes(s.startTime), {

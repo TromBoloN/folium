@@ -1,3 +1,4 @@
+import { safeHttpsUrl } from "@/lib/safe-links";
 import { dueAtFrom } from "../tasks/due";
 import { isLive, type Occurrence } from "./occurrences";
 
@@ -15,7 +16,17 @@ function icsUtc(iso: string) {
 
 /** Escape text values: backslash, semicolon, comma, newline. */
 export function escapeText(value: string) {
-  return value.replace(/\\/g, "\\\\").replace(/;/g, ";").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
+  return (
+    value
+      .replace(/\\/g, "\\\\")
+      .replace(/;/g, "\\;")
+      .replace(/,/g, "\\,")
+      // CRLF, LF and a lone CR are all line breaks; none may reach the file raw.
+      .replace(/\r\n|\r|\n/g, "\\n")
+      // Other control characters aren't allowed in TEXT values (RFC 5545 3.3.11).
+      // biome-ignore lint/suspicious/noControlCharactersInRegex: removing control characters is the point.
+      .replace(/[\u0000-\u0008\u000b-\u001f\u007f]/g, "")
+  );
 }
 
 /** Lines longer than 75 octets are folded: CRLF + one space. */
@@ -62,7 +73,8 @@ export function buildIcs(
     if (o.status === "moved" && o.from) notes.push(`Moved from ${o.from.date} ${o.from.startTime}`);
     if (o.room) notes.push(`Room changed from ${o.room.from ?? "the usual room"}`);
     if (o.note) notes.push(o.note);
-    if (o.meetingUrl) notes.push(o.meetingUrl);
+    const url = safeHttpsUrl(o.meetingUrl);
+    if (url) notes.push(url);
     lines.push(
       "BEGIN:VEVENT",
       `UID:${o.key}@${options.host}`,
@@ -73,7 +85,8 @@ export function buildIcs(
     );
     if (o.location) lines.push(`LOCATION:${escapeText(o.location)}`);
     if (notes.length) lines.push(`DESCRIPTION:${escapeText(notes.join("\n"))}`);
-    if (o.meetingUrl) lines.push(`URL:${o.meetingUrl}`);
+    // URL is a URI value, not TEXT: it isn't escaped, so only a safe https link (no line breaks) goes in.
+    if (url) lines.push(`URL:${url}`);
     lines.push("END:VEVENT");
   }
   lines.push("END:VCALENDAR");

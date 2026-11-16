@@ -72,5 +72,8 @@ Each of these has already cost time once.
 - **Tailwind's `appearance-none` beats layered CSS.** The customizable select (`appearance: base-select`) lives in unlayered CSS in `globals.css` so the utility on `NativeSelect` can't cancel it.
 - **Native `<select>` options inherit the page's text colour**, while some systems draw the popup light: white on white in dark mode. Options get explicit `--popover` colours.
 - **`playwright/.auth/` holds a live session.** It's git-ignored; Biome follows `.gitignore`, so a tracked copy also fails `biome ci` on formatting.
+- **`.ics` lost its semicolon escaping without anyone noticing.** `escapeText` shipped as `.replace(/;/g, ";")` and its test expected the same unescaped output; a backslash before `;` had been dropped while writing the file through a shell command, and the test was written the same way. Write escape-heavy code and its expectations with an editor (or `String.raw`), and test each special character on its own (`ics.test.ts` does now).
+- **User-entered links are sanitised when read, not only in forms.** Rows can be written through the API without the app's Zod schemas, and the database only checks a `^https?://` prefix. `lib/safe-links.ts` (`safeHttpsUrl`, `whatsappLink`, `mailtoLink`) is applied in `courses/queries.ts`, at every href and in the `.ics` `URL:` line.
+- **Module state in a `"use client"` file still exists on the server.** `client-data-store.ts` ignores writes and returns `null` when there's no `window`, so one user's courses can never be shared across server requests.
 - **A `"use client"` module's exports are client references on the server.** Helpers a server file needs (like `describedBy`) must not move into one; `Field` is a client component, and only client forms import it.
 
