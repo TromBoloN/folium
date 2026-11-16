@@ -59,7 +59,7 @@ export function BottomNav() {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-40 border-border-soft border-t bg-surface-1 pb-[env(safe-area-inset-bottom)] shadow-raised md:hidden"
     >
-      <ul className="grid grid-cols-5 px-1">
+      <ul className="grid grid-cols-6 px-0.5">
         {NAV_ITEMS.map(({ href, label, icon: Icon }) => {
           const active = isActive(pathname, href);
           return (
@@ -68,12 +68,12 @@ export function BottomNav() {
                 href={href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative isolate flex h-16 flex-col items-center justify-center gap-1 font-medium text-xs transition-colors duration-(--dur-fast)",
+                  "relative isolate flex h-16 flex-col items-center justify-center gap-1 font-medium text-[0.6875rem] transition-colors duration-(--dur-fast)",
                   active ? "text-foreground" : "text-muted-foreground hover:text-foreground",
                 )}
               >
                 {active ? (
-                  <ActivePill name="nav-pill-mobile" className="inset-x-2 top-1.5 h-8 rounded-full bg-accent" />
+                  <ActivePill name="nav-pill-mobile" className="inset-x-1.5 top-1.5 h-8 rounded-full bg-accent" />
                 ) : null}
                 <span className="flex h-8 items-center">
                   <Icon aria-hidden className={cn("size-5", active && "text-primary")} />

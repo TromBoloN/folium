@@ -21,7 +21,7 @@ function isTyping(target: EventTarget | null) {
 /**
  * Keyboard shortcuts for the whole app:
  * - Ctrl/⌘ K: search and commands
- * - N: add a task (when not typing in a field)
+ * - N: add a task (when not typing in a field); on Money pages, add a transaction
  */
 export function PaletteProvider({ children }: { children: React.ReactNode }) {
   const [mode, setMode] = useState<PaletteMode | null>(null);
@@ -37,7 +37,7 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
       if (e.key === "n" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTyping(e.target) && !e.repeat) {
         if (document.querySelector("dialog[open]")) return;
         e.preventDefault();
-        setMode("add");
+        setMode(window.location.pathname.startsWith("/money") ? "money" : "add");
       }
     };
     window.addEventListener("keydown", onKeyDown);

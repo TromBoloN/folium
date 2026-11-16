@@ -146,6 +146,11 @@ test.describe("signed-in pages", () => {
           `/grades/${ids.courseId}/assessments/new`,
           ids.assessmentEdit,
           "/settings",
+          "/settings/categories",
+          "/money",
+          "/money/transactions",
+          "/money/new",
+          "/money/accounts",
           "/update-password",
           "/courses/00000000-0000-4000-8000-000000000000",
         ];

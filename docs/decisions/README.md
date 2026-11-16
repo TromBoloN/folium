@@ -15,6 +15,9 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Finance**
 
+- [2026-11-16: "Match my real balance" rewrites the opening balance](backend.md#2026-11-16-match-my-real-balance-rewrites-the-opening-balance)
+- [2026-11-16: Finance undo re-inserts the deleted row with the same id](backend.md#2026-11-16-finance-undo-re-inserts-the-deleted-row-with-the-same-id)
+- [2026-11-16: The last-used account is a cookie](backend.md#2026-11-16-the-last-used-account-is-a-cookie)
 - [2026-11-16: Typed amounts: separators depend on the suffix](backend.md#2026-11-16-typed-amounts-separators-depend-on-the-suffix)
 - [2026-11-16: Finance logic takes "now" and the time zone as arguments](backend.md#2026-11-16-finance-logic-takes-now-and-the-time-zone-as-arguments)
 - [2026-11-16: Money is integer rupiah (bigint), never floats](backend.md#2026-11-16-money-is-integer-rupiah-bigint-never-floats)

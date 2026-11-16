@@ -16,10 +16,13 @@ import {
   Search,
   Settings,
   Sun,
+  Wallet,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useId, useRef, useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { deleteTransaction, quickAddMoney } from "@/features/finance/actions/transactions";
+import { QuickMoneyPreview, useQuickMoney } from "@/features/finance/components/quick-money";
 import { removeBreak, runScheduleCommand, undoChange } from "@/features/schedule/actions";
 import { useScheduleCommand } from "@/features/schedule/components/command-preview";
 import { quickAddTask, removeTask } from "@/features/tasks/actions";
@@ -28,7 +31,7 @@ import { QUICK_ADD_HINT } from "@/features/tasks/parse";
 import { cn } from "@/lib/utils";
 import { type SearchResults, searchEverything } from "../actions";
 
-export type PaletteMode = "add" | "search";
+export type PaletteMode = "add" | "search" | "money";
 
 type Item = {
   key: string;
@@ -42,6 +45,10 @@ type Item = {
 
 const COMMANDS: { label: string; href: string; icon: LucideIcon; group: string }[] = [
   { label: "Today", href: "/", icon: Sun, group: "Go to" },
+  { label: "Money", href: "/money", icon: Wallet, group: "Go to" },
+  { label: "All transactions", href: "/money/transactions", icon: Wallet, group: "Go to" },
+  { label: "Money accounts", href: "/money/accounts", icon: Wallet, group: "Go to" },
+  { label: "Money categories", href: "/settings/categories", icon: Wallet, group: "Go to" },
   { label: "Tasks", href: "/tasks", icon: ListChecks, group: "Go to" },
   { label: "Overdue tasks", href: "/tasks?due=overdue", icon: AlarmClock, group: "Go to" },
   { label: "Courses", href: "/courses", icon: BookOpen, group: "Go to" },
@@ -51,6 +58,7 @@ const COMMANDS: { label: string; href: string; icon: LucideIcon; group: string }
   { label: "Settings", href: "/settings", icon: Settings, group: "Go to" },
   { label: "New task with details", href: "/tasks/new", icon: Plus, group: "Create" },
   { label: "New course", href: "/courses/new", icon: BookOpen, group: "Create" },
+  { label: "New transaction with details", href: "/money/new", icon: Wallet, group: "Create" },
   { label: "Add a class time", href: "/courses/timetable/new", icon: CalendarPlus, group: "Create" },
 ];
 
@@ -72,7 +80,35 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
   const listId = useId();
 
   const close = () => dialog.current?.close();
-  const scheduleCommand = useScheduleCommand(text);
+  const scheduleCommand = useScheduleCommand(mode === "money" ? "" : text);
+  // Money: the Money mode (N on /money), or a line starting with "$" in any mode.
+  const moneyText = mode === "money" ? text : text.trimStart().startsWith("$") ? text.trimStart().slice(1) : null;
+  const money = useQuickMoney(moneyText ?? "", moneyText !== null);
+
+  // A transaction in one line: saved only when the amount and account are resolved, with Undo.
+  const addMoney = () => {
+    if (!moneyText?.trim()) return;
+    if (!money.canSave) {
+      setError(money.draft?.errors[0] ?? "Add an amount and an account.");
+      return;
+    }
+    setError(null);
+    startAdding(async () => {
+      const result = await quickAddMoney(moneyText);
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      const { id, message } = result.data;
+      toast({
+        message,
+        duration: 8000,
+        action: { label: "Undo", onClick: async () => void (await deleteTransaction(id)) },
+      });
+      router.refresh();
+      close();
+    });
+  };
 
   // A schedule change ("cancel physics tomorrow"): applied at once, with Undo.
   const apply = () => {
@@ -144,6 +180,17 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
     };
     const q = text.trim().toLowerCase();
     const list: Item[] = [];
+    if (moneyText !== null) {
+      if (moneyText.trim())
+        list.push({
+          key: "money",
+          group: "Money",
+          label: money.canSave ? "Add transaction" : "Add an amount and an account",
+          icon: Wallet,
+          run: addMoney,
+        });
+      return list;
+    }
     const applyItem: Item | null = scheduleCommand
       ? { key: "apply", group: "Schedule", label: scheduleCommand.summary, icon: ArrowRightLeft, run: apply }
       : null;
@@ -201,7 +248,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
         if (el && !el.open) el.showModal();
       }}
       onClose={onClose}
-      aria-label={mode === "add" ? "Add a task" : "Search and commands"}
+      aria-label={mode === "add" ? "Add a task" : mode === "money" ? "Add a transaction" : "Search and commands"}
       className="toast-in mx-auto mt-[12vh] mb-auto w-[min(40rem,calc(100vw-2rem))] overflow-hidden rounded-tile border border-border-soft bg-popover p-0 text-popover-foreground shadow-raised backdrop:bg-foreground/35"
       onClick={(e) => {
         if (e.target === e.currentTarget) close(); // a click on the backdrop
@@ -220,7 +267,9 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       }}
     >
       <div className="flex items-center gap-3 border-border-soft border-b px-4">
-        {mode === "add" ? (
+        {mode === "money" ? (
+          <Wallet aria-hidden className="size-5 shrink-0 text-primary" />
+        ) : mode === "add" ? (
           <Plus aria-hidden className="size-5 shrink-0 text-primary" />
         ) : (
           <Search aria-hidden className="size-5 shrink-0 text-muted-foreground" />
@@ -232,30 +281,51 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
           aria-controls={listId}
           aria-activedescendant={items.length ? optionId(safeActive) : undefined}
           aria-autocomplete="list"
-          aria-label={mode === "add" ? "New task" : "Search tasks, courses and pages"}
+          aria-label={
+            mode === "money" ? "New transaction" : mode === "add" ? "New task" : "Search tasks, courses and pages"
+          }
           value={text}
           onChange={(e) => {
             setText(e.target.value);
             setActive(0);
           }}
-          placeholder={mode === "add" ? "Add a task…" : "Search or jump to…"}
+          placeholder={
+            mode === "money" ? "gofood 32k #food @gopay" : mode === "add" ? "Add a task…" : "Search or jump to…"
+          }
           className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
           autoComplete="off"
-          enterKeyHint={mode === "add" ? "done" : "go"}
+          enterKeyHint={mode === "search" ? "go" : "done"}
         />
         <button
           type="button"
           onClick={() => {
-            setMode(mode === "add" ? "search" : "add");
+            setMode(mode === "search" ? "add" : "search");
             setActive(0);
           }}
           className="shrink-0 rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent hover:text-foreground"
         >
-          {mode === "add" ? "Search instead" : "Add a task"}
+          {mode === "search" ? "Add a task" : "Search instead"}
         </button>
       </div>
 
-      {mode === "add" ? (
+      {moneyText !== null ? (
+        <div className="flex min-h-12 flex-col gap-1 px-4 py-3">
+          {money.draft ? (
+            <QuickMoneyPreview draft={money.draft} />
+          ) : (
+            <p className="text-muted-foreground text-xs">
+              {money.loading
+                ? "Loading your accounts…"
+                : "One line: amount, then #category, @account, “to dana” for a transfer, + for income, “kemarin” for yesterday."}
+            </p>
+          )}
+          {error ? (
+            <p role="alert" className="text-destructive text-xs">
+              {error}
+            </p>
+          ) : null}
+        </div>
+      ) : mode === "add" ? (
         <div className="flex min-h-12 flex-col gap-1 px-4 py-3">
           {scheduleCommand ? (
             <p className="text-muted-foreground text-xs">Schedule change: press Enter to apply (you can undo it).</p>
@@ -263,7 +333,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
             <ParsePreview text={text} />
           ) : (
             <p className="text-muted-foreground text-xs">
-              {QUICK_ADD_HINT}, or change a class: “cancel physics tomorrow”
+              {QUICK_ADD_HINT}, change a class: “cancel physics tomorrow”, or start with $ for money: “$ gofood 32k”
             </p>
           )}
           {error ? (

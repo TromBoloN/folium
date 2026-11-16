@@ -63,6 +63,12 @@ Routes `/grades`, `/grades/[courseId]` (`?target=`), assessment new/edit (also s
 
 Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `registry.tsx` (`WIDGETS`: title, icon, component, size, link), `layout.ts` (`resolveLayout`: unknown ids dropped, new ids appended, junk → defaults; only overrides stored), `now.ts` (hero `nextUp`, timeline maths, `weekLoad`), `today.ts` (`classMoment`, `greeting`), `widgets/` (one file per widget; `hero-class.ts` turns occurrences into widget data), `components/` (`dashboard-editor.tsx` with dnd-kit + up/down buttons, `onboarding.tsx` first-run checklist, `attendance-prompt.tsx` "Did you go?", `widget-frame.tsx`, `greeting.tsx`). Each widget has its own Suspense and error boundary.
 
+## Money (finance) — `features/finance/`
+
+**The rules:** amounts are bigint rupiah (read as `::text`, never floats); balances come only from the `account_balances` view; planned rows never count; pure logic in `lib/` takes `now` and `timeZone` as arguments.
+
+Routes `/money` (accounts, this month, recent), `/money/transactions` (`?account&category&kind&month&q`), `/money/new` (`?kind=`) and `/money/[id]/edit` (also sheets), `/money/accounts`, `/money/accounts/new`, `/money/accounts/[id]` (edit, archive, match real balance / adjust; `?real=` previews), `/settings/categories` (+ `/[id]`), `/money/export.csv`. Files: `lib/` (`parse-amount`, `format-idr`, `split-evenly`, `local-date`, `parse-quick-transaction`, `suggest-category`, `to-csv`), `schemas/` (form schemas, `money-math.ts`: reconcile, adjustment, month range, grouping), `queries/` (`ensureFinanceDefaults` first, accounts with balances, categories, transactions, last-used account cookie), `actions/` (`transactions.ts` incl. quick add and delete/restore for Undo, `accounts.ts`, `categories.ts`). Components: `transaction-form.tsx` (fields per kind via the `.tx-form` CSS rule in `globals.css`), `transaction-list.tsx`, `money-overview.tsx`, `quick-money.tsx` (palette: N on `/money`, or `$ …` anywhere), `account-form.tsx`, `category-form.tsx`. Database: `supabase/migrations/*_finance.sql`, `supabase/tests/database/finance.test.sql`.
+
 ## Search and command palette — `features/search/`
 
 `actions.ts` (`searchEverything`), `components/palette-provider.tsx` (Ctrl/⌘K search, N add), `command-palette.tsx` (add with parsing, search, schedule commands, navigation), `palette-buttons.tsx` (sidebar button, mobile + button).

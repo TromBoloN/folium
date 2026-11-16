@@ -32,6 +32,29 @@ async function SettingsContent() {
       <InstallCard />
       <Card>
         <CardHeader>
+          <CardTitle>Money</CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-muted-foreground text-sm">
+            Categories for spending and income, your accounts, and a CSV of everything.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/settings/categories">Categories</Link>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link href="/money/accounts">Accounts</Link>
+            </Button>
+            <Button asChild variant="ghost" size="sm">
+              <a href="/money/export.csv" download>
+                Export CSV
+              </a>
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardHeader>
           <CardTitle>Account</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">

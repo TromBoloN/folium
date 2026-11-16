@@ -627,3 +627,19 @@
     font-weight: 500;
   }
 }
+
+/*
+ * Transaction form: fields belong to some kinds (data-kinds="expense income").
+ * Pure CSS on the checked kind radio, so switching kinds works without JavaScript.
+ */
+@layer components {
+  .tx-form [data-kinds] {
+    display: none;
+  }
+  .tx-form:has([name="kind"][value="expense"]:checked) [data-kinds~="expense"],
+  .tx-form:has([name="kind"][value="income"]:checked) [data-kinds~="income"],
+  .tx-form:has([name="kind"][value="transfer"]:checked) [data-kinds~="transfer"],
+  .tx-form:has([name="kind"][value="adjustment"]:checked) [data-kinds~="adjustment"] {
+    display: block;
+  }
+}

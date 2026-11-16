@@ -6,6 +6,9 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Finance**
 
+- [2026-11-16: "Match my real balance" rewrites the opening balance](#2026-11-16-match-my-real-balance-rewrites-the-opening-balance)
+- [2026-11-16: Finance undo re-inserts the deleted row with the same id](#2026-11-16-finance-undo-re-inserts-the-deleted-row-with-the-same-id)
+- [2026-11-16: The last-used account is a cookie](#2026-11-16-the-last-used-account-is-a-cookie)
 - [2026-11-16: Typed amounts: separators depend on the suffix](#2026-11-16-typed-amounts-separators-depend-on-the-suffix)
 - [2026-11-16: Finance logic takes "now" and the time zone as arguments](#2026-11-16-finance-logic-takes-now-and-the-time-zone-as-arguments)
 - [2026-11-16: Money is integer rupiah (bigint), never floats](#2026-11-16-money-is-integer-rupiah-bigint-never-floats)
@@ -62,6 +65,30 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-16: "Match my real balance" rewrites the opening balance
+
+**Status.** Accepted.
+
+**Decision.** Reconciling an account sets `opening_balance = real − (balance − opening_balance)` (`reconciledOpening` in `features/finance/schemas/money-math.ts`, tested), leaving every transaction as it is. The alternative, "Adjust", records the difference as an adjustment transaction dated today (`adjustmentFor`). The real balance and the opening balance may be negative.
+
+**Why.** Students start tracking mid-month; the bank app's number is the truth. Opening balance is a snapshot, so it must be re-run after backfilling older transactions (the page says so). Don't compute balances in TypeScript to do this: read `account_balances`, then write the opening balance.
+
+## 2026-11-16: Finance undo re-inserts the deleted row with the same id
+
+**Status.** Accepted.
+
+**Decision.** Deleting a transaction is a hard delete that returns the full row; the toast's Undo (8 seconds) calls `restoreTransaction`, which inserts that row again with the same `id` and `created_at`. Quick add's Undo deletes the new row by id.
+
+**Why.** Same pattern as tasks: the database stays the source of truth, and the id survives so links and exports stay stable. No `deleted_at` (every balance would need a filter). If an account or category was deleted in between, Undo fails with a message instead of guessing.
+
+## 2026-11-16: The last-used account is a cookie
+
+**Status.** Accepted.
+
+**Decision.** Saving a transaction (form or quick add) sets the `folium_last_account` cookie (httpOnly, a year); new transactions and quick add default to it if it's still an active account of the user (`lastUsedAccountId`), else the first active account.
+
+**Why.** It works without JavaScript and needs no migration or settings write per save. It's per browser, not per account: a phone and a laptop can remember different accounts, which matches how people pay. Move it to preferences only if it must follow the user across devices.
 
 ## 2026-11-16: Typed amounts: separators depend on the suffix
 

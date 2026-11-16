@@ -3,16 +3,17 @@ import Link from "next/link";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { Tile } from "@/components/ui/tile";
 import { listCourses } from "@/features/courses/queries";
+import { hasAnyTransaction } from "@/features/finance/queries";
 import { hasAnyTask } from "@/features/tasks/queries";
 import { cn } from "@/lib/utils";
 
 /**
- * First-run checklist on Today: add a course, give it class times, add a task.
+ * First-run checklist on Today: add a course, give it class times, add a task, track some money.
  * Progress comes from real data, so it ticks itself off and disappears once
  * everything is done (no "dismiss" state to store).
  */
 export async function Onboarding() {
-  const [courses, anyTask] = await Promise.all([listCourses(), hasAnyTask()]);
+  const [courses, anyTask, anyTransaction] = await Promise.all([listCourses(), hasAnyTask(), hasAnyTransaction()]);
   const steps = [
     {
       done: courses.length > 0,
@@ -35,6 +36,13 @@ export async function Onboarding() {
       href: "/tasks/new",
       cta: "Add a task",
     },
+    {
+      done: anyTransaction,
+      title: "Track some money",
+      detail: "Add what you spent or received; your accounts keep their balance. “gofood 32k #food @gopay”.",
+      href: "/money/new",
+      cta: "Add a transaction",
+    },
   ];
   const doneCount = steps.filter((s) => s.done).length;
   if (doneCount === steps.length) return null;
@@ -55,7 +63,7 @@ export async function Onboarding() {
               <Sprout aria-hidden className="size-5 text-primary" />
               Set up Folium
             </h2>
-            <p className="text-muted-foreground text-sm">Three steps and Today fills itself in.</p>
+            <p className="text-muted-foreground text-sm">Four steps and Today fills itself in.</p>
           </div>
         </div>
         <ol className="flex flex-1 flex-col gap-2">

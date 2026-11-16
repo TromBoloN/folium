@@ -20,10 +20,10 @@ async function openAdd(page: Page) {
 test("first run: the setup checklist ticks itself off", async ({ page }) => {
   await signUp(page);
   const setup = page.getByRole("region", { name: "Set up Folium" });
-  await expect(setup).toContainText("0/3");
+  await expect(setup).toContainText("0/4");
   await addCourse(page, "Academic English", "ING101");
   await page.goto("/");
-  await expect(setup).toContainText("1/3");
+  await expect(setup).toContainText("1/4");
   await expect(setup).toContainText("Add your first course (done)");
 });
 
