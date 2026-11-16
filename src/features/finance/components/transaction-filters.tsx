@@ -135,7 +135,7 @@ export function TransactionFilters({
               Account
             </label>
             <select
-              key={filters.account ?? ""}
+              key={`account-${filters.account ?? ""}`}
               id="f-account"
               name="account"
               defaultValue={filters.account ?? ""}
@@ -154,7 +154,7 @@ export function TransactionFilters({
               Category
             </label>
             <select
-              key={filters.category ?? ""}
+              key={`category-${filters.category ?? ""}`}
               id="f-category"
               name="category"
               defaultValue={filters.category ?? ""}
@@ -180,7 +180,7 @@ export function TransactionFilters({
               Kind
             </label>
             <select
-              key={filters.kind ?? ""}
+              key={`kind-${filters.kind ?? ""}`}
               id="f-kind"
               name="kind"
               defaultValue={filters.kind ?? ""}
