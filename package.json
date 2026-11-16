@@ -14,6 +14,7 @@
     "test:e2e": "playwright test --project=desktop --project=mobile",
     "test:a11y": "playwright test --project=a11y --project=a11y-mobile",
     "db:seed": "docker exec -i supabase_db_folium-web psql -U postgres -v ON_ERROR_STOP=1 -q < supabase/seed.sql",
+    "db:seed:finance": "node scripts/seed-finance.mjs",
     "screenshots": "node scripts/screenshots.mjs",
     "visual-check": "node scripts/visual-check.mjs"
   },

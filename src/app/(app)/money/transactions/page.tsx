@@ -1,4 +1,4 @@
-import { Plus, SearchX } from "lucide-react";
+import { Plus, Receipt, SearchX } from "lucide-react";
 import type { Metadata } from "next";
 import { io } from "next/cache";
 import Link from "next/link";
@@ -6,17 +6,28 @@ import { Suspense } from "react";
 import { BackLink } from "@/components/back-link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
-import { ListSkeleton } from "@/components/skeletons";
 import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
-import { TransactionFilters } from "@/features/finance/components/transaction-filters";
+import { ListRowsSkeleton } from "@/features/finance/components/money-skeletons";
+import { filtersHref, TransactionFilters } from "@/features/finance/components/transaction-filters";
 import { TransactionList } from "@/features/finance/components/transaction-list";
+import { formatIdr } from "@/features/finance/lib/format-idr";
 import { localDateFor } from "@/features/finance/lib/local-date";
-import { ensureFinanceDefaults, listAccounts, listCategories, listTransactions } from "@/features/finance/queries";
+import {
+  ensureFinanceDefaults,
+  hasAnyTransaction,
+  listAccounts,
+  listCategories,
+  listTransactions,
+  summarizeTransactions,
+} from "@/features/finance/queries";
 import { transactionFiltersSchema } from "@/features/finance/schemas";
 import { getSettings } from "@/features/settings/queries";
 
 export const metadata: Metadata = { title: "Transactions" };
+
+const PAGE = 50;
+const MAX = 1000;
 
 export default function TransactionsPage({ searchParams }: PageProps<"/money/transactions">) {
   return (
@@ -33,7 +44,7 @@ export default function TransactionsPage({ searchParams }: PageProps<"/money/tra
           </Button>
         }
       />
-      <Suspense fallback={<ListSkeleton rows={5} label="Loading transactions" />}>
+      <Suspense fallback={<ListRowsSkeleton rows={6} label="Loading transactions" />}>
         <Transactions searchParams={searchParams} />
       </Suspense>
     </>
@@ -44,31 +55,83 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
   await requireUser();
   await ensureFinanceDefaults();
   const params = await searchParams;
+  const one = (v: string | string[] | undefined) => (typeof v === "string" && v ? v : undefined);
   const filters = transactionFiltersSchema.parse({
-    account: params.account || undefined,
-    category: params.category || undefined,
-    kind: params.kind || undefined,
-    month: params.month || undefined,
-    q: typeof params.q === "string" ? params.q : undefined,
+    account: one(params.account),
+    category: one(params.category),
+    kind: one(params.kind),
+    month: one(params.month),
+    q: one(params.q),
   });
-  const [transactions, accounts, categories, { preferences }] = await Promise.all([
-    listTransactions(filters),
+  // "Load more" grows the page size in the URL, so it works without JavaScript and survives a reload.
+  const requested = Number.parseInt(one(params.limit) ?? "", 10);
+  const limit = Number.isFinite(requested) ? Math.min(MAX, Math.max(PAGE, requested)) : PAGE;
+
+  const [{ rows, more }, summary, accounts, categories, { preferences }, any] = await Promise.all([
+    listTransactions(filters, limit),
+    summarizeTransactions(filters),
     listAccounts(),
     listCategories(),
     getSettings(),
+    hasAnyTransaction(),
   ]);
   await io();
   const today = localDateFor(new Date(), preferences.timeZone);
+  const filtered = Object.values(filters).some(Boolean);
+  const moreHref = `${filtersHref(filters)}${filtered ? "&" : "?"}limit=${limit + PAGE}`;
+
   return (
     <div className="flex flex-col gap-5">
-      <TransactionFilters filters={filters} accounts={accounts} categories={categories} />
-      {transactions.length === 0 ? (
-        <EmptyState icon={SearchX} title="Nothing here" description="No transactions match these filters." />
+      <TransactionFilters
+        filters={filters}
+        accounts={accounts.map((a) => ({ id: a.id, name: a.name, archived: a.archived }))}
+        categories={categories.map((c) => ({
+          id: c.id,
+          name: c.name,
+          kind: c.kind,
+          parentId: c.parentId,
+          archived: c.archived,
+        }))}
+        currentMonth={today.slice(0, 7)}
+      />
+      {rows.length > 0 ? (
+        <p className="px-1 text-muted-foreground text-sm" aria-live="polite">
+          {summary.count} {summary.count === 1 ? "transaction" : "transactions"} · in{" "}
+          <span className="font-medium text-money-in tabular-nums">{formatIdr(summary.income)}</span> · out{" "}
+          <span className="font-medium text-money-out tabular-nums">{formatIdr(summary.expense)}</span>
+        </p>
+      ) : null}
+      {!any ? (
+        <EmptyState
+          icon={Receipt}
+          title="No transactions yet"
+          description="Add one from Money with a single line, or the full form."
+        >
+          <Button asChild size="sm">
+            <Link href="/money">Go to Money</Link>
+          </Button>
+        </EmptyState>
+      ) : rows.length === 0 ? (
+        <EmptyState icon={SearchX} title="No matches" description="Nothing matches these filters.">
+          <Button asChild size="sm" variant="outline">
+            <Link href="/money/transactions">Clear all filters</Link>
+          </Button>
+        </EmptyState>
       ) : (
-        <TransactionList transactions={transactions} accounts={accounts} categories={categories} today={today} />
+        <TransactionList transactions={rows} accounts={accounts} categories={categories} today={today} />
       )}
-      {transactions.length === 200 ? (
-        <p className="text-muted-foreground text-sm">Showing the newest 200. Narrow the filters to see older ones.</p>
+      {more && limit < MAX ? (
+        <div className="flex justify-center">
+          <Button asChild variant="outline">
+            <Link href={moreHref} scroll={false}>
+              Load more
+            </Link>
+          </Button>
+        </div>
+      ) : more ? (
+        <p className="text-center text-muted-foreground text-sm">
+          Showing the newest {MAX}. Narrow the filters to see older ones.
+        </p>
       ) : null}
     </div>
   );

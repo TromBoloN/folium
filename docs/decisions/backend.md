@@ -6,6 +6,9 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Finance**
 
+- [2026-11-16: Sparklines work backwards from `account_balances`](#2026-11-16-sparklines-work-backwards-from-account_balances)
+- [2026-11-16: Spending charts leave out transfers and adjustments](#2026-11-16-spending-charts-leave-out-transfers-and-adjustments)
+- [2026-11-16: Transaction filters are GET parameters first, JavaScript second](#2026-11-16-transaction-filters-are-get-parameters-first-javascript-second)
 - [2026-11-16: "Match my real balance" rewrites the opening balance](#2026-11-16-match-my-real-balance-rewrites-the-opening-balance)
 - [2026-11-16: Finance undo re-inserts the deleted row with the same id](#2026-11-16-finance-undo-re-inserts-the-deleted-row-with-the-same-id)
 - [2026-11-16: The last-used account is a cookie](#2026-11-16-the-last-used-account-is-a-cookie)
@@ -65,6 +68,30 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-16: Sparklines work backwards from `account_balances`
+
+**Status.** Accepted.
+
+**Decision.** The 7-day balance sparklines on `/money` come from `balanceSeries` (`features/finance/lib/balance-series.ts`, tested): it starts at the current balance from the `account_balances` view and undoes the recent posted rows day by day. Rows dated after today are undone first, because the view counts them. Planned rows are ignored. A transfer takes amount + fee from the sender and gives the amount to the receiver.
+
+**Why.** The view is the only source of truth for balances. Re-adding history from the opening balance in TypeScript would drift from it the moment the two formulas disagree. If the view's CASE changes, change `effectOn` with it.
+
+## 2026-11-16: Spending charts leave out transfers and adjustments
+
+**Status.** Accepted.
+
+**Decision.** "In / out", the comparison with last month, and spending by category count only posted income and expenses. Transfers move money between your own accounts; adjustments correct a balance. `rollupByCategory` filters them out itself, rolls child categories into their parent, and its percentages always sum to 100 (largest remainder). A parent's category filter also matches its children.
+
+**Why.** Counting a top-up from Livin' to GoPay as spending would double it. Filtering inside the helper means a caller can't forget to.
+
+## 2026-11-16: Transaction filters are GET parameters first, JavaScript second
+
+**Status.** Accepted.
+
+**Decision.** `/money/transactions` filters (`q`, `account`, `category`, `kind`, `month`) and "Load more" (`limit`) live in the URL. The filter bar is a plain `<form method="get">` with an Apply button. With JavaScript, changes apply at once (search is debounced) through `router.replace`, and Apply is hidden. `/money` uses `?month=` the same way, and the quick-add bar is a real form posting to `quickAddForm`.
+
+**Why.** Shareable links, a working back button, and forms that work without JavaScript (a project rule). Don't move filter state into React state or local storage.
 
 ## 2026-11-16: "Match my real balance" rewrites the opening balance
 

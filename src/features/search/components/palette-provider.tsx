@@ -37,6 +37,12 @@ export function PaletteProvider({ children }: { children: React.ReactNode }) {
       if (e.key === "n" && !e.metaKey && !e.ctrlKey && !e.altKey && !isTyping(e.target) && !e.repeat) {
         if (document.querySelector("dialog[open]")) return;
         e.preventDefault();
+        // On /money the quick-add bar is always there: N focuses it instead of opening a box.
+        const bar = document.getElementById("quick-add-input");
+        if (bar) {
+          bar.focus();
+          return;
+        }
         setMode(window.location.pathname.startsWith("/money") ? "money" : "add");
       }
     };

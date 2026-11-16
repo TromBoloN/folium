@@ -48,7 +48,10 @@ async function Categories() {
         </section>
       ))}
       <div className="tile p-5">
-        <CategoryForm defaults={{ name: "", kind: "expense", parentId: "", color: "#868e96" }} parents={parents} />
+        <CategoryForm
+          defaults={{ name: "", kind: "expense", parentId: "", color: "#495057", icon: "" }}
+          parents={parents}
+        />
       </div>
     </div>
   );

@@ -1,17 +1,20 @@
 "use client";
 
+import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Pill } from "@/components/ui/pill";
+import { cn } from "@/lib/utils";
 import { getQuickMoneyContext, type QuickMoneyContext } from "../actions/transactions";
 import { type Chip, parseQuickTransaction, type QuickTransaction } from "../lib/parse-quick-transaction";
 
 /**
  * Preview a one-line transaction ("gofood 32k #food @gopay") while typing.
- * Accounts and categories load once when the box opens. The server parses the
- * line again before saving, so this is only what the user sees.
+ * Accounts and categories load once when the box opens (or come in as
+ * `initial`). The server parses the line again before saving, so this is only
+ * what the user sees.
  */
-export function useQuickMoney(text: string, active: boolean) {
-  const [context, setContext] = useState<QuickMoneyContext | null>(null);
+export function useQuickMoney(text: string, active: boolean, initial?: QuickMoneyContext) {
+  const [context, setContext] = useState<QuickMoneyContext | null>(initial ?? null);
   useEffect(() => {
     if (!active || context) return;
     let current = true;
@@ -23,11 +26,11 @@ export function useQuickMoney(text: string, active: boolean) {
     };
   }, [active, context]);
 
-  if (!active || !context || !text.trim()) return { draft: null, canSave: false, loading: active && !context };
+  if (!active || !context || !text.trim()) return { draft: null, canSave: false, loading: active && !context, context };
   const draft = parseQuickTransaction(text, { ...context, now: new Date() });
   // Enter only saves a clean line: amount and account resolved, nothing typed left unmatched.
   const canSave = draft.errors.length === 0 && draft.amount !== undefined && draft.accountId !== undefined;
-  return { draft, canSave, loading: false };
+  return { draft, canSave, loading: false, context };
 }
 
 const TONE: Record<Chip["state"], "accent" | "neutral" | "warning" | "danger"> = {
@@ -43,29 +46,76 @@ const STATE_TEXT: Record<Chip["state"], string> = {
   missing: " (missing)",
 };
 
-/** What the line will become, as chips: matched, default, ambiguous or missing. */
-export function QuickMoneyPreview({ draft }: { draft: QuickTransaction }) {
+/** Chips that a picker can fix: accounts and categories that are missing, ambiguous or just the default. */
+export function fixable(chip: Chip) {
+  if (chip.type === "account") return chip.state !== "matched";
+  if (chip.type === "toAccount" || chip.type === "category")
+    return chip.state === "ambiguous" || chip.state === "missing";
+  return chip.type === "amount" && chip.state === "missing";
+}
+
+/**
+ * What the line will become, as chips: matched, default, ambiguous or missing.
+ * With `onFix`, the chips a picker can fix are buttons.
+ */
+export function QuickMoneyPreview({
+  draft,
+  onFix,
+  open,
+  errorId,
+}: {
+  draft: QuickTransaction;
+  onFix?: (chip: Chip) => void;
+  open?: Chip["type"] | null;
+  errorId?: string;
+}) {
   return (
     <div className="flex flex-col gap-1.5">
       <ul className="flex flex-wrap gap-1.5" aria-label="Understood">
-        {draft.chips.map((chip) => (
-          <li key={`${chip.type}-${chip.label}`}>
+        {draft.chips.map((chip) => {
+          const pill = (
             <Pill
               tone={TONE[chip.state]}
-              className={chip.state === "default" ? "border border-border-soft border-dashed" : undefined}
+              className={cn(chip.state === "default" && "border border-border-soft border-dashed")}
             >
               {chip.label}
               <span className="sr-only">{STATE_TEXT[chip.state]}</span>
+              {onFix && fixable(chip) && chip.type !== "amount" ? <ChevronDown aria-hidden /> : null}
             </Pill>
-          </li>
-        ))}
+          );
+          return (
+            <li key={`${chip.type}-${chip.label}`}>
+              {onFix && fixable(chip) ? (
+                <button
+                  type="button"
+                  onClick={() => onFix(chip)}
+                  aria-expanded={chip.type === "amount" ? undefined : open === chip.type}
+                  aria-label={
+                    chip.type === "amount"
+                      ? "Amount missing: type one"
+                      : `Change ${chip.label}${STATE_TEXT[chip.state]}`
+                  }
+                  className="rounded-full transition-transform duration-(--dur-fast) focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
+                >
+                  {pill}
+                </button>
+              ) : (
+                pill
+              )}
+            </li>
+          );
+        })}
         {draft.payee ? (
           <li>
             <Pill tone="neutral">“{draft.payee}”</Pill>
           </li>
         ) : null}
       </ul>
-      {draft.errors.length > 0 ? <p className="text-destructive text-xs">{draft.errors[0]}</p> : null}
+      {draft.errors.length > 0 ? (
+        <p id={errorId} className="text-destructive text-xs">
+          {draft.errors[0]}
+        </p>
+      ) : null}
     </div>
   );
 }

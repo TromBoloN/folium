@@ -50,6 +50,7 @@ async function AccountDetail({ params, searchParams }: Props) {
             name: account.name,
             type: account.type,
             color: account.color,
+            icon: account.icon ?? "",
             openingBalance:
               account.openingBalance < 0n ? `-${grouped(-account.openingBalance)}` : grouped(account.openingBalance),
           }}
@@ -70,7 +71,7 @@ function Reconcile({ account, real, matched }: { account: Account; real: string;
   const target = parsed?.success ? parsed.data.real : null;
   const adjustment = target !== null ? adjustmentFor(account.balance, target) : null;
   return (
-    <section aria-labelledby="reconcile-h" className="tile flex flex-col gap-4 p-5">
+    <section id="reconcile" aria-labelledby="reconcile-h" className="tile flex scroll-mt-24 flex-col gap-4 p-5">
       <div className="flex flex-col gap-1">
         <h2 id="reconcile-h" className="flex items-center gap-2 font-medium">
           <Scale aria-hidden className="size-4 text-muted-foreground" />
@@ -83,11 +84,11 @@ function Reconcile({ account, real, matched }: { account: Account; real: string;
       </div>
       {matched ? (
         <p className="flex items-center gap-2 text-sm" role="status">
-          <CheckCircle2 aria-hidden className="size-4 text-primary" />
+          <CheckCircle2 aria-hidden className="size-4 text-money-in" />
           Balance matched.
         </p>
       ) : null}
-      <form method="get" className="flex flex-wrap items-end gap-2">
+      <form method="get" action="#reconcile" className="flex flex-wrap items-end gap-2">
         <div className="grid gap-1.5">
           <Label htmlFor="real">Real balance</Label>
           <Input

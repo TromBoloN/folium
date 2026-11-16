@@ -42,6 +42,7 @@ async function Edit({ params }: Pick<PageProps<"/settings/categories/[id]">, "pa
         kind: category.kind,
         parentId: category.parentId ?? "",
         color: category.color,
+        icon: category.icon ?? "",
       }}
       parents={parents}
     />

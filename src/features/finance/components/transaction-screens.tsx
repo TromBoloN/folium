@@ -26,33 +26,45 @@ async function formData(keepIds: (string | null)[] = []) {
   const [accounts, categories, history] = await Promise.all([listAccounts(), listCategories(), listPayeeHistory()]);
   // Archived ones are hidden from pickers, unless the transaction being edited uses them.
   return {
-    accounts: accounts.filter((a) => !a.archived || keepIds.includes(a.id)),
+    accounts: accounts
+      .filter((a) => !a.archived || keepIds.includes(a.id))
+      .map((a) => ({
+        id: a.id,
+        name: a.name,
+        type: a.type,
+        color: a.color,
+        icon: a.icon,
+        balance: a.balance.toString(),
+      })),
     categories: categories
       .filter((c) => !c.archived || keepIds.includes(c.id))
-      .map((c) => ({ id: c.id, name: c.name, kind: c.kind, parentId: c.parentId })),
+      .map((c) => ({ id: c.id, name: c.name, kind: c.kind, parentId: c.parentId, color: c.color, icon: c.icon })),
     history,
     allAccounts: accounts,
   };
 }
 
-export async function NewTransactionScreen({ kind, variant }: { kind?: string } & Variant) {
+/** ?kind= and ?account= preselect (e.g. "Adjust" on an account opens an adjustment for it). */
+export async function NewTransactionScreen({ kind, account, variant }: { kind?: string; account?: string } & Variant) {
   await requireUser();
   const [{ accounts, categories, history, allAccounts }, { preferences }] = await Promise.all([
     formData(),
     getSettings(),
   ]);
   await io();
+  const today = localDateFor(new Date(), preferences.timeZone);
   const defaults: TransactionDefaults = {
     kind: TRANSACTION_KINDS.includes(kind as TransactionKind) ? (kind as TransactionKind) : "expense",
     status: "posted",
     amount: "",
-    accountId: (await lastUsedAccountId(allAccounts)) ?? "",
+    accountId:
+      allAccounts.find((a) => a.id === account && !a.archived)?.id ?? (await lastUsedAccountId(allAccounts)) ?? "",
     toAccountId: "",
     feeAmount: "",
     categoryId: "",
     payee: "",
     note: "",
-    occurredOn: localDateFor(new Date(), preferences.timeZone),
+    occurredOn: today,
     adjustmentDirection: "",
   };
   return (
@@ -60,7 +72,13 @@ export async function NewTransactionScreen({ kind, variant }: { kind?: string } 
       {variant === "page" ? (
         <PageHeader title="Add transaction" back={<BackLink href="/money">Money</BackLink>} />
       ) : null}
-      <TransactionForm defaults={defaults} accounts={accounts} categories={categories} history={history} />
+      <TransactionForm
+        defaults={defaults}
+        today={today}
+        accounts={accounts}
+        categories={categories}
+        history={history}
+      />
     </>
   );
 }
@@ -69,11 +87,12 @@ export async function EditTransactionScreen({ id, variant }: { id: string } & Va
   await requireUser();
   const transaction = await getTransaction(id);
   if (!transaction) notFound();
-  const { accounts, categories, history } = await formData([
-    transaction.accountId,
-    transaction.toAccountId,
-    transaction.categoryId,
+  const [{ accounts, categories, history }, { preferences }] = await Promise.all([
+    formData([transaction.accountId, transaction.toAccountId, transaction.categoryId]),
+    getSettings(),
   ]);
+  await io();
+  const today = localDateFor(new Date(), preferences.timeZone);
   const defaults: TransactionDefaults = {
     kind: transaction.kind,
     status: transaction.status,
@@ -92,7 +111,14 @@ export async function EditTransactionScreen({ id, variant }: { id: string } & Va
       {variant === "page" ? (
         <PageHeader title="Edit transaction" back={<BackLink href="/money">Money</BackLink>} />
       ) : null}
-      <TransactionForm id={id} defaults={defaults} accounts={accounts} categories={categories} history={history} />
+      <TransactionForm
+        id={id}
+        defaults={defaults}
+        today={today}
+        accounts={accounts}
+        categories={categories}
+        history={history}
+      />
     </>
   );
 }

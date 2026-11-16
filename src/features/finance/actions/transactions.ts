@@ -66,6 +66,20 @@ export async function saveTransaction(_prev: FormState, formData: FormData): Pro
       values,
     };
   }
+  // A category of the other kind (left checked after switching kinds without JavaScript).
+  if (parsed.data.categoryId) {
+    const category = (await listCategories()).find((c) => c.id === parsed.data.categoryId);
+    if (category && category.kind !== parsed.data.kind) {
+      return {
+        ok: false,
+        error: "Check the highlighted fields.",
+        fieldErrors: {
+          categoryId: `Pick ${parsed.data.kind === "income" ? "an income" : "an expense"} category, or None.`,
+        },
+        values,
+      };
+    }
+  }
   const id = z.uuid().safeParse(formData.get("id"));
   const supabase = await createClient();
   const row = transactionRow(parsed.data);
@@ -155,14 +169,10 @@ export async function getQuickMoneyContext(): Promise<ActionResult<QuickMoneyCon
   };
 }
 
-/**
- * One line from the quick-add box ("gofood 32k #food @gopay"), parsed again
- * here with the real accounts, categories, clock and zone. Saved only when it
- * parses cleanly; returns the id (for Undo) and a sentence for the toast.
- */
-export async function quickAddMoney(text: string): Promise<ActionResult<{ id: string; message: string }>> {
-  await requireUser();
+/** Parse a line again on the server (real accounts, categories, clock and zone) and save it if it's clean. */
+async function saveQuickLine(text: string): Promise<ActionResult<{ id: string; message: string }>> {
   if (typeof text !== "string" || text.length > 300) return { ok: false, error: "That's too long." };
+  if (!text.trim()) return { ok: false, error: "Type something like “gofood 32k #food @gopay”." };
   const context = await getQuickMoneyContext();
   if (!context.ok) return context;
   const draft = parseQuickTransaction(text, { ...context.data, now: new Date() });
@@ -195,4 +205,25 @@ export async function quickAddMoney(text: string): Promise<ActionResult<{ id: st
     ok: true,
     data: { id: data.id, message: `${what} ${formatIdr(draft.amount)}${draft.payee ? `: ${draft.payee}` : ""}` },
   };
+}
+
+/**
+ * One line from the command palette's quick add ("gofood 32k #food @gopay").
+ * Saved only when it parses cleanly; returns the id (for Undo) and a sentence for the toast.
+ */
+export async function quickAddMoney(text: string): Promise<ActionResult<{ id: string; message: string }>> {
+  await requireUser();
+  return saveQuickLine(text);
+}
+
+/**
+ * The quick-add bar on /money: a real form, so it works without JavaScript.
+ * On an error the typed line comes back in `values` to fix.
+ */
+export async function quickAddForm(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireUser();
+  const text = String(formData.get("text") ?? "");
+  const saved = await saveQuickLine(text);
+  if (!saved.ok) return { ok: false, error: saved.error, values: { text } };
+  return { ok: true, result: saved.data };
 }

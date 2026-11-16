@@ -11,18 +11,22 @@ test("adding an expense lowers that account's balance by exactly that amount", a
   // First visit seeds the default accounts (all at Rp 0).
   await page.goto("/money");
   await waitForContent(page);
-  await expect(card(page)).toHaveAccessibleName(/balance\s*Rp 0$/);
+  await expect(card(page)).toHaveAccessibleName(/balance\s*Rp 0\s/);
 
   await page.goto("/money/new");
   await waitForContent(page);
   await page.getByLabel("Amount", { exact: true }).fill("32.500");
-  await page.getByLabel("Account", { exact: true }).selectOption({ label: LIVIN });
+  // Accounts are chips (radios) showing their balance.
+  await page
+    .getByRole("group", { name: "Account" })
+    .getByRole("radio", { name: new RegExp(LIVIN) })
+    .check();
   await page.getByLabel("Payee").fill("GoFood");
   await page.getByRole("button", { name: "Add transaction" }).click();
 
   await expect(page).toHaveURL(/\/money$/);
   await waitForContent(page);
-  await expect(card(page)).toHaveAccessibleName(/balance\s*-Rp 32\.500$/);
+  await expect(card(page)).toHaveAccessibleName(/balance\s*-Rp 32\.500\s/);
   await expect(page.getByRole("link", { name: /GoFood/ }).first()).toBeVisible();
 });
 

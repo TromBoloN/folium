@@ -9,7 +9,7 @@ export default function NewAccountPage() {
   return (
     <div className="mx-auto w-full max-w-2xl">
       <PageHeader title="Add account" back={<BackLink href="/money/accounts">Accounts</BackLink>} />
-      <AccountForm defaults={{ name: "", type: "ewallet", color: "#1c7ed6", openingBalance: "" }} />
+      <AccountForm defaults={{ name: "", type: "ewallet", color: "#1971c2", icon: "", openingBalance: "" }} />
     </div>
   );
 }

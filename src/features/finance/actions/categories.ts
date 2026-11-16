@@ -21,6 +21,7 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
     kind: formData.get("kind") ?? "",
     parentId: formData.get("parentId") ?? "",
     color: formData.get("color") ?? "",
+    icon: formData.get("icon") ?? "",
   });
   if (!parsed.success) {
     return {
@@ -31,7 +32,7 @@ export async function saveCategory(_prev: FormState, formData: FormData): Promis
     };
   }
   const c = parsed.data;
-  const row = { name: c.name, kind: c.kind, parent_id: c.parentId, color: c.color };
+  const row = { name: c.name, kind: c.kind, parent_id: c.parentId, color: c.color, icon: c.icon };
   const id = z.uuid().safeParse(formData.get("id"));
   const supabase = await createClient();
   const { error } = id.success

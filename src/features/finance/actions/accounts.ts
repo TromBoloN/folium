@@ -24,6 +24,7 @@ export async function saveAccount(_prev: FormState, formData: FormData): Promise
     name: formData.get("name") ?? "",
     type: formData.get("type") ?? "",
     color: formData.get("color") ?? "",
+    icon: formData.get("icon") ?? "",
     openingBalance: formData.get("openingBalance") ?? "",
   });
   if (!parsed.success) {
@@ -35,7 +36,7 @@ export async function saveAccount(_prev: FormState, formData: FormData): Promise
     };
   }
   const a = parsed.data;
-  const row = { name: a.name, type: a.type, color: a.color, opening_balance: Number(a.openingBalance) };
+  const row = { name: a.name, type: a.type, color: a.color, icon: a.icon, opening_balance: Number(a.openingBalance) };
   const id = z.uuid().safeParse(formData.get("id"));
   const supabase = await createClient();
   const { error } = id.success

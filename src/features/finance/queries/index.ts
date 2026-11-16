@@ -19,6 +19,7 @@ export type Account = {
   name: string;
   type: AccountType;
   color: string;
+  icon: string | null;
   sortOrder: number;
   archived: boolean;
   openingBalance: bigint;
@@ -31,6 +32,7 @@ export type Category = {
   kind: CategoryKind;
   parentId: string | null;
   color: string;
+  icon: string | null;
   sortOrder: number;
   archived: boolean;
 };
@@ -66,6 +68,7 @@ type AccountRow = {
   name: string;
   type: AccountType;
   color: string;
+  icon: string | null;
   sort_order: number;
   archived_at: string | null;
   opening_balance: string;
@@ -76,7 +79,7 @@ export const listAccounts = cache(async (): Promise<Account[]> => {
   const [accounts, balances] = await Promise.all([
     supabase
       .from("accounts")
-      .select("id, name, type, color, sort_order, archived_at, opening_balance::text")
+      .select("id, name, type, color, icon, sort_order, archived_at, opening_balance::text")
       .order("sort_order")
       .order("name"),
     supabase.from("account_balances").select("account_id, balance::text"),
@@ -94,6 +97,7 @@ export const listAccounts = cache(async (): Promise<Account[]> => {
     name: a.name,
     type: a.type,
     color: a.color,
+    icon: a.icon,
     sortOrder: a.sort_order,
     archived: a.archived_at !== null,
     openingBalance: BigInt(a.opening_balance),
@@ -105,7 +109,7 @@ export const listCategories = cache(async (): Promise<Category[]> => {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("categories")
-    .select("id, name, kind, parent_id, color, sort_order, archived_at")
+    .select("id, name, kind, parent_id, color, icon, sort_order, archived_at")
     .order("kind")
     .order("sort_order")
     .order("name");
@@ -116,6 +120,7 @@ export const listCategories = cache(async (): Promise<Category[]> => {
     kind: c.kind as CategoryKind,
     parentId: c.parent_id,
     color: c.color,
+    icon: c.icon,
     sortOrder: c.sort_order,
     archived: c.archived_at !== null,
   }));
@@ -164,29 +169,76 @@ function quotedLike(q: string) {
   return `"${pattern.replace(/["\\]/g, (c) => `\\${c}`)}"`;
 }
 
-/** Transactions, newest first, with the URL filters applied in SQL. */
-export async function listTransactions(filters: TransactionFilters, limit = 200): Promise<Transaction[]> {
-  const supabase = await createClient();
-  let query = supabase.from("transactions").select(TX_COLUMNS);
+/** The few filter methods used here (PostgREST's builder types are too generic to name). */
+type Filterable = {
+  or(f: string): Filterable;
+  eq(c: string, v: string): Filterable;
+  in(c: string, v: string[]): Filterable;
+  gte(c: string, v: string): Filterable;
+  lte(c: string, v: string): Filterable;
+};
+
+/** A category and its children (a parent's filter includes them: they roll up into it). */
+async function categoryWithChildren(id: string | undefined): Promise<string[]> {
+  if (!id) return [];
+  return [id, ...(await listCategories()).filter((c) => c.parentId === id).map((c) => c.id)];
+}
+
+/**
+ * The URL filters as SQL. Synchronous on purpose: the builder is thenable, so
+ * returning it from an async function would run the query early.
+ */
+function applyFilters<Q>(query: Q, filters: TransactionFilters, categoryIds: string[]): Q {
+  let q = query as unknown as Filterable;
   // Two "either" conditions (account on either side, text in payee or note) must go in one
   // `or` parameter: PostgREST doesn't reliably combine repeated ones.
   const groups: string[] = [];
   if (filters.account) groups.push(`account_id.eq.${filters.account},to_account_id.eq.${filters.account}`);
   if (filters.q) groups.push(`payee.ilike.${quotedLike(filters.q)},note.ilike.${quotedLike(filters.q)}`);
-  if (groups.length === 1) query = query.or(groups[0]);
-  if (groups.length === 2) query = query.or(`and(or(${groups[0]}),or(${groups[1]}))`);
-  if (filters.category) query = query.eq("category_id", filters.category);
-  if (filters.kind) query = query.eq("kind", filters.kind);
+  if (groups.length === 1) q = q.or(groups[0]);
+  if (groups.length === 2) q = q.or(`and(or(${groups[0]}),or(${groups[1]}))`);
+  if (filters.category) q = q.in("category_id", categoryIds);
+  if (filters.kind) q = q.eq("kind", filters.kind);
   if (filters.month) {
     const { from, to } = monthBounds(filters.month);
-    query = query.gte("occurred_on", from).lte("occurred_on", to);
+    q = q.gte("occurred_on", from).lte("occurred_on", to);
   }
+  return q as unknown as Q;
+}
+
+/** Transactions, newest first, with the URL filters applied in SQL. `more` says whether older ones exist. */
+export async function listTransactions(
+  filters: TransactionFilters,
+  limit = 200,
+): Promise<{ rows: Transaction[]; more: boolean }> {
+  const [supabase, categoryIds] = await Promise.all([createClient(), categoryWithChildren(filters.category)]);
+  const query = applyFilters(supabase.from("transactions").select(TX_COLUMNS), filters, categoryIds);
   const { data, error } = await query
     .order("occurred_on", { ascending: false })
     .order("created_at", { ascending: false })
-    .limit(limit);
+    .limit(limit + 1);
   if (error) throw new Error(`Couldn't load transactions: ${error.message}`);
-  return (data as unknown as TxRow[]).map(toTransaction);
+  const rows = (data as unknown as TxRow[]).map(toTransaction);
+  return { rows: rows.slice(0, limit), more: rows.length > limit };
+}
+
+/** Count and posted money in/out for everything the filters match (not just the page shown). */
+export async function summarizeTransactions(
+  filters: TransactionFilters,
+): Promise<{ count: number; income: bigint; expense: bigint }> {
+  const [supabase, categoryIds] = await Promise.all([createClient(), categoryWithChildren(filters.category)]);
+  const query = applyFilters(supabase.from("transactions").select("kind, status, amount::text"), filters, categoryIds);
+  const { data, error } = await query.limit(10000);
+  if (error) throw new Error(`Couldn't load the summary: ${error.message}`);
+  let income = 0n;
+  let expense = 0n;
+  const rows = data as unknown as { kind: string; status: string; amount: string }[];
+  for (const r of rows) {
+    if (r.status !== "posted") continue;
+    if (r.kind === "income") income += BigInt(r.amount);
+    else if (r.kind === "expense") expense += BigInt(r.amount);
+  }
+  return { count: rows.length, income, expense };
 }
 
 export async function getTransaction(id: string): Promise<Transaction | null> {
@@ -197,21 +249,42 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
   return data ? toTransaction(data as unknown as TxRow) : null;
 }
 
-/** Posted income and expense rows in a date range (for "This month"). */
-export async function listPostedInOut(from: string, to: string): Promise<{ kind: string; amount: bigint }[]> {
+/** Posted income and expense rows in a date range (month totals and spending by category). */
+export async function listPostedInOut(
+  from: string,
+  to: string,
+): Promise<{ kind: string; status: string; categoryId: string | null; amount: bigint }[]> {
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("transactions")
-    .select("kind, amount::text")
+    .select("kind, category_id, amount::text")
     .eq("status", "posted")
     .in("kind", ["income", "expense"])
     .gte("occurred_on", from)
     .lte("occurred_on", to);
   if (error) throw new Error(`Couldn't load this month: ${error.message}`);
-  return (data as unknown as { kind: string; amount: string }[]).map((r) => ({
+  return (data as unknown as { kind: string; category_id: string | null; amount: string }[]).map((r) => ({
     kind: r.kind,
+    status: "posted",
+    categoryId: r.category_id,
     amount: BigInt(r.amount),
   }));
+}
+
+/**
+ * Posted rows dated after `since`, future-dated ones included: what balanceSeries
+ * needs to work backwards from account_balances.
+ */
+export async function listPostedSince(since: string): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("transactions")
+    .select(TX_COLUMNS)
+    .eq("status", "posted")
+    .gt("occurred_on", since)
+    .limit(5000);
+  if (error) throw new Error(`Couldn't load recent activity: ${error.message}`);
+  return (data as unknown as TxRow[]).map(toTransaction);
 }
 
 /** Recent payee → category pairs, for suggesting a category as you type a payee. */

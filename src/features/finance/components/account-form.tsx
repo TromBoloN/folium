@@ -9,11 +9,18 @@ import { CancelButton } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import { ColorField } from "@/features/courses/components/color-field";
 import { saveAccount } from "../actions/accounts";
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "../schemas";
+import { AppearanceFields } from "./appearance-fields";
 
-export type AccountDefaults = { id?: string; name: string; type: string; color: string; openingBalance: string };
+export type AccountDefaults = {
+  id?: string;
+  name: string;
+  type: string;
+  color: string;
+  icon: string;
+  openingBalance: string;
+};
 
 export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
   const [state, action, pending] = useActionState(saveAccount, null);
@@ -61,7 +68,7 @@ export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
             aria-describedby={describedBy("openingBalance", errors.openingBalance, "hint")}
           />
         </Field>
-        <ColorField key={value("color")} defaultValue={value("color")} error={errors.color} />
+        <AppearanceFields color={value("color")} icon={value("icon")} errors={errors} />
       </FormSection>
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>

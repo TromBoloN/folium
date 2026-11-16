@@ -8,10 +8,17 @@ import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
-import { ColorField } from "@/features/courses/components/color-field";
 import { saveCategory } from "../actions/categories";
+import { AppearanceFields } from "./appearance-fields";
 
-export type CategoryDefaults = { id?: string; name: string; kind: string; parentId: string; color: string };
+export type CategoryDefaults = {
+  id?: string;
+  name: string;
+  kind: string;
+  parentId: string;
+  color: string;
+  icon: string;
+};
 type Parent = { id: string; name: string; kind: "expense" | "income" };
 
 /** Add or edit a category. Parents are top-level categories of the same kind (one level of nesting). */
@@ -72,7 +79,7 @@ export function CategoryForm({ defaults, parents }: { defaults: CategoryDefaults
             ))}
           </NativeSelect>
         </Field>
-        <ColorField key={value("color")} defaultValue={value("color")} error={errors.color} />
+        <AppearanceFields color={value("color")} icon={value("icon")} errors={errors} />
       </FormSection>
       {state && !state.ok && !state.fieldErrors ? (
         <p role="alert" className="text-destructive text-sm">

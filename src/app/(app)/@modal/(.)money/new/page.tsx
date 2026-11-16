@@ -14,6 +14,12 @@ export default function NewTransactionSheet({ searchParams }: PageProps<"/money/
 }
 
 async function New({ searchParams }: Pick<PageProps<"/money/new">, "searchParams">) {
-  const { kind } = await searchParams;
-  return <NewTransactionScreen variant="sheet" kind={typeof kind === "string" ? kind : undefined} />;
+  const { kind, account } = await searchParams;
+  return (
+    <NewTransactionScreen
+      variant="sheet"
+      kind={typeof kind === "string" ? kind : undefined}
+      account={typeof account === "string" ? account : undefined}
+    />
+  );
 }

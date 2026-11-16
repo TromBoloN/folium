@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isCivilDate } from "@/lib/dates";
+import { isMoneyIcon } from "../lib/money-palette";
 import { parseAmount } from "../lib/parse-amount";
 
 export const TRANSACTION_KINDS = ["expense", "income", "transfer", "adjustment"] as const;
@@ -76,6 +77,13 @@ const hexColor = z
   .trim()
   .toLowerCase()
   .regex(/^#[0-9a-f]{6}$/, "Pick a colour.");
+
+/** An icon key from the picker; blank = automatic (guessed from the name). */
+const optionalIcon = z
+  .string()
+  .default("")
+  .transform((v) => (v === "" ? null : v))
+  .refine((v) => v === null || isMoneyIcon(v), "Pick an icon from the list.");
 
 export const transactionFormSchema = z
   .object({
@@ -160,6 +168,7 @@ export const accountFormSchema = z.object({
   name: z.string().trim().min(1, "Give the account a name.").max(60, "Name can be at most 60 characters."),
   type: z.enum(ACCOUNT_TYPES, "Choose a type."),
   color: hexColor,
+  icon: optionalIcon,
   openingBalance: signedAmount,
 });
 
@@ -168,6 +177,7 @@ export const categoryFormSchema = z.object({
   kind: z.enum(CATEGORY_KINDS, "Choose expense or income."),
   parentId: optionalId,
   color: hexColor,
+  icon: optionalIcon,
 });
 
 /** List filters from the URL. Junk falls back to "no filter" instead of an error page. */

@@ -15,6 +15,9 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Finance**
 
+- [2026-11-16: Sparklines work backwards from `account_balances`](backend.md#2026-11-16-sparklines-work-backwards-from-account_balances)
+- [2026-11-16: Spending charts leave out transfers and adjustments](backend.md#2026-11-16-spending-charts-leave-out-transfers-and-adjustments)
+- [2026-11-16: Transaction filters are GET parameters first, JavaScript second](backend.md#2026-11-16-transaction-filters-are-get-parameters-first-javascript-second)
 - [2026-11-16: "Match my real balance" rewrites the opening balance](backend.md#2026-11-16-match-my-real-balance-rewrites-the-opening-balance)
 - [2026-11-16: Finance undo re-inserts the deleted row with the same id](backend.md#2026-11-16-finance-undo-re-inserts-the-deleted-row-with-the-same-id)
 - [2026-11-16: The last-used account is a cookie](backend.md#2026-11-16-the-last-used-account-is-a-cookie)

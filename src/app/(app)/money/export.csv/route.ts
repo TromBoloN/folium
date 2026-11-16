@@ -11,7 +11,7 @@ import { ensureFinanceDefaults, listAccounts, listCategories, listTransactions }
 export async function GET() {
   await requireUser();
   await ensureFinanceDefaults();
-  const [accounts, categories, transactions] = await Promise.all([
+  const [accounts, categories, { rows: transactions }] = await Promise.all([
     listAccounts(),
     listCategories(),
     listTransactions({}, 100_000),
