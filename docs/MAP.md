@@ -1,6 +1,6 @@
 # Map
 
-Where to look before you change something. One section per feature: its routes, its files, and the rule that matters. Paths are under `src/` unless they start with another folder. Tests sit next to the file they test (`x.ts` → `x.test.ts`). How it fits together: [docs/architecture.md](docs/architecture.md).
+Where to look before you change something. One section per feature: its routes, its files, and the rule that matters. Paths are under `src/` unless they start with another folder (relative to the repo root). Tests sit next to the file they test (`x.ts` → `x.test.ts`). How it fits together: [architecture.md](architecture.md).
 
 ## Find it fast
 
@@ -83,7 +83,7 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 
 **Add a page.** Static parts (header) in the page, data in a Suspense'd async child that calls `requireUser()`, awaits `params`/`searchParams`, and calls `notFound()` when needed. Give it loading, empty and error states. `bun run typecheck` regenerates `PageProps`. For a sheet version, add `app/(app)/@modal/(.)<route>/page.tsx` rendering the same screen with `variant="sheet"`.
 
-**Add a form.** Build it from `Field`, `FormSection`, `ChipGroup`, `FormFooter`; follow the form contract in [docs/architecture.md](docs/architecture.md#forms-and-server-actions); include `SheetFormBridge` if it can open in a sheet.
+**Add a form.** Build it from `Field`, `FormSection`, `ChipGroup`, `FormFooter`; follow the form contract in [architecture.md](architecture.md#forms-and-server-actions); include `SheetFormBridge` if it can open in a sheet.
 
 **Change a theme colour.** Edit the token in `globals.css` (both halves of `light-dark()`). A new preset: add it to `PRESETS` (`settings/schema.ts`), a label in `theme.ts`, and a `[data-preset="…"] { --hue; --chroma }` rule.
 

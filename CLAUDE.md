@@ -50,7 +50,7 @@ usefulness, fast workflows, customizable theme, preferences and widgets.
 - Before finishing: `bun run typecheck`, `bunx biome check .`, `bun run test` and
   `bunx supabase test db` pass. Also `bun run build` if you added or changed routes.
 - When a task is done, end with one suggested Conventional Commits line.
-- Update docs if you add something worth noting, especially MAP.md for new features
+- Update docs if you add something worth noting, especially `docs/MAP.md` for new features
 
 ## Testing and cost rules
 - Logic, parsers and route handlers: Vitest. RLS: pgTAP.

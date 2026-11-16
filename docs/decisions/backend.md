@@ -54,7 +54,7 @@ Data, domain rules, settings storage, server actions, auth and security, integra
 
 ## 2026-11-16: Docs consolidated into a few files plus a map
 
-**Status.** Accepted, amended 2026-11-16: decisions split into `docs/decisions/` (backend, frontend, index).
+**Status.** Accepted, amended 2026-11-16: decisions split into `docs/decisions/` (backend, frontend, index); `MAP.md` moved to `docs/MAP.md`.
 
 **Decision.** The 20 numbered docs became `README.md`, `MAP.md` (where things are), `docs/architecture.md`, `docs/local-development.md`, `docs/decisions.md`, `docs/gotchas.md` and `docs/security-review.md`. Per-feature docs, the file-by-file codebase map and the UI states audit were deleted; feature behaviour is described by the code, its tests and the one-line pointers in `MAP.md`. Screenshots left `docs/`.
 

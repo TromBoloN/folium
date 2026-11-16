@@ -54,7 +54,7 @@ The first four must pass before any change is finished.
 
 ## Docs
 
-- [MAP.md](MAP.md): where everything is, feature by feature, and how to add a widget, setting, table, page or form.
+- [docs/MAP.md](docs/MAP.md): where everything is, feature by feature, and how to add a widget, setting, table, page or form.
 - [docs/architecture.md](docs/architecture.md): how it fits together and the rules (data and security, auth, dates and time zones, forms and actions, testing).
 - [docs/decisions/](docs/decisions/README.md): why things are the way they are (backend and frontend, plus open decisions).
 - [docs/gotchas.md](docs/gotchas.md): traps that already cost time once.
