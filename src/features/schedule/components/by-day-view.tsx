@@ -2,13 +2,15 @@ import { CalendarPlus } from "lucide-react";
 import Link from "next/link";
 import type { Week } from "@/features/timetable/week";
 import { formatDate, isoWeekday } from "@/lib/dates";
+import { plural, type T } from "@/lib/i18n/core";
+import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import { BreakBanner } from "./break-banner";
 import { OccurrenceRow } from "./occurrence-row";
 
-function countLabel(classes: number, cancelled: number) {
-  const parts = [`${classes} ${classes === 1 ? "class" : "classes"}`];
-  if (cancelled) parts.push(`${cancelled} cancelled`);
+function countLabel(t: T, classes: number, cancelled: number) {
+  const parts = [t(plural(classes, "{n} class", "{n} classes"), { n: classes })];
+  if (cancelled) parts.push(t("{n} cancelled", { n: cancelled }));
   return parts.join(" · ");
 }
 
@@ -16,11 +18,12 @@ function countLabel(classes: number, cancelled: number) {
  * The week as a time-first list, one section per day. Days without classes
  * collapse to one line ("Free day", or the break's name).
  */
-export function ByDayView({ week }: { week: Week }) {
+export async function ByDayView({ week }: { week: Week }) {
+  const { t, intl } = await getI18n();
   return (
     <ol className="flex flex-col gap-2">
       {week.days.map((d) => {
-        const heading = formatDate(d.date, { weekday: "short", day: "numeric", month: "short" });
+        const heading = formatDate(d.date, { weekday: "short", day: "numeric", month: "short" }, intl);
         if (d.items.length === 0) {
           return (
             <li
@@ -33,10 +36,10 @@ export function ByDayView({ week }: { week: Week }) {
             >
               <h3 className="font-medium">
                 {heading}
-                {d.isToday ? <span className="text-muted-foreground"> · Today</span> : null}
+                {d.isToday ? <span className="text-muted-foreground">{t(" · Today")}</span> : null}
               </h3>
               <span className="text-muted-foreground">
-                {d.breakLabel ? `No classes · ${d.breakLabel}` : "Free day"}
+                {d.breakLabel ? t("No classes · {name}", { name: d.breakLabel }) : t("Free day")}
               </span>
             </li>
           );
@@ -53,11 +56,11 @@ export function ByDayView({ week }: { week: Week }) {
                 <h3 id={`day-${d.date}-h`} className="font-display font-medium text-lg">
                   {heading}
                   {d.isToday ? (
-                    <span className="font-sans font-normal text-muted-foreground text-sm"> · Today</span>
+                    <span className="font-sans font-normal text-muted-foreground text-sm">{t(" · Today")}</span>
                   ) : null}
                 </h3>
                 <span className="text-muted-foreground text-sm tabular-nums">
-                  {countLabel(d.classCount, d.cancelledCount)}
+                  {countLabel(t, d.classCount, d.cancelledCount)}
                 </span>
               </header>
               {d.breakId && d.breakLabel ? <BreakBanner id={d.breakId} label={d.breakLabel} /> : null}
@@ -78,7 +81,7 @@ export function ByDayView({ week }: { week: Week }) {
           className="inline-flex items-center gap-1.5 rounded-md py-1 text-muted-foreground text-sm hover:text-foreground"
         >
           <CalendarPlus aria-hidden className="size-4" />
-          Add a weekly class time
+          {t("Add a weekly class time")}
         </Link>
       </li>
     </ol>

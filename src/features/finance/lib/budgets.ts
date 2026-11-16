@@ -1,3 +1,5 @@
+import { type T, tEn } from "@/lib/i18n/core";
+
 /**
  * Budget progress for one month. A parent category's budget includes its
  * children. Spent = posted expenses; committed = planned expenses still to come
@@ -81,9 +83,10 @@ export function budgetProgress(input: {
 export function budgetLabel(
   p: Pick<BudgetProgress, "spent" | "limit" | "percent" | "state">,
   format: (n: bigint) => string,
+  t: T = tEn,
 ) {
-  if (p.state === "over") return `Over by ${format(p.spent - p.limit)}`;
-  return `${p.percent}% used`;
+  if (p.state === "over") return t("Over by {amount}", { amount: format(p.spent - p.limit) });
+  return t("{n}% used", { n: p.percent });
 }
 
 /**

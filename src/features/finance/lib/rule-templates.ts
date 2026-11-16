@@ -1,3 +1,4 @@
+import type { MessageKey } from "@/lib/i18n/core";
 import { addDays, type IsoDate } from "./local-date";
 
 /** Starting points for a recurring rule. Category and account are matched by name when they exist. */
@@ -9,7 +10,7 @@ export const RULE_TEMPLATES = [
   { key: "service", label: "Service reminder" },
   { key: "allowance", label: "Allowance" },
   { key: "sinking", label: "Set aside monthly" },
-] as const;
+] as const satisfies readonly { key: string; label: MessageKey }[];
 
 export type TemplateKey = (typeof RULE_TEMPLATES)[number]["key"];
 

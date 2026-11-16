@@ -2,6 +2,7 @@ import { CalendarDays } from "lucide-react";
 import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import { Tr } from "@/lib/i18n/client";
 import { formatTime } from "../logic";
 import type { Week } from "../week";
 import { DayAgenda } from "./day-agenda";
@@ -24,14 +25,20 @@ export function WeekView({ week, timeFormat, hasAnySlots, todayIndex }: Props) {
         description="Add class times to a course and they'll show up here, week by week."
       >
         <Button asChild size="sm">
-          <Link href="/courses/timetable/new">Add a class time</Link>
+          <Link href="/courses/timetable/new">
+            <Tr k="Add a class time" />
+          </Link>
         </Button>
       </EmptyState>
     );
   }
   return (
     <div className="flex flex-col gap-4">
-      {emptyThisWeek ? <p className="text-muted-foreground text-sm">No classes this week.</p> : null}
+      {emptyThisWeek ? (
+        <p className="text-muted-foreground text-sm">
+          <Tr k="No classes this week." />
+        </p>
+      ) : null}
       <div className="md:hidden">
         <DayAgenda days={week.days} initialIndex={todayIndex} />
       </div>

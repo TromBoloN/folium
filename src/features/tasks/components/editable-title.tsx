@@ -3,12 +3,14 @@
 import { Pencil } from "lucide-react";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { useTaskOps } from "./task-ops";
 
 /** The task's title as a heading; click it to rename in place (Enter saves, Escape cancels). */
 export function EditableTitle({ id, title, done }: { id: string; title: string; done: boolean }) {
   const ops = useTaskOps();
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [shown, setShown] = useState(title);
   const [prev, setPrev] = useState(title);
@@ -23,7 +25,7 @@ export function EditableTitle({ id, title, done }: { id: string; title: string; 
     setEditing(false);
     if (!next || next === shown) return;
     setShown(next);
-    const ok = await ops.patch({ id, title: next }, `Renamed to “${next}”`);
+    const ok = await ops.patch({ id, title: next }, t("Renamed to “{title}”", { title: next }));
     if (!ok) setShown(title);
   };
 
@@ -31,7 +33,7 @@ export function EditableTitle({ id, title, done }: { id: string; title: string; 
     return (
       <Input
         defaultValue={shown}
-        aria-label="Task title"
+        aria-label={t("Task title")}
         maxLength={200}
         autoFocus
         onFocus={(e) => e.currentTarget.select()}
@@ -54,7 +56,7 @@ export function EditableTitle({ id, title, done }: { id: string; title: string; 
           done && "text-muted-foreground line-through",
         )}
       >
-        <span className="sr-only">Rename: </span>
+        <span className="sr-only">{t("Rename:")} </span>
         {shown}
         <Pencil
           aria-hidden

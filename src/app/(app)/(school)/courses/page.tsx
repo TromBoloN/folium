@@ -27,8 +27,12 @@ import { listOpenTasks } from "@/features/tasks/queries";
 import { WeekView } from "@/features/timetable/components/week-view";
 import { buildWeek, weekRange } from "@/features/timetable/week";
 import { addDays, type CivilDate, isCivilDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { Tr } from "@/lib/i18n/client";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Courses" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Courses") };
+}
 
 export default function CoursesPage({ searchParams }: PageProps<"/courses">) {
   return (
@@ -41,13 +45,13 @@ export default function CoursesPage({ searchParams }: PageProps<"/courses">) {
             <Button asChild size="sm" variant="outline">
               <Link href="/courses/rollover">
                 <CalendarRange aria-hidden />
-                New semester
+                <Tr k="New semester" />
               </Link>
             </Button>
             <Button asChild size="sm">
               <Link href="/courses/new">
                 <Plus aria-hidden />
-                Add course
+                <Tr k="Add course" />
               </Link>
             </Button>
           </div>
@@ -84,7 +88,9 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
           description="Add your courses for this semester, then give each one its weekly class times."
         >
           <Button asChild size="sm">
-            <Link href="/courses/new">Add your first course</Link>
+            <Link href="/courses/new">
+              <Tr k="Add your first course" />
+            </Link>
           </Button>
         </EmptyState>
       </div>
@@ -108,7 +114,9 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
         {shown.length > 0 ? (
           <CourseList courses={shown} stats={stats} />
         ) : (
-          <p className="text-muted-foreground text-sm">No courses in {semester}.</p>
+          <p className="text-muted-foreground text-sm">
+            <Tr k="No courses in {semester}." vars={{ semester }} />
+          </p>
         )}
       </div>
     );
@@ -124,6 +132,7 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
     weekStart: preferences.weekStart,
     timeFormat: preferences.timeFormat,
     nowMinute,
+    i18n: await getI18n(),
   });
   const hasAnySlots = courses.some((c) => !c.archivedAt && c.slots.length > 0);
   // The day agenda (phones) opens on the linked day (e.g. from the week strip), else today.
@@ -161,6 +170,7 @@ async function cardStats(
   nowMinute: number,
   preferences: Preferences,
 ): Promise<Record<string, CourseCardStats>> {
+  const i18n = await getI18n();
   const thisWeek = weekRange(today, preferences.weekStart);
   const range = { from: thisWeek.from, to: addDays(today, 13) };
   const [input, tasks, gradebook, courses] = await Promise.all([
@@ -180,9 +190,9 @@ async function cardStats(
     stats[course.id] = {
       next: next
         ? {
-            label: nextLabel(next, now, preferences.timeFormat),
+            label: nextLabel(next, now, preferences.timeFormat, i18n),
             location: next.location,
-            chips: occurrenceChips(next, preferences.timeFormat),
+            chips: occurrenceChips(next, preferences.timeFormat, i18n),
           }
         : null,
       weekdays: [...new Set(course.slots.filter((s) => !s.endsOn || s.endsOn >= today).map((s) => s.weekday))],

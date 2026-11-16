@@ -11,9 +11,12 @@ import { requireUser } from "@/features/auth/queries";
 import { setCategoryArchived } from "@/features/finance/actions/categories";
 import { CategoryForm } from "@/features/finance/components/category-form";
 import { type Category, ensureFinanceDefaults, listCategories } from "@/features/finance/queries";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Categories" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Categories") };
+}
 
 export default function CategoriesPage() {
   return (
@@ -33,7 +36,7 @@ export default function CategoriesPage() {
 async function Categories() {
   await requireUser();
   await ensureFinanceDefaults();
-  const categories = await listCategories();
+  const [categories, t] = await Promise.all([listCategories(), getT()]);
   const parents = categories
     .filter((c) => !c.parentId && !c.archived)
     .map((c) => ({ id: c.id, name: c.name, kind: c.kind }));
@@ -42,7 +45,7 @@ async function Categories() {
       {(["expense", "income"] as const).map((kind) => (
         <section key={kind} aria-labelledby={`${kind}-h`} className="flex flex-col gap-3">
           <h2 id={`${kind}-h`} className="font-medium">
-            {kind === "expense" ? "Expense" : "Income"}
+            {kind === "expense" ? t("Expense") : t("Income")}
           </h2>
           <CategoryTree categories={categories.filter((c) => c.kind === kind)} />
         </section>
@@ -57,7 +60,8 @@ async function Categories() {
   );
 }
 
-function CategoryTree({ categories }: { categories: Category[] }) {
+async function CategoryTree({ categories }: { categories: Category[] }) {
+  const t = await getT();
   const top = categories.filter((c) => !c.parentId);
   return (
     <ul className="tile flex flex-col divide-y divide-border-soft overflow-hidden">
@@ -82,7 +86,7 @@ function CategoryTree({ categories }: { categories: Category[] }) {
               {c.archived ? " (archived)" : ""}
             </span>
             <Button asChild size="icon" variant="ghost">
-              <Link href={`/money/categories/${c.id}`} aria-label={`Edit ${c.name}`}>
+              <Link href={`/money/categories/${c.id}`} aria-label={t("Edit {name}", { name: c.name })}>
                 <Pencil aria-hidden />
               </Link>
             </Button>
@@ -90,7 +94,9 @@ function CategoryTree({ categories }: { categories: Category[] }) {
               <SubmitButton
                 size="icon"
                 variant="ghost"
-                aria-label={c.archived ? `Unarchive ${c.name}` : `Archive ${c.name}`}
+                aria-label={
+                  c.archived ? t("Unarchive {name}", { name: c.name }) : t("Archive {name}", { name: c.name })
+                }
               >
                 {c.archived ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
               </SubmitButton>

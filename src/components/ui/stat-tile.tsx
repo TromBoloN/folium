@@ -1,5 +1,6 @@
 import { ArrowUpRight } from "lucide-react";
 import Link from "next/link";
+import { TrL } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { CountUp } from "./count-up";
 import { Tile } from "./tile";
@@ -37,8 +38,14 @@ export function StatTile({
         {value === null ? placeholder : <CountUp value={value} decimals={decimals} />}
       </span>
       <span className="flex flex-col">
-        <span className="font-medium text-sm leading-tight">{label}</span>
-        {hint ? <span className="text-muted-foreground text-xs">{hint}</span> : null}
+        <span className="font-medium text-sm leading-tight">
+          <TrL text={label} />
+        </span>
+        {hint ? (
+          <span className="text-muted-foreground text-xs">
+            <TrL text={hint} />
+          </span>
+        ) : null}
       </span>
     </>
   );

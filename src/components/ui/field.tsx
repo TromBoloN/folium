@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Label } from "@/components/ui/label";
+import { useI18n } from "@/lib/i18n/client";
 
 type Props = {
   id: string;
@@ -28,8 +29,10 @@ const isControl = (el: EventTarget): el is Control =>
  * still validates everything; without JavaScript its errors are what you see.
  */
 export function Field({ id, label, error, hint, optional, requiredMessage, children }: Props) {
+  const { t, tl } = useI18n();
   const [local, setLocal] = useState<string | null>(null);
-  const shown = error ?? local ?? undefined;
+  // Labels, hints and server errors arrive in English; they're looked up here (unknown text shows as is).
+  const shown = error ? tl(error) : (local ?? undefined);
 
   const check = (el: Control, final: boolean) => {
     if (el.id !== id) return;
@@ -41,7 +44,11 @@ export function Field({ id, label, error, hint, optional, requiredMessage, child
       return;
     }
     if (!final) return; // while typing, only clear; complain on leaving
-    const message = el.validity.valueMissing ? (requiredMessage ?? `${label} is required.`) : el.validationMessage;
+    const message = el.validity.valueMissing
+      ? requiredMessage
+        ? tl(requiredMessage)
+        : t("{label} is required.", { label: tl(label) })
+      : el.validationMessage;
     setLocal(message);
     el.setAttribute("aria-invalid", "true");
     el.setAttribute("aria-describedby", `${id}-error`);
@@ -55,13 +62,13 @@ export function Field({ id, label, error, hint, optional, requiredMessage, child
       onInput={(e) => isControl(e.target) && check(e.target, false)}
     >
       <Label htmlFor={id}>
-        {label}
-        {optional ? <span className="font-normal text-muted-foreground"> (optional)</span> : null}
+        {tl(label)}
+        {optional ? <span className="font-normal text-muted-foreground"> {t("(optional)")}</span> : null}
       </Label>
       {children}
       {hint && !shown ? (
         <p id={`${id}-hint`} className="text-muted-foreground text-xs">
-          {hint}
+          {tl(hint)}
         </p>
       ) : null}
       {shown ? (

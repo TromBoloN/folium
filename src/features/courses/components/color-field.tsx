@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import { useState } from "react";
 import { readableTextOn } from "@/lib/color";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { COURSE_COLORS } from "../schema";
 
@@ -19,6 +20,7 @@ export function ColorField({
   error?: string;
   onChange?: (color: string) => void;
 }) {
+  const t = useT();
   const [color, setColorState] = useState(defaultValue.toLowerCase());
   const setColor = (c: string) => {
     setColorState(c);
@@ -26,14 +28,14 @@ export function ColorField({
   };
   return (
     <fieldset className="grid gap-2" aria-describedby={error ? "color-error" : undefined}>
-      <legend className="mb-1.5 font-medium text-sm">Colour</legend>
+      <legend className="mb-1.5 font-medium text-sm">{t("Colour")}</legend>
       <div className="flex flex-wrap items-center gap-2">
         {COURSE_COLORS.map((c) => (
           <button
             key={c}
             type="button"
             onClick={() => setColor(c)}
-            aria-label={`Use colour ${c}`}
+            aria-label={t("Use colour {color}", { color: c })}
             aria-pressed={color === c}
             style={{ "--course": c, color: readableTextOn(c) } as React.CSSProperties}
             className={cn(
@@ -50,10 +52,10 @@ export function ColorField({
             name="color"
             value={color}
             onChange={(e) => setColor(e.target.value)}
-            aria-label="Custom colour"
+            aria-label={t("Custom colour")}
             className="h-8 w-12 cursor-pointer rounded-md border bg-transparent p-0.5"
           />
-          Custom
+          {t("Custom")}
         </label>
       </div>
       {error ? (

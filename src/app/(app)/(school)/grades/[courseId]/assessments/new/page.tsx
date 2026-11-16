@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewAssessmentScreen } from "@/features/grades/components/assessment-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add assessment" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add assessment") };
+}
 
 export default function NewAssessmentPage({ params }: PageProps<"/grades/[courseId]/assessments/new">) {
   return (

@@ -4,8 +4,11 @@ import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewTaskScreen } from "@/features/tasks/components/task-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "New task" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("New task") };
+}
 
 export default function NewTaskPage({ searchParams }: PageProps<"/tasks/new">) {
   return (

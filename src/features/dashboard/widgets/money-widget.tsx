@@ -9,11 +9,14 @@ import { loadBudgetProgress } from "@/features/finance/queries/budget-progress";
 import { ensureRecurringGenerated, listBills } from "@/features/finance/queries/planning";
 import { loadSafeToSpend } from "@/features/finance/queries/safe-to-spend";
 import { moneyToday } from "@/features/finance/queries/today";
+import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
 /** Today's money: safe to spend, bills due this week, and budgets past 80%. In-app reminders, no cron. */
 export async function MoneyWidget() {
   await requireUser();
+  const i18n = await getI18n();
+  const { t } = i18n;
   await ensureFinanceDefaults();
   const { today } = await moneyToday();
   await ensureRecurringGenerated(today);
@@ -33,15 +36,17 @@ export async function MoneyWidget() {
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col">
-        <span className="text-muted-foreground text-xs">Safe to spend</span>
+        <span className="text-muted-foreground text-xs">{t("Safe to spend")}</span>
         {safe.perDay !== null ? (
           <span className="font-display font-medium text-2xl tabular-nums">
             {formatIdr(safe.perDay)}
-            <span className="font-normal font-sans text-muted-foreground text-sm"> a day · {safe.days}d</span>
+            <span className="font-normal font-sans text-muted-foreground text-sm">
+              {t(" a day · {days}d", { days: safe.days })}
+            </span>
           </span>
         ) : (
           <span className="font-display font-medium text-2xl text-money-out tabular-nums">
-            Over by {formatIdr(safe.over ?? 0n)}
+            {t("Over by {amount}", { amount: formatIdr(safe.over ?? 0n) })}
           </span>
         )}
       </div>
@@ -50,9 +55,9 @@ export async function MoneyWidget() {
           {due.map((b) => (
             <li key={b.id} className="flex items-baseline justify-between gap-3">
               <span className="min-w-0 truncate">
-                {b.rule?.name ?? b.payee ?? "Bill"}{" "}
+                {b.rule?.name ?? b.payee ?? t("Bill")}{" "}
                 <span className={cn("text-xs", b.dueOn < today ? "text-money-out" : "text-muted-foreground")}>
-                  {dueText(b.dueOn, today)}
+                  {dueText(b.dueOn, today, i18n)}
                 </span>
               </span>
               <span className="shrink-0 tabular-nums">{formatIdr(b.amount)}</span>
@@ -60,7 +65,7 @@ export async function MoneyWidget() {
           ))}
         </ul>
       ) : (
-        <p className="text-muted-foreground text-sm">No bills due this week.</p>
+        <p className="text-muted-foreground text-sm">{t("No bills due this week.")}</p>
       )}
       {hot.length > 0 ? (
         <ul className="flex flex-col gap-1 border-border-soft border-t pt-3 text-sm">
@@ -70,7 +75,7 @@ export async function MoneyWidget() {
               <span
                 className={cn("shrink-0 font-medium text-xs", b.state === "over" ? "text-money-out" : "text-warning")}
               >
-                {budgetLabel(b, formatIdr)}
+                {budgetLabel(b, formatIdr, t)}
               </span>
             </li>
           ))}
@@ -80,7 +85,7 @@ export async function MoneyWidget() {
         href="/money/recurring"
         className="text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
       >
-        Bills and recurring
+        {t("Bills and recurring")}
       </Link>
     </div>
   );

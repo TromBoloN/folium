@@ -1,17 +1,19 @@
 import { Check, X } from "lucide-react";
 import { ActionForm, SubmitButton } from "@/components/action-form";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import { deleteSubtask, toggleSubtask } from "../actions";
 import type { Subtask } from "../queries";
 import { AddSubtask } from "./add-subtask";
 
 /** The task's checklist. Steps are one level deep (enforced by a database trigger). */
-export function SubtaskList({ taskId, subtasks }: { taskId: string; subtasks: Subtask[] }) {
+export async function SubtaskList({ taskId, subtasks }: { taskId: string; subtasks: Subtask[] }) {
+  const t = await getT();
   const doneCount = subtasks.filter((s) => s.done).length;
   return (
     <section aria-labelledby="steps" className="flex flex-col gap-3">
       <h2 id="steps" className="font-medium">
-        Steps{" "}
+        {t("Steps")}{" "}
         {subtasks.length > 0 ? (
           <span className="font-normal text-muted-foreground text-sm">
             {doneCount} of {subtasks.length} done
@@ -26,7 +28,11 @@ export function SubtaskList({ taskId, subtasks }: { taskId: string; subtasks: Su
                 <SubmitButton
                   variant="ghost"
                   size="icon"
-                  aria-label={s.done ? `Mark “${s.title}” as not done` : `Mark “${s.title}” as done`}
+                  aria-label={
+                    s.done
+                      ? t("Mark “{title}” as not done", { title: s.title })
+                      : t("Mark “{title}” as done", { title: s.title })
+                  }
                   className="size-8"
                 >
                   <span
@@ -42,7 +48,12 @@ export function SubtaskList({ taskId, subtasks }: { taskId: string; subtasks: Su
               </ActionForm>
               <span className={cn("flex-1 text-sm", s.done && "text-muted-foreground line-through")}>{s.title}</span>
               <ActionForm action={deleteSubtask} fields={{ id: s.id }}>
-                <SubmitButton variant="ghost" size="icon" aria-label={`Delete “${s.title}”`} className="size-8">
+                <SubmitButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("Delete “{title}”", { title: s.title })}
+                  className="size-8"
+                >
                   <X aria-hidden />
                 </SubmitButton>
               </ActionForm>

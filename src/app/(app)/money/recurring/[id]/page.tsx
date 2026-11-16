@@ -14,8 +14,11 @@ import { ensureFinanceDefaults, listAccounts, listCategories } from "@/features/
 import { getRule } from "@/features/finance/queries/planning";
 import { moneyToday } from "@/features/finance/queries/today";
 import { formatDate } from "@/lib/dates";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit recurring" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit recurring") };
+}
 
 export default function EditRulePage({ params }: PageProps<"/money/recurring/[id]">) {
   return (
@@ -30,11 +33,12 @@ export default function EditRulePage({ params }: PageProps<"/money/recurring/[id
 async function Edit({ params }: Pick<PageProps<"/money/recurring/[id]">, "params">) {
   await requireUser();
   await ensureFinanceDefaults();
-  const [{ id }, accounts, categories, { today }] = await Promise.all([
+  const [{ id }, accounts, categories, { today }, { t, intl }] = await Promise.all([
     params,
     listAccounts(),
     listCategories(),
     moneyToday(),
+    getI18n(),
   ]);
   const rule = await getRule(id);
   if (!rule) notFound();
@@ -44,7 +48,7 @@ async function Edit({ params }: Pick<PageProps<"/money/recurring/[id]">, "params
       <div>
         <PageHeader title={rule.name} back={<BackLink href="/money/recurring">Recurring</BackLink>} />
         <p className="-mt-3 mb-5 text-muted-foreground text-sm">
-          Changes apply to upcoming payments only. Paid ones stay as they were.
+          {t("Changes apply to upcoming payments only. Paid ones stay as they were.")}
         </p>
         <RuleForm
           defaults={{
@@ -75,11 +79,13 @@ async function Edit({ params }: Pick<PageProps<"/money/recurring/[id]">, "params
       </div>
       <section aria-labelledby="rule-actions-h" className="tile flex flex-col gap-3 p-5">
         <h2 id="rule-actions-h" className="font-medium">
-          Pause or delete
+          {t("Pause or delete")}
         </h2>
         {paused ? (
           <p className="text-sm">
-            Paused until {formatDate(rule.pausedUntil as string, { day: "numeric", month: "long", year: "numeric" })}.
+            {t("Paused until {date}.", {
+              date: formatDate(rule.pausedUntil as string, { day: "numeric", month: "long", year: "numeric" }, intl),
+            })}
           </p>
         ) : null}
         <div className="flex flex-wrap items-start gap-2">
@@ -87,13 +93,13 @@ async function Edit({ params }: Pick<PageProps<"/money/recurring/[id]">, "params
             <ToastForm action={pauseRule} fields={{ id: rule.id, until: "" }}>
               <SubmitButton size="sm" variant="outline">
                 <Play aria-hidden />
-                Resume
+                {t("Resume")}
               </SubmitButton>
             </ToastForm>
           ) : (
             <ToastForm action={pauseRule} fields={{ id: rule.id }} className="flex-row flex-wrap items-center gap-2">
               <label htmlFor="until" className="text-sm">
-                Pause until
+                {t("Pause until")}
               </label>
               <input
                 id="until"
@@ -105,14 +111,14 @@ async function Edit({ params }: Pick<PageProps<"/money/recurring/[id]">, "params
               />
               <SubmitButton size="sm" variant="outline">
                 <Pause aria-hidden />
-                Pause
+                {t("Pause")}
               </SubmitButton>
             </ToastForm>
           )}
           <ToastForm action={deleteRule} fields={{ id: rule.id }}>
             <SubmitButton size="sm" variant="ghost" className="text-destructive">
               <Trash2 aria-hidden />
-              Delete
+              {t("Delete")}
             </SubmitButton>
           </ToastForm>
         </div>

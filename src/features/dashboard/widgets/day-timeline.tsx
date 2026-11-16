@@ -4,6 +4,7 @@ import { MapPin } from "lucide-react";
 import Link from "next/link";
 import { ChangeChip } from "@/features/schedule/components/change-chips";
 import { formatTime, layoutDay, toMinutes } from "@/features/timetable/logic";
+import { useT } from "@/lib/i18n/client";
 import { useNow } from "@/lib/use-now";
 import { cn } from "@/lib/utils";
 import { nowOffset, timelinePosition, timelineRange } from "../now";
@@ -27,6 +28,7 @@ type Props = {
  * minute (transform only); the class on now gets a pulsing dot. Past classes are muted.
  */
 export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorrow }: Props) {
+  const t = useT();
   const { minute } = useNow(initialNow, timeZone);
   const range = timelineRange(classes);
   if (!range) return null;
@@ -103,7 +105,7 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
                   <span className="flex min-w-0 flex-col leading-tight">
                     <span className={cn("truncate font-medium", slot.cancelled && "line-through")}>
                       {slot.code ?? slot.name}
-                      {slot.cancelled ? <span className="sr-only"> (cancelled)</span> : null}
+                      {slot.cancelled ? <span className="sr-only">{t(" (cancelled)")}</span> : null}
                     </span>
                     <span className={cn("truncate text-xs tabular-nums", slot.cancelled && "line-through")}>
                       {formatTime(slot.startTime, timeFormat)}–{formatTime(slot.endTime, timeFormat)}
@@ -116,16 +118,16 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
                     </span>
                   </span>
                   {slot.cancelled ? (
-                    <ChangeChip chip={{ kind: "cancelled", text: "Cancelled" }} compact />
+                    <ChangeChip chip={{ kind: "cancelled", text: t("Cancelled") }} compact />
                   ) : slot.chips.length > 0 && !isNow && !isNext ? (
                     <ChangeChip chip={slot.chips[0]} compact />
                   ) : isNow ? (
                     <span className="shrink-0 rounded-full bg-foreground px-2 py-0.5 font-medium text-background text-xs">
-                      Now
+                      {t("Now")}
                     </span>
                   ) : isNext ? (
                     <span className="shrink-0 rounded-full border border-foreground/40 px-2 py-0.5 font-medium text-xs">
-                      Next
+                      {t("Next")}
                     </span>
                   ) : null}
                 </Link>

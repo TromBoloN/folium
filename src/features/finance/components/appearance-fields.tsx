@@ -1,4 +1,7 @@
+"use client";
+
 import { Sparkles } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { MONEY_ICONS, MONEY_PALETTE } from "../lib/money-palette";
 import { MONEY_ICON_GLYPHS } from "./money-icon";
@@ -20,19 +23,20 @@ export function AppearanceFields({
   icon: string;
   errors: Record<string, string>;
 }) {
+  const t = useT();
   const current = color.toLowerCase();
   const swatches = MONEY_PALETTE.some((p) => p.hex === current)
     ? [...MONEY_PALETTE]
-    : [{ hex: current, name: "Current colour" }, ...MONEY_PALETTE];
+    : [{ hex: current, name: "Current colour" as const }, ...MONEY_PALETTE];
   return (
     <>
       <fieldset className="flex min-w-0 flex-col gap-2" aria-describedby={errors.color ? "color-error" : undefined}>
-        <legend className="mb-1.5 font-medium text-sm">Colour</legend>
+        <legend className="mb-1.5 font-medium text-sm">{t("Colour")}</legend>
         <div className="flex flex-wrap gap-2.5">
           {swatches.map((s) => (
             <label
               key={s.hex}
-              title={s.name}
+              title={t(s.name)}
               className={cn(
                 "relative size-8 cursor-pointer rounded-full transition-transform active:scale-90",
                 swatchRing,
@@ -45,7 +49,7 @@ export function AppearanceFields({
                 value={s.hex}
                 defaultChecked={current === s.hex}
                 className="sr-only"
-                aria-label={s.name}
+                aria-label={t(s.name)}
               />
             </label>
           ))}
@@ -58,10 +62,10 @@ export function AppearanceFields({
       </fieldset>
 
       <fieldset className="flex min-w-0 flex-col gap-2" aria-describedby={errors.icon ? "icon-error" : "icon-hint"}>
-        <legend className="mb-1.5 font-medium text-sm">Icon</legend>
+        <legend className="mb-1.5 font-medium text-sm">{t("Icon")}</legend>
         <div className="grid grid-cols-6 gap-2 sm:grid-cols-8">
           <label
-            title="Automatic"
+            title={t("Automatic")}
             className="flex size-10 cursor-pointer items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30"
           >
             <input
@@ -70,7 +74,7 @@ export function AppearanceFields({
               value=""
               defaultChecked={!icon}
               className="sr-only"
-              aria-label="Automatic"
+              aria-label={t("Automatic")}
             />
             <Sparkles aria-hidden className="size-4" />
           </label>
@@ -102,7 +106,7 @@ export function AppearanceFields({
           </p>
         ) : (
           <p id="icon-hint" className="text-muted-foreground text-xs">
-            Automatic picks one from the name.
+            {t("Automatic picks one from the name.")}
           </p>
         )}
       </fieldset>

@@ -3,6 +3,8 @@
 import { ChevronDown } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Pill } from "@/components/ui/pill";
+import { useI18n } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n/core";
 import { cn } from "@/lib/utils";
 import { getQuickMoneyContext, type QuickMoneyContext } from "../actions/transactions";
 import { type Chip, parseQuickTransaction, type QuickTransaction } from "../lib/parse-quick-transaction";
@@ -39,7 +41,7 @@ const TONE: Record<Chip["state"], "accent" | "neutral" | "warning" | "danger"> =
   ambiguous: "warning",
   missing: "danger",
 };
-const STATE_TEXT: Record<Chip["state"], string> = {
+const STATE_TEXT: Record<Chip["state"], MessageKey | ""> = {
   matched: "",
   default: " (default)",
   ambiguous: " (several match)",
@@ -69,17 +71,19 @@ export function QuickMoneyPreview({
   open?: Chip["type"] | null;
   errorId?: string;
 }) {
+  const { t, tl } = useI18n();
+  const state = (chip: Chip) => (STATE_TEXT[chip.state] ? t(STATE_TEXT[chip.state] as MessageKey) : "");
   return (
     <div className="flex flex-col gap-1.5">
-      <ul className="flex flex-wrap gap-1.5" aria-label="Understood">
+      <ul className="flex flex-wrap gap-1.5" aria-label={t("Understood")}>
         {draft.chips.map((chip) => {
           const pill = (
             <Pill
               tone={TONE[chip.state]}
               className={cn(chip.state === "default" && "border border-border-soft border-dashed")}
             >
-              {chip.label}
-              <span className="sr-only">{STATE_TEXT[chip.state]}</span>
+              {tl(chip.label)}
+              <span className="sr-only">{state(chip)}</span>
               {onFix && fixable(chip) && chip.type !== "amount" ? <ChevronDown aria-hidden /> : null}
             </Pill>
           );
@@ -92,8 +96,8 @@ export function QuickMoneyPreview({
                   aria-expanded={chip.type === "amount" ? undefined : open === chip.type}
                   aria-label={
                     chip.type === "amount"
-                      ? "Amount missing: type one"
-                      : `Change ${chip.label}${STATE_TEXT[chip.state]}`
+                      ? t("Amount missing: type one")
+                      : t("Change {name}", { name: `${tl(chip.label)}${state(chip)}` })
                   }
                   className="rounded-full transition-transform duration-(--dur-fast) focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
                 >
@@ -113,7 +117,7 @@ export function QuickMoneyPreview({
       </ul>
       {draft.errors.length > 0 ? (
         <p id={errorId} className="text-destructive text-xs">
-          {draft.errors[0]}
+          {tl(draft.errors[0])}
         </p>
       ) : null}
     </div>

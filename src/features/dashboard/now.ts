@@ -1,4 +1,5 @@
 import type { CivilDate } from "@/lib/dates";
+import { type T, tEn } from "@/lib/i18n/core";
 import { dueParts } from "../tasks/due";
 import { appliesOn, type SlotTiming, sortSlots, toMinutes } from "../timetable/logic";
 
@@ -55,18 +56,21 @@ export function nextUp<T extends SlotTiming>(
 }
 
 /** 25 -> "25 min", 60 -> "1 h", 85 -> "1 h 25 min". */
-export function formatDuration(minutes: number): string {
+export function formatDuration(minutes: number, t: T = tEn): string {
   const m = Math.max(0, Math.round(minutes));
-  if (m < 60) return `${m} min`;
+  if (m < 60) return t("{m} min", { m });
   const h = Math.floor(m / 60);
   const rest = m % 60;
-  return rest === 0 ? `${h} h` : `${h} h ${rest} min`;
+  return rest === 0 ? t("{h} h", { h }) : t("{h} h {m} min", { h, m: rest });
 }
 
 /** "in 25 min" before a class, "Now, ends in 40 min" during one. */
-export function countdownText(moment: { kind: "now"; minutesLeft: number } | { kind: "next"; minutesUntil: number }) {
-  if (moment.kind === "now") return `Now, ends in ${formatDuration(moment.minutesLeft)}`;
-  return moment.minutesUntil <= 0 ? "Starting now" : `in ${formatDuration(moment.minutesUntil)}`;
+export function countdownText(
+  moment: { kind: "now"; minutesLeft: number } | { kind: "next"; minutesUntil: number },
+  t: T = tEn,
+) {
+  if (moment.kind === "now") return t("Now, ends in {d}", { d: formatDuration(moment.minutesLeft, t) });
+  return moment.minutesUntil <= 0 ? t("Starting now") : t("in {d}", { d: formatDuration(moment.minutesUntil, t) });
 }
 
 // --- Day timeline ---------------------------------------------------------

@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewSlotForCourseScreen } from "@/features/timetable/components/slot-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add class time" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add class time") };
+}
 
 export default function NewSlotPage({ params }: PageProps<"/courses/[id]/slots/new">) {
   return (

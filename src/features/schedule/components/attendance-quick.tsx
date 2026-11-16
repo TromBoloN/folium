@@ -3,6 +3,7 @@
 import { Check, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { setAttendance } from "../actions";
 import type { AttendanceStatus } from "../schema";
@@ -28,6 +29,7 @@ export function AttendanceQuick({
   const [status, setStatus] = useState(initial);
   const [pending, start] = useTransition();
   const toast = useToast();
+  const t = useT();
   const set = (next: AttendanceStatus) => {
     const value = status === next ? null : next;
     const before = status;
@@ -44,11 +46,11 @@ export function AttendanceQuick({
   };
   return (
     <fieldset className="flex shrink-0 gap-1">
-      <legend className="sr-only">Attendance: {label}</legend>
+      <legend className="sr-only">{t("Attendance: {label}", { label })}</legend>
       {(
         [
-          ["attended", "Attended", Check],
-          ["missed", "Missed", X],
+          ["attended", t("Attended"), Check],
+          ["missed", t("Missed"), X],
         ] as const
       ).map(([value, text, Icon]) => {
         const on = status === value;

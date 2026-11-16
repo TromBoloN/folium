@@ -7,6 +7,7 @@ import { requireUser } from "@/features/auth/queries";
 import { listCourseOptions } from "@/features/courses/queries";
 import { getSettings } from "@/features/settings/queries";
 import { addDays, isCivilDate, todayIn } from "@/lib/dates";
+import { Tr } from "@/lib/i18n/client";
 import { BreakForm } from "./break-form";
 import { ExtraSessionForm } from "./extra-form";
 
@@ -32,14 +33,18 @@ export async function NewExtraSessionScreen({
         <PageHeader title="Extra session" back={<BackLink href={`/courses?view=day&week=${day}`}>Schedule</BackLink>} />
       ) : (
         <p className="mb-4 text-muted-foreground text-sm">
-          A makeup class, an exam or a review: one date, outside the weekly timetable.
+          <Tr k="A makeup class, an exam or a review: one date, outside the weekly timetable." />
         </p>
       )}
       {courses.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-muted-foreground text-sm">Add a course first.</p>
+          <p className="text-muted-foreground text-sm">
+            <Tr k="Add a course first." />
+          </p>
           <Button asChild size="sm">
-            <Link href="/courses/new">Add a course</Link>
+            <Link href="/courses/new">
+              <Tr k="Add a course" />
+            </Link>
           </Button>
         </div>
       ) : (
@@ -61,7 +66,7 @@ export async function NewBreakScreen({ from, variant }: { from?: string } & Vari
         <PageHeader title="Add a break" back={<BackLink href={`/courses?view=day&week=${start}`}>Schedule</BackLink>} />
       ) : (
         <p className="mb-4 text-muted-foreground text-sm">
-          Holidays and exam weeks: no regular classes for a few days.
+          <Tr k="Holidays and exam weeks: no regular classes for a few days." />
         </p>
       )}
       <BreakForm prefill={{ startsOn: start, endsOn: addDays(start, 4) }} />

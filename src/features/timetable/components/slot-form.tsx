@@ -10,9 +10,10 @@ import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { createSlot, updateSlot } from "../actions";
-import { addMinutes, formatTime, slotsConflict, suggestedDuration, toMinutes, WEEKDAYS } from "../logic";
+import { addMinutes, formatTime, slotsConflict, suggestedDuration, toMinutes, WEEKDAYS, weekdayLabel } from "../logic";
 import type { TimetableSlot } from "../types";
 
 /** Another class time already in the timetable, for the preview and the overlap warning. */
@@ -47,6 +48,7 @@ type Props = {
 
 export function SlotForm(props: Props) {
   const { courseId, courses, slot, defaultLocation, prefill, returnTo, existing, startTimes, timeFormat } = props;
+  const { t, intl } = useI18n();
   const [state, action, pending] = useActionState(slot ? updateSlot : createSlot, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const creditsOf = (id: string) => courses?.find((c) => c.id === id)?.credits ?? props.credits ?? 0;
@@ -102,7 +104,9 @@ export function SlotForm(props: Props) {
     setLive((l) => ({ ...l, start, end }));
   };
 
-  const locationHint = defaultLocation ? `Leave blank to use the course room (${defaultLocation}).` : undefined;
+  const locationHint = defaultLocation
+    ? t("Leave blank to use the course room ({room}).", { room: defaultLocation })
+    : undefined;
   const moreOpen = Boolean(
     errors.startsOn ||
       errors.endsOn ||
@@ -129,7 +133,7 @@ export function SlotForm(props: Props) {
         if (el.name === "startsOn" || el.name === "endsOn") setLive((l) => ({ ...l, [el.name]: el.value }));
       }}
     >
-      <SheetFormBridge state={state} message={slot ? "Class time saved" : "Class time added"} />
+      <SheetFormBridge state={state} message={slot ? t("Class time saved") : t("Class time added")} />
       {courseId ? <input type="hidden" name="courseId" value={courseId} /> : null}
       {returnTo ? <input type="hidden" name="returnTo" value={returnTo} /> : null}
       {slot ? <input type="hidden" name="id" value={slot.id} /> : null}
@@ -149,16 +153,16 @@ export function SlotForm(props: Props) {
 
         <ChipGroup
           name="weekday"
-          legend={slot ? "Day" : "Days"}
+          legend={slot ? t("Day") : t("Days")}
           type={slot ? "radio" : "checkbox"}
           compact
           options={WEEKDAYS.map((d) => ({
             value: String(d.value),
-            label: d.short.slice(0, slot ? 3 : 1),
-            title: d.label,
+            label: weekdayLabel(d.value, "short", intl).slice(0, slot ? 3 : 1),
+            title: weekdayLabel(d.value, "label", intl),
           }))}
           defaultValue={value("weekday").split(",")}
-          hint={slot ? undefined : "Pick every day it meets at this time: each becomes its own class time."}
+          hint={slot ? undefined : t("Pick every day it meets at this time: each becomes its own class time.")}
           error={errors.weekday}
           onChange={(days) => setLive((l) => ({ ...l, weekdays: days.map(Number) }))}
         />
@@ -190,28 +194,28 @@ export function SlotForm(props: Props) {
             </Field>
           </div>
           <div className="flex flex-wrap items-center gap-1.5">
-            <span className="sr-only">Common start times:</span>
-            {startTimes.map((t) => (
+            <span className="sr-only">{t("Common start times:")}</span>
+            {startTimes.map((time) => (
               <button
-                key={t}
+                key={time}
                 type="button"
-                onClick={() => setStart(t)}
-                aria-pressed={live.start === t}
-                aria-label={`Start at ${formatTime(t, timeFormat)}`}
+                onClick={() => setStart(time)}
+                aria-pressed={live.start === time}
+                aria-label={t("Start at {time}", { time: formatTime(time, timeFormat) })}
                 className={cn(
                   "h-9 rounded-full border border-border px-3 text-sm tabular-nums transition-colors hover:border-foreground/25",
-                  live.start === t && "border-primary bg-accent text-accent-foreground",
+                  live.start === time && "border-primary bg-accent text-accent-foreground",
                 )}
               >
-                {formatTime(t, timeFormat)}
+                {formatTime(time, timeFormat)}
               </button>
             ))}
             <span className="text-muted-foreground text-xs">
               {endTouched.current
-                ? "The end keeps the class length."
+                ? t("The end keeps the class length.")
                 : credits > 0
-                  ? `Ends after ${suggestedDuration(credits)} min (${credits} SKS × 50).`
-                  : "Ends after 100 min."}
+                  ? t("Ends after {m} min ({credits} SKS × 50).", { m: suggestedDuration(credits), credits })
+                  : t("Ends after 100 min.")}
             </span>
           </div>
         </div>
@@ -222,7 +226,11 @@ export function SlotForm(props: Props) {
       <FormSection title="Where" icon={MapPin}>
         <Field id="location" label="Room" optional error={errors.location} hint={locationHint}>
           <Input
-            placeholder={defaultLocation ? `e.g. ${defaultLocation}` : "e.g. B2.04"}
+            placeholder={
+              defaultLocation
+                ? t("e.g. {example}", { example: defaultLocation })
+                : t("e.g. {example}", { example: "B2.04" })
+            }
             {...field("location", locationHint)}
           />
         </Field>
@@ -237,7 +245,7 @@ export function SlotForm(props: Props) {
               defaultChecked={value("online") === "on"}
               className="size-4 accent-(--primary)"
             />
-            Online class
+            {t("Online class")}
           </label>
           <Field
             id="meetingUrl"
@@ -269,12 +277,12 @@ export function SlotForm(props: Props) {
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
           {pending
-            ? "Saving…"
+            ? t("Saving…")
             : slot
-              ? "Save changes"
+              ? t("Save changes")
               : live.weekdays.length > 1
-                ? `Add ${live.weekdays.length} class times`
-                : "Add class time"}
+                ? t("Add {n} class times", { n: live.weekdays.length })
+                : t("Add class time")}
         </Button>
         <CancelButton href={returnTo ?? (courseId ? `/courses/${courseId}` : "/courses")} />
       </FormFooter>
@@ -295,6 +303,7 @@ function WeekPreview({
   existing: ExistingSlot[];
   timeFormat: "24h" | "12h";
 }) {
+  const { t, intl } = useI18n();
   const valid = /^\d{2}:\d{2}$/.test(live.start) && /^\d{2}:\d{2}$/.test(live.end) && live.end > live.start;
   const probe = (weekday: number) => ({
     id: "new",
@@ -320,7 +329,7 @@ function WeekPreview({
               )}
             >
               <span className={cn("font-medium", picked ? "text-accent-foreground" : "text-muted-foreground")}>
-                {d.short}
+                {weekdayLabel(d.value, "short", intl)}
               </span>
               <span className="flex flex-wrap justify-center gap-0.5">
                 {day.slice(0, 4).map((e) => (
@@ -344,19 +353,23 @@ function WeekPreview({
         <p className="flex items-start gap-1.5 text-sm text-warning" role="status">
           <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           <span>
-            Overlaps with{" "}
+            {t("Overlaps with")}{" "}
             {clashes
               .map(
                 (c) =>
-                  `${c.title} (${WEEKDAYS[c.weekday - 1].short} ${formatTime(c.startTime, timeFormat)}–${formatTime(c.endTime, timeFormat)})`,
+                  `${c.title} (${weekdayLabel(c.weekday, "short", intl)} ${formatTime(c.startTime, timeFormat)}–${formatTime(c.endTime, timeFormat)})`,
               )
               .join(", ")}
-            . You can still save it.
+            {t(". You can still save it.")}
           </span>
         </p>
       ) : (
         <p className="text-muted-foreground text-xs" role="status">
-          {live.weekdays.length === 0 ? "Pick at least one day." : valid ? "No overlaps." : "Set a start and an end."}
+          {live.weekdays.length === 0
+            ? t("Pick at least one day.")
+            : valid
+              ? t("No overlaps.")
+              : t("Set a start and an end.")}
         </p>
       )}
     </div>

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { ViewTransition } from "react";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { isActive, NAV_ITEMS } from "./nav-items";
 import { usePagePath } from "./use-page-path";
@@ -22,8 +23,9 @@ function ActivePill({ name, className }: { name: string; className: string }) {
 /** Desktop: vertical list in the sidebar. */
 export function SidebarNav() {
   const pathname = usePagePath();
+  const t = useT();
   return (
-    <nav aria-label="Main" className="flex flex-col gap-1">
+    <nav aria-label={t("Main")} className="flex flex-col gap-1">
       {NAV_ITEMS.map((item) => {
         const { href, label, icon: Icon } = item;
         const active = isActive(pathname, item);
@@ -44,7 +46,7 @@ export function SidebarNav() {
               />
             ) : null}
             <Icon aria-hidden className={cn("size-4.5", active && "text-primary")} />
-            {label}
+            {t(label)}
           </Link>
         );
       })}
@@ -55,9 +57,10 @@ export function SidebarNav() {
 /** Mobile: fixed tab bar at the bottom, clear of the home indicator. Solid surface (no backdrop blur on mobile). */
 export function BottomNav() {
   const pathname = usePagePath();
+  const t = useT();
   return (
     <nav
-      aria-label="Main"
+      aria-label={t("Main")}
       className="fixed inset-x-0 bottom-0 z-40 border-border-soft border-t bg-surface-1 pb-[env(safe-area-inset-bottom)] shadow-raised md:hidden"
     >
       <ul className="grid grid-cols-4 px-0.5">
@@ -80,7 +83,7 @@ export function BottomNav() {
                 <span className="flex h-8 items-center">
                   <Icon aria-hidden className={cn("size-5", active && "text-primary")} />
                 </span>
-                {label}
+                {t(label)}
               </Link>
             </li>
           );

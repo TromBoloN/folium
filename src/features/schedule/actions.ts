@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type ActionResult, type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/action-result";
 import { addDays, type CivilDate, formatDate, isoWeekday, minutesNowIn, todayIn } from "@/lib/dates";
+import { getI18n } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables } from "@/types/database";
 import { requireUser } from "../auth/queries";
@@ -515,7 +516,8 @@ export type CommandUndo = { kind: "change"; key: string; previous: ChangeRow | n
 export async function runScheduleCommand(text: string): Promise<ActionResult<{ message: string; undo: CommandUndo }>> {
   await requireUser();
   if (typeof text !== "string" || text.length > 300) return { ok: false, error: "That command is too long." };
-  const [{ preferences }, courses] = await Promise.all([getSettings(), listCourseOptions()]);
+  const [{ preferences }, courses, i18n] = await Promise.all([getSettings(), listCourseOptions(), getI18n()]);
+  const { t, intl } = i18n;
   const active = courses.filter((c) => !c.archived);
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
@@ -535,21 +537,24 @@ export async function runScheduleCommand(text: string): Promise<ActionResult<{ m
     if (!result.ok) return result;
     const range =
       plan.startsOn === plan.endsOn
-        ? formatDate(plan.startsOn, { weekday: "short", day: "numeric", month: "short" })
-        : `${formatDate(plan.startsOn, { day: "numeric", month: "short" })} – ${formatDate(plan.endsOn, { day: "numeric", month: "short" })}`;
-    return { ok: true, data: { message: `No classes ${range}`, undo: { kind: "break", id: result.data.id } } };
+        ? formatDate(plan.startsOn, { weekday: "short", day: "numeric", month: "short" }, intl)
+        : `${formatDate(plan.startsOn, { day: "numeric", month: "short" }, intl)} – ${formatDate(plan.endsOn, { day: "numeric", month: "short" }, intl)}`;
+    return {
+      ok: true,
+      data: { message: t("No classes {range}", { range }), undo: { kind: "break", id: result.data.id } },
+    };
   }
 
   const o = plan.occurrence;
   const name = o.course.code ?? o.course.name;
-  const when = placementLabel(o, fmt);
+  const when = placementLabel(o, fmt, undefined, i18n);
   if (plan.action === "cancel") {
     const result = await cancelOccurrence({ key: o.key });
     if (!result.ok) return result;
     return {
       ok: true,
       data: {
-        message: `Cancelled ${name}, ${when}`,
+        message: t("Cancelled {name}", { name: `${name}, ${when}` }),
         undo: { kind: "change", key: o.key, previous: result.data.previous },
       },
     };
@@ -566,8 +571,11 @@ export async function runScheduleCommand(text: string): Promise<ActionResult<{ m
   if (!result.ok) return result;
   const message =
     plan.action === "move"
-      ? `Moved ${name} to ${placementLabel({ date: plan.date, startTime: plan.startTime }, fmt)}`
-      : `${name}, ${when}: room → ${plan.room}`;
+      ? t("Moved {name} to {when}", {
+          name,
+          when: placementLabel({ date: plan.date, startTime: plan.startTime }, fmt, undefined, i18n),
+        })
+      : t("{name}, {when}: room → {room}", { name, when, room: plan.room });
   return { ok: true, data: { message, undo: { kind: "change", key: o.key, previous: result.data.previous } } };
 }
 

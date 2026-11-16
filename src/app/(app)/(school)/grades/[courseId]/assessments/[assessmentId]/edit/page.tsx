@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { EditAssessmentScreen } from "@/features/grades/components/assessment-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit assessment" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit assessment") };
+}
 
 type Props = PageProps<"/grades/[courseId]/assessments/[assessmentId]/edit">;
 

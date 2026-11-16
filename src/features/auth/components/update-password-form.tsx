@@ -5,27 +5,29 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n/client";
 import { updatePassword } from "../actions";
 import { MIN_PASSWORD_LENGTH } from "../schemas";
 import { FormError } from "./form-error";
 
 export function UpdatePasswordForm() {
+  const t = useT();
   const [state, action, pending] = useActionState(updatePassword, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
 
   if (state?.ok) {
     return (
       <div className="flex flex-col gap-3 text-sm" role="status">
-        <p className="font-medium">Password updated</p>
-        <p className="text-muted-foreground">Use your new password next time you sign in.</p>
+        <p className="font-medium">{t("Password updated")}</p>
+        <p className="text-muted-foreground">{t("Use your new password next time you sign in.")}</p>
         <Link href="/" className="underline underline-offset-4">
-          Go to Today
+          {t("Go to Today")}
         </Link>
       </div>
     );
   }
 
-  const hint = `At least ${MIN_PASSWORD_LENGTH} characters.`;
+  const hint = t("At least {n} characters.", { n: MIN_PASSWORD_LENGTH });
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <Field id="password" label="New password" error={errors.password} hint={hint}>
@@ -52,7 +54,7 @@ export function UpdatePasswordForm() {
       </Field>
       <FormError message={state && !state.ok && !state.fieldErrors ? state.error : undefined} />
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Saving…" : "Set new password"}
+        {pending ? t("Saving…") : t("Set new password")}
       </Button>
     </form>
   );

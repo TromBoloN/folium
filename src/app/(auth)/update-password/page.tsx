@@ -3,8 +3,12 @@ import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { UpdatePasswordForm } from "@/features/auth/components/update-password-form";
 import { requireUser } from "@/features/auth/queries";
+import { rich } from "@/lib/i18n/rich";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Set a new password" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Set a new password") };
+}
 
 // Reached from the password-reset email (which signs the user in) or from Settings.
 export default function UpdatePasswordPage() {
@@ -16,11 +20,11 @@ export default function UpdatePasswordPage() {
 }
 
 async function SignedIn() {
-  const user = await requireUser();
+  const [user, t] = await Promise.all([requireUser(), getT()]);
   return (
     <div className="flex flex-col gap-4">
       <p className="text-muted-foreground text-sm">
-        Set a new password for <span className="text-foreground">{user.email}</span>.
+        {rich(t("Set a new password for {email}."), { email: <span className="text-foreground">{user.email}</span> })}
       </p>
       <UpdatePasswordForm />
     </div>

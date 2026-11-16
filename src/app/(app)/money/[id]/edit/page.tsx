@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { EditTransactionScreen } from "@/features/finance/components/transaction-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit transaction" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit transaction") };
+}
 
 export default function EditTransactionPage({ params }: PageProps<"/money/[id]/edit">) {
   return (

@@ -5,18 +5,20 @@ import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n/client";
 import { updateProfile } from "../actions";
 
 /** The name Folium shows in the sidebar and the greeting. A plain form: works without JavaScript. */
 export function ProfileForm({ displayName }: { displayName: string }) {
   const [state, action, pending] = useActionState(updateProfile, null);
   const toast = useToast();
+  const t = useT();
   const handled = useRef(state);
   useEffect(() => {
     if (!state?.ok || handled.current === state) return;
     handled.current = state;
-    toast({ message: state.result?.message ?? "Saved" });
-  }, [state, toast]);
+    toast({ message: state.result?.message ?? t("Saved") });
+  }, [state, toast, t]);
   const error = state && !state.ok ? (state.fieldErrors?.displayName ?? state.error) : undefined;
   const value = state && !state.ok ? (state.values?.displayName ?? displayName) : displayName;
 
@@ -35,14 +37,14 @@ export function ProfileForm({ displayName }: { displayName: string }) {
             defaultValue={value}
             maxLength={80}
             autoComplete="name"
-            placeholder="e.g. Dewi"
+            placeholder={t("e.g. Dewi")}
             aria-invalid={error ? true : undefined}
             aria-describedby={describedBy("displayName", error, "hint")}
           />
         </Field>
       </div>
       <Button type="submit" variant="outline" size="sm" disabled={pending} className="self-start">
-        {pending ? "Saving…" : "Save name"}
+        {pending ? t("Saving…") : t("Save name")}
       </Button>
     </form>
   );

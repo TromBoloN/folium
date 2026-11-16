@@ -27,6 +27,7 @@ Where to look before you change something. One section per feature: its routes, 
 - `components/form/`: `FormSection` + `MoreDetails`, `ChipGroup`, `Stepper`, `FormFooter`. `components/ui/field.tsx` (self-checking field), `ui/control.ts` (the shared control look), `ui/native-select.tsx` (+ the "Selects" block in `globals.css`).
 - `components/action-form.tsx`: one-button actions. `section-error-boundary.tsx`: per-widget errors. `empty-state.tsx`, `page-header.tsx`, `skeletons.tsx`.
 - Motion: `components/motion/` (ambient glow, `MotionRuntime` sets `data-hydrated`, spotlight), `lib/use-now.ts` (minute ticker).
+- Translations: `lib/i18n/` (`core.ts`: `makeT`, `plural`, `translateLoose`; `server.ts`: `getI18n`/`getT`; `client.tsx`: `I18nProvider`, `useI18n`/`useT`, `<Tr>`, `<TrL>`; `rich.tsx`; `id/*.ts`: the Indonesian dictionary keyed by English text, `id/patterns.ts` for messages with values).
 - PWA: `app/manifest.ts`, `app/icon.tsx`, `app/apple-icon.tsx`, `lib/pwa/brand.tsx`, `public/sw.js` (offline page only), `components/pwa/`.
 
 ## Auth — `features/auth/`
@@ -113,6 +114,8 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 **Add a page.** Static parts (header) in the page, data in a Suspense'd async child that calls `requireUser()`, awaits `params`/`searchParams`, and calls `notFound()` when needed. Give it loading, empty and error states. `bun run typecheck` regenerates `PageProps`. For a sheet version, add `app/(app)/@modal/(.)<route>/page.tsx` rendering the same screen with `variant="sheet"`.
 
 **Add a form.** Build it from `Field`, `FormSection`, `ChipGroup`, `FormFooter`; follow the form contract in [architecture.md](architecture.md#forms-and-server-actions); include `SheetFormBridge` if it can open in a sheet.
+
+**Add or change text.** Write it in English through `t("…")` (server: `await getT()`; client: `useT()`; either side: `<Tr k="…" />`) and add the Indonesian to the matching `lib/i18n/id/*.ts`; `bun run typecheck` lists any key without one. Text passed to `Field`/`PageHeader`/`EmptyState`/`StatTile` props or returned by a server action is translated where it's shown: add it to `id/loose.ts` or `id/messages.ts`. Format dates with the `intl` from `getI18n()`/`useI18n()`.
 
 **Change a theme colour.** Edit the token in `globals.css` (both halves of `light-dark()`). A new preset: add it to `PRESETS` (`settings/schema.ts`), a label in `theme.ts`, and a `[data-preset="…"] { --hue; --chroma }` rule.
 

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { ActionResult } from "@/lib/action-result";
+import { useI18n } from "@/lib/i18n/client";
 import { type ChangeRow, cancelOccurrence, postponeOccurrence, updateOccurrence } from "../actions";
 
 export type RescheduleTarget = {
@@ -43,6 +44,7 @@ export function RescheduleDialog({
   onClose: () => void;
   onDone: (outcome: RescheduleOutcome) => void;
 }) {
+  const { t, tl } = useI18n();
   const ref = useRef<HTMLDialogElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, start] = useTransition();
@@ -64,7 +66,7 @@ export function RescheduleDialog({
     start(async () => {
       const result = await call();
       if (!result.ok) {
-        setError(result.fieldErrors ? (Object.values(result.fieldErrors)[0] ?? result.error) : result.error);
+        setError(tl(result.fieldErrors ? (Object.values(result.fieldErrors)[0] ?? result.error) : result.error));
         return;
       }
       onDone({ kind, previous: result.data.previous, message });
@@ -74,7 +76,7 @@ export function RescheduleDialog({
 
   const save = () => {
     if (!date) {
-      setError("Pick the new date, or choose “Not decided yet”.");
+      setError(t("Pick the new date, or choose “Not decided yet”."));
       return;
     }
     run(
@@ -89,7 +91,7 @@ export function RescheduleDialog({
           note: "",
           scope: "once",
         }),
-      `Rescheduled: ${target.name}`,
+      t("Rescheduled: {name}", { name: target.name }),
     );
   };
 
@@ -115,23 +117,23 @@ export function RescheduleDialog({
         <div className="flex flex-col gap-1">
           <h2 id={`${id}-title`} className="flex items-center gap-2 font-display font-medium text-lg">
             <CalendarClock aria-hidden className="size-5 text-warning" />
-            {waiting ? "Set the new date" : "Rescheduled to when?"}
+            {waiting ? t("Set the new date") : t("Rescheduled to when?")}
           </h2>
           <p className="text-muted-foreground text-sm">
-            {target.name}, {waiting ? "was" : ""} {target.when}
+            {target.name}, {waiting ? t("was {when}", { when: target.when }) : target.when}
           </p>
         </div>
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="grid gap-1.5 sm:col-span-3">
-            <Label htmlFor={`${id}-date`}>New date</Label>
+            <Label htmlFor={`${id}-date`}>{t("New date")}</Label>
             <Input id={`${id}-date`} type="date" value={date} onChange={(e) => setDate(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor={`${id}-start`}>Starts</Label>
+            <Label htmlFor={`${id}-start`}>{t("Starts")}</Label>
             <Input id={`${id}-start`} type="time" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
           </div>
           <div className="grid gap-1.5">
-            <Label htmlFor={`${id}-end`}>Ends</Label>
+            <Label htmlFor={`${id}-end`}>{t("Ends")}</Label>
             <Input id={`${id}-end`} type="time" value={endTime} onChange={(e) => setEndTime(e.target.value)} />
           </div>
         </div>
@@ -142,16 +144,22 @@ export function RescheduleDialog({
         ) : null}
         <div className="flex flex-wrap items-center gap-2">
           <Button type="submit" disabled={pending}>
-            {pending ? "Saving…" : "Save new date"}
+            {pending ? t("Saving…") : t("Save new date")}
           </Button>
           {waiting ? (
             <Button
               type="button"
               variant="outline"
               disabled={pending}
-              onClick={() => run("cancelled", () => cancelOccurrence({ key: target.key }), `Cancelled: ${target.name}`)}
+              onClick={() =>
+                run(
+                  "cancelled",
+                  () => cancelOccurrence({ key: target.key }),
+                  t("Cancelled: {name}", { name: target.name }),
+                )
+              }
             >
-              It's cancelled
+              {t("It's cancelled")}
             </Button>
           ) : target.canWait ? (
             <Button
@@ -159,14 +167,18 @@ export function RescheduleDialog({
               variant="outline"
               disabled={pending}
               onClick={() =>
-                run("postponed", () => postponeOccurrence(target.key), `Waiting for a new date: ${target.name}`)
+                run(
+                  "postponed",
+                  () => postponeOccurrence(target.key),
+                  t("Waiting for a new date: {name}", { name: target.name }),
+                )
               }
             >
-              Not decided yet
+              {t("Not decided yet")}
             </Button>
           ) : null}
           <Button type="button" variant="ghost" disabled={pending} onClick={() => ref.current?.close()}>
-            Close
+            {t("Close")}
           </Button>
         </div>
       </form>

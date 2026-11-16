@@ -5,6 +5,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useI18n } from "@/lib/i18n/client";
 import { quickAddTask, removeTask } from "../actions";
 import { ParsePreview } from "./parse-preview";
 
@@ -17,6 +18,7 @@ export function QuickAdd({ courseId, courseName }: { courseId?: string; courseNa
   const [state, action, pending] = useActionState(quickAddTask, null);
   const [text, setText] = useState("");
   const toast = useToast();
+  const { t, tl } = useI18n();
   const handled = useRef(state);
 
   useEffect(() => {
@@ -26,10 +28,10 @@ export function QuickAdd({ courseId, courseName }: { courseId?: string; courseNa
       setText("");
       const id = state.result?.id;
       toast({
-        message: `Added: ${state.result?.title ?? "task"}`,
+        message: t("Added: {title}", { title: state.result?.title ?? t("task") }),
         action: id
           ? {
-              label: "Undo",
+              label: t("Undo"),
               onClick: async () => {
                 await removeTask(id);
               },
@@ -39,7 +41,7 @@ export function QuickAdd({ courseId, courseName }: { courseId?: string; courseNa
     } else {
       setText(state.values?.title ?? text);
     }
-  }, [state, toast, text]);
+  }, [state, toast, text, t]);
 
   const previewId = courseId ? "quick-add-preview-course" : "quick-add-preview";
   return (
@@ -50,21 +52,21 @@ export function QuickAdd({ courseId, courseName }: { courseId?: string; courseNa
           name="title"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder={courseName ? `Add a task for ${courseName}…` : "Add a task…"}
-          aria-label="New task title"
+          placeholder={courseName ? t("Add a task for {name}…", { name: courseName }) : t("Add a task…")}
+          aria-label={t("New task title")}
           autoComplete="off"
           enterKeyHint="done"
           aria-invalid={state && !state.ok ? true : undefined}
           aria-describedby={state && !state.ok ? "quick-add-error" : previewId}
         />
-        <Button type="submit" disabled={pending} aria-label="Add task">
+        <Button type="submit" disabled={pending} aria-label={t("Add task")}>
           <Plus aria-hidden />
-          <span className="hidden sm:inline">Add</span>
+          <span className="hidden sm:inline">{t("Add")}</span>
         </Button>
       </div>
       {state && !state.ok ? (
         <p id="quick-add-error" role="alert" className="text-destructive text-xs">
-          {state.error}
+          {tl(state.error)}
         </p>
       ) : text ? (
         <ParsePreview text={text} id={previewId} />

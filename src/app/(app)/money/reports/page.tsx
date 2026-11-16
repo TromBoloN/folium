@@ -22,9 +22,13 @@ import { ensureRecurringGenerated, listBills } from "@/features/finance/queries/
 import { moneyToday } from "@/features/finance/queries/today";
 import { monthBounds } from "@/features/finance/schemas/money-math";
 import { formatDate } from "@/lib/dates";
+import { plural } from "@/lib/i18n/core";
+import { getI18n, getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Reports" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Reports") };
+}
 
 export default function ReportsPage() {
   return (
@@ -52,6 +56,7 @@ async function Reports() {
   const current = today.slice(0, 7);
   const months = Array.from({ length: 12 }, (_, i) => shiftMonth(current, i - 11));
   const firstEnd = monthBounds(months[0]).from;
+  const { t, intl } = await getI18n();
   const [rows, accounts, categories, bills] = await Promise.all([
     listPostedSince(addDays(firstEnd, -1)),
     listAccounts(),
@@ -91,8 +96,9 @@ async function Reports() {
   ).length;
   const notes = insights({
     trends,
-    previousLabel: formatDate(`${previous}-01`, { month: "long" }),
+    previousLabel: formatDate(`${previous}-01`, { month: "long" }, intl),
     renewingThisWeek: renewing,
+    t,
   });
   // The tallest bar (bigint, so no Math.max).
   let maxBar = 1n;
@@ -101,7 +107,7 @@ async function Reports() {
   const wMin = Math.min(...worthValues, 0);
   const wMax = Math.max(...worthValues, 0);
   const wSpan = wMax - wMin || 1;
-  const monthName = (m: string) => formatDate(`${m}-01`, { month: "short" });
+  const monthName = (m: string) => formatDate(`${m}-01`, { month: "short" }, intl);
 
   return (
     <div className="flex flex-col gap-6">
@@ -109,7 +115,7 @@ async function Reports() {
         <section aria-labelledby="insights-h" className="tile flex flex-col gap-2 p-5">
           <h2 id="insights-h" className="flex items-center gap-2 font-medium">
             <Lightbulb aria-hidden className="size-4 text-muted-foreground" />
-            Worth knowing
+            {t("Worth knowing")}
           </h2>
           <ul className="flex list-disc flex-col gap-1 pl-5 text-sm">
             {notes.map((n) => (
@@ -122,10 +128,10 @@ async function Reports() {
       <section aria-labelledby="inout-h" className="tile flex flex-col gap-4 p-5">
         <div className="flex flex-wrap items-baseline justify-between gap-3">
           <h2 id="inout-h" className="font-medium">
-            In and out, last 12 months
+            {t("In and out, last 12 months")}
           </h2>
           <p className="text-muted-foreground text-sm">
-            {rate === null ? "No income this month" : `Kept ${rate}% of this month's income`}
+            {rate === null ? t("No income this month") : t("Kept {n}% of this month's income", { n: rate })}
           </p>
         </div>
         <div aria-hidden className="flex h-40 items-end gap-1.5">
@@ -147,23 +153,23 @@ async function Reports() {
         </div>
         <details>
           <summary className="cursor-pointer text-muted-foreground text-sm hover:text-foreground">
-            Show the numbers
+            {t("Show the numbers")}
           </summary>
           <table className="mt-2 w-full text-sm tabular-nums">
-            <caption className="sr-only">Income and expenses by month</caption>
+            <caption className="sr-only">{t("Income and expenses by month")}</caption>
             <thead>
               <tr className="text-left text-muted-foreground text-xs">
                 <th scope="col" className="py-1 font-normal">
-                  Month
+                  {t("Month")}
                 </th>
                 <th scope="col" className="py-1 text-right font-normal">
-                  In
+                  {t("In")}
                 </th>
                 <th scope="col" className="py-1 text-right font-normal">
-                  Out
+                  {t("Out")}
                 </th>
                 <th scope="col" className="py-1 text-right font-normal">
-                  Net
+                  {t("Net")}
                 </th>
               </tr>
             </thead>
@@ -171,7 +177,7 @@ async function Reports() {
               {[...inOut].reverse().map((m) => (
                 <tr key={m.month} className="border-border-soft border-t">
                   <th scope="row" className="py-1 text-left font-normal">
-                    {formatDate(`${m.month}-01`, { month: "long", year: "numeric" })}
+                    {formatDate(`${m.month}-01`, { month: "long", year: "numeric" }, intl)}
                   </th>
                   <td className="py-1 text-right text-money-in">{formatIdr(m.income)}</td>
                   <td className="py-1 text-right text-money-out">{formatIdr(m.expense)}</td>
@@ -188,7 +194,7 @@ async function Reports() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="worth-h" className="tile flex flex-col gap-3 p-5">
           <h2 id="worth-h" className="font-medium">
-            Net worth
+            {t("Net worth")}
           </h2>
           <p className="font-display font-medium text-2xl tabular-nums">{formatIdr(total)}</p>
           <svg
@@ -212,27 +218,28 @@ async function Reports() {
             />
           </svg>
           <p className="text-muted-foreground text-sm">
-            {formatIdr(worth[0].total)} at the end of{" "}
-            {formatDate(`${months[0]}-01`, { month: "long", year: "numeric" })}; all accounts together (money lent out
-            not included).
+            {t("{amount} at the end of {month}; all accounts together (money lent out not included).", {
+              amount: formatIdr(worth[0].total),
+              month: formatDate(`${months[0]}-01`, { month: "long", year: "numeric" }, intl),
+            })}
           </p>
         </section>
 
         <section aria-labelledby="year-h" className="tile flex flex-col gap-3 p-5">
           <h2 id="year-h" className="font-medium">
-            {year} so far
+            {t("{year} so far", { year })}
           </h2>
           <dl className="grid grid-cols-3 gap-3 text-sm">
             <div>
-              <dt className="text-muted-foreground text-xs">In</dt>
+              <dt className="text-muted-foreground text-xs">{t("In")}</dt>
               <dd className="font-medium text-money-in tabular-nums">{short(yearIncome)}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground text-xs">Out</dt>
+              <dt className="text-muted-foreground text-xs">{t("Out")}</dt>
               <dd className="font-medium text-money-out tabular-nums">{short(yearExpense)}</dd>
             </div>
             <div>
-              <dt className="text-muted-foreground text-xs">Kept</dt>
+              <dt className="text-muted-foreground text-xs">{t("Kept")}</dt>
               <dd className="font-medium tabular-nums">
                 {savingsRate(yearIncome, yearExpense) === null ? "—" : `${savingsRate(yearIncome, yearExpense)}%`}
               </dd>
@@ -247,31 +254,33 @@ async function Reports() {
       <div className="grid gap-6 lg:grid-cols-2">
         <section aria-labelledby="trends-h" className="tile flex flex-col gap-3 p-5">
           <h2 id="trends-h" className="font-medium">
-            Categories vs {formatDate(`${previous}-01`, { month: "long" })}
+            {t("Categories vs {month}", { month: formatDate(`${previous}-01`, { month: "long" }, intl) })}
           </h2>
           {trends.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No categorised spending in these two months.</p>
+            <p className="text-muted-foreground text-sm">{t("No categorised spending in these two months.")}</p>
           ) : (
             <ul className="flex flex-col divide-y divide-border-soft text-sm">
-              {trends.slice(0, 8).map((t) => (
-                <li key={t.categoryId} className="flex items-center gap-3 py-2">
-                  <span className="min-w-0 flex-1 truncate">{t.name}</span>
-                  <span className="tabular-nums">{formatIdr(t.current)}</span>
+              {trends.slice(0, 8).map((trend) => (
+                <li key={trend.categoryId} className="flex items-center gap-3 py-2">
+                  <span className="min-w-0 flex-1 truncate">{trend.name}</span>
+                  <span className="tabular-nums">{formatIdr(trend.current)}</span>
                   <span
                     className={cn(
                       "w-24 text-right text-xs tabular-nums",
-                      t.change?.direction === "more"
+                      trend.change?.direction === "more"
                         ? "text-money-out"
-                        : t.change?.direction === "less"
+                        : trend.change?.direction === "less"
                           ? "text-money-in"
                           : "text-muted-foreground",
                     )}
                   >
-                    {t.change === null
-                      ? "new"
-                      : t.change.direction === "same"
-                        ? "same"
-                        : `${t.change.direction === "more" ? "▲" : "▼"} ${t.change.percent}% ${t.change.direction}`}
+                    {trend.change === null
+                      ? t("new")
+                      : trend.change.direction === "same"
+                        ? t("same")
+                        : trend.change.direction === "more"
+                          ? t("▲ {n}% more", { n: trend.change.percent })
+                          : t("▼ {n}% less", { n: trend.change.percent })}
                   </span>
                 </li>
               ))}
@@ -281,17 +290,17 @@ async function Reports() {
 
         <section aria-labelledby="payees-h" className="tile flex flex-col gap-3 p-5">
           <h2 id="payees-h" className="font-medium">
-            Top payees this month
+            {t("Top payees this month")}
           </h2>
           {topPayees(monthRows).length === 0 ? (
-            <p className="text-muted-foreground text-sm">No payees this month yet.</p>
+            <p className="text-muted-foreground text-sm">{t("No payees this month yet.")}</p>
           ) : (
             <ol className="flex flex-col divide-y divide-border-soft text-sm">
               {topPayees(monthRows).map((p) => (
                 <li key={p.payee} className="flex items-center gap-3 py-2">
                   <span className="min-w-0 flex-1 truncate">{p.payee}</span>
                   <span className="text-muted-foreground text-xs">
-                    {p.count} {p.count === 1 ? "time" : "times"}
+                    {t(plural(p.count, "1 time", "{n} times"), { n: p.count })}
                   </span>
                   <span className="tabular-nums">{formatIdr(p.total)}</span>
                 </li>

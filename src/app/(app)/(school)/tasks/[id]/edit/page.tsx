@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { EditTaskScreen } from "@/features/tasks/components/task-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit task" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit task") };
+}
 
 export default function EditTaskPage({ params }: PageProps<"/tasks/[id]/edit">) {
   return (

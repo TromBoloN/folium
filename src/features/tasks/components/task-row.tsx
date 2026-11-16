@@ -3,6 +3,7 @@ import Link from "next/link";
 import { CourseStripe } from "@/components/ui/course-stripe";
 import { Pill } from "@/components/ui/pill";
 import { readableTextOn } from "@/lib/color";
+import { Tr } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import type { DueState } from "../due";
 import type { Task } from "../queries";
@@ -66,7 +67,7 @@ export function TaskRow({ task, dueLabel, dueState }: Props) {
             {task.priority === "high" || task.priority === "urgent" ? (
               <Pill tone={task.priority === "urgent" ? "danger" : "neutral"}>
                 <Flag aria-hidden />
-                {PRIORITY_LABELS[task.priority]}
+                <Tr k={PRIORITY_LABELS[task.priority]} />
               </Pill>
             ) : null}
             {steps > 0 ? (
@@ -83,7 +84,10 @@ export function TaskRow({ task, dueLabel, dueState }: Props) {
                   />
                 </span>
                 {stepsDone}/{steps}
-                <span className="sr-only"> steps done</span>
+                <span className="sr-only">
+                  {" "}
+                  <Tr k="steps done" />
+                </span>
               </span>
             ) : null}
           </span>

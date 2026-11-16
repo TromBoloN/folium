@@ -13,8 +13,11 @@ import { NeededCalculator } from "@/features/grades/components/needed-calculator
 import { courseResult, formatPercent } from "@/features/grades/logic";
 import { getCourseGradebook } from "@/features/grades/queries";
 import { getSettings } from "@/features/settings/queries";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Course grades" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Course grades") };
+}
 
 export default function CourseGradesPage({ params, searchParams }: PageProps<"/grades/[courseId]">) {
   return (
@@ -34,7 +37,12 @@ async function CourseGrades({
   searchParams,
 }: Pick<PageProps<"/grades/[courseId]">, "params" | "searchParams">) {
   await requireUser();
-  const [{ courseId }, { target }, { preferences }] = await Promise.all([params, searchParams, getSettings()]);
+  const [{ courseId }, { target }, { preferences }, t] = await Promise.all([
+    params,
+    searchParams,
+    getSettings(),
+    getT(),
+  ]);
   const course = await getCourseGradebook(courseId);
   if (!course) notFound();
 
@@ -55,30 +63,30 @@ async function CourseGrades({
             {course.name}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {course.credits > 0 ? `${course.credits} SKS` : "0 SKS (not counted in your GPA)"}
+            {course.credits > 0 ? t("{n} SKS", { n: course.credits }) : t("0 SKS (not counted in your GPA)")}
             {course.semester ? ` · ${course.semester}` : ""} ·{" "}
             <Link href={`/courses/${course.id}/edit`} className="underline underline-offset-4">
-              Edit course
+              {t("Edit course")}
             </Link>
           </p>
         </header>
 
         <section aria-labelledby="standing" className="grid grid-cols-3 gap-3">
           <h2 id="standing" className="sr-only">
-            Current standing
+            {t("Current standing")}
           </h2>
           <div className="tile p-4">
-            <span className="text-muted-foreground text-xs">Grade so far</span>
+            <span className="text-muted-foreground text-xs">{t("Grade so far")}</span>
             <span className="block font-display font-medium text-3xl">{result.band?.letter ?? "–"}</span>
           </div>
           <div className="tile p-4">
-            <span className="text-muted-foreground text-xs">Percentage</span>
+            <span className="text-muted-foreground text-xs">{t("Percentage")}</span>
             <span className="block font-display font-medium text-3xl tabular-nums">
               {result.percent === null ? "–" : `${formatPercent(result.percent)}%`}
             </span>
           </div>
           <div className="tile p-4">
-            <span className="text-muted-foreground text-xs">Graded</span>
+            <span className="text-muted-foreground text-xs">{t("Graded")}</span>
             <span className="block font-display font-medium text-3xl tabular-nums">
               {result.totalWeight > 0 ? `${Math.round((result.gradedWeight / result.totalWeight) * 100)}%` : "–"}
             </span>
@@ -88,8 +96,10 @@ async function CourseGrades({
         {weightOff ? (
           <p className="flex items-start gap-2 rounded-md bg-muted px-3 py-2 text-sm">
             <TriangleAlert aria-hidden className="mt-0.5 size-4 shrink-0 text-warning" />
-            Weights add up to {formatPercent(result.totalWeight, 0)}%, not 100%. Grades are scaled to the weights
-            entered; add the missing assessments for an accurate picture.
+            {t(
+              "Weights add up to {n}%, not 100%. Grades are scaled to the weights entered; add the missing assessments for an accurate picture.",
+              { n: formatPercent(result.totalWeight, 0) },
+            )}
           </p>
         ) : null}
 
@@ -99,13 +109,13 @@ async function CourseGrades({
       <section aria-labelledby="assessments" className="flex flex-col gap-3">
         <div className="flex items-center justify-between gap-3">
           <h2 id="assessments" className="font-medium">
-            Assessments
+            {t("Assessments")}
           </h2>
           {course.assessments.length > 0 ? (
             <Button asChild size="sm" variant="outline">
               <Link href={`/grades/${course.id}/assessments/new`}>
                 <Plus aria-hidden />
-                Add assessment
+                {t("Add assessment")}
               </Link>
             </Button>
           ) : null}
@@ -117,7 +127,7 @@ async function CourseGrades({
             description="Add quizzes, assignments and exams with their weight. Leave the score empty until it's graded."
           >
             <Button asChild size="sm">
-              <Link href={`/grades/${course.id}/assessments/new`}>Add assessment</Link>
+              <Link href={`/grades/${course.id}/assessments/new`}>{t("Add assessment")}</Link>
             </Button>
           </EmptyState>
         ) : (

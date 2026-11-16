@@ -1,6 +1,7 @@
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
+import { Tr } from "@/lib/i18n/client";
 import { listCourses } from "../queries";
 import { nextCourseColor, nextSemesterName, semesterLabels } from "../schema";
 import { CourseForm } from "./course-form";
@@ -34,11 +35,13 @@ export async function RolloverScreen({ variant }: { variant: "page" | "sheet" })
         <PageHeader title="New semester" back={<BackLink href="/courses">Courses</BackLink>} />
       ) : (
         <p className="mb-4 text-muted-foreground text-sm">
-          Copy your courses into a new semester instead of typing them again.
+          <Tr k="Copy your courses into a new semester instead of typing them again." />
         </p>
       )}
       {courses.length === 0 ? (
-        <p className="text-muted-foreground text-sm">Add some courses first.</p>
+        <p className="text-muted-foreground text-sm">
+          <Tr k="Add some courses first." />
+        </p>
       ) : (
         <RolloverForm semesters={semesters} suggestion={nextSemesterName(latest)} />
       )}

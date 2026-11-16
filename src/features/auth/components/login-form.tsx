@@ -5,12 +5,14 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/lib/i18n/client";
 import { signIn } from "../actions";
 import { FormError } from "./form-error";
 
 type Props = { next?: string; notice?: string };
 
 export function LoginForm({ next, notice }: Props) {
+  const t = useT();
   const [state, action, pending] = useActionState(signIn, null);
   const error = state && !state.ok ? state.error : notice;
 
@@ -18,7 +20,7 @@ export function LoginForm({ next, notice }: Props) {
     <form action={action} className="flex flex-col gap-4" noValidate>
       {next ? <input type="hidden" name="next" value={next} /> : null}
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("Email")}</Label>
         <Input
           id="email"
           name="email"
@@ -31,21 +33,21 @@ export function LoginForm({ next, notice }: Props) {
       </div>
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Password</Label>
+          <Label htmlFor="password">{t("Password")}</Label>
           <Link href="/forgot-password" className="text-muted-foreground text-sm underline-offset-4 hover:underline">
-            Forgot password?
+            {t("Forgot password?")}
           </Link>
         </div>
         <Input id="password" name="password" type="password" autoComplete="current-password" required />
       </div>
       <FormError message={error} />
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Signing in…" : "Sign in"}
+        {pending ? t("Signing in…") : t("Sign in")}
       </Button>
       <p className="text-center text-sm text-muted-foreground">
-        New to Folium?{" "}
+        {t("New to Folium?")}{" "}
         <Link href="/signup" className="text-foreground underline underline-offset-4">
-          Create an account
+          {t("Create an account")}
         </Link>
       </p>
     </form>

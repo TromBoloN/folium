@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { AccountForm } from "@/features/finance/components/account-form";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add account" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add account") };
+}
 
 export default function NewAccountPage() {
   return (

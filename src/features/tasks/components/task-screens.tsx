@@ -6,6 +6,7 @@ import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
 import { listCourseOptions } from "@/features/courses/queries";
 import { getSettings } from "@/features/settings/queries";
+import { getI18n } from "@/lib/i18n/server";
 import { dueParts, dueState, formatDue } from "../due";
 import { getTask } from "../queries";
 import { PRIORITY_LABELS, STATUS_LABELS } from "../schema";
@@ -77,22 +78,24 @@ export async function TaskDetailScreen({ id }: { id: string }) {
   await io();
   const now = new Date();
   const done = task.status === "done";
-  const due = formatDue(task, now, preferences.timeZone, preferences.timeFormat);
+  const i18n = await getI18n();
+  const { t } = i18n;
+  const due = formatDue(task, now, preferences.timeZone, preferences.timeFormat, i18n);
 
   return (
     <div className="flex flex-col gap-8">
       <header className="flex flex-col gap-4">
         <EditableTitle id={task.id} title={task.title} done={done} />
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
-          <dt className="text-muted-foreground">Status</dt>
-          <dd>{STATUS_LABELS[task.status]}</dd>
-          <dt className="text-muted-foreground">Due</dt>
-          <dd>{due ? <DueLabel label={due} state={dueState(task, now, preferences.timeZone)} /> : "No deadline"}</dd>
-          <dt className="text-muted-foreground">Priority</dt>
-          <dd>{PRIORITY_LABELS[task.priority]}</dd>
+          <dt className="text-muted-foreground">{t("Status")}</dt>
+          <dd>{t(STATUS_LABELS[task.status])}</dd>
+          <dt className="text-muted-foreground">{t("Due")}</dt>
+          <dd>{due ? <DueLabel label={due} state={dueState(task, now, preferences.timeZone)} /> : t("No deadline")}</dd>
+          <dt className="text-muted-foreground">{t("Priority")}</dt>
+          <dd>{t(PRIORITY_LABELS[task.priority])}</dd>
           {task.course ? (
             <>
-              <dt className="text-muted-foreground">Course</dt>
+              <dt className="text-muted-foreground">{t("Course")}</dt>
               <dd>
                 <Link
                   href={`/courses/${task.course.id}`}
@@ -112,7 +115,7 @@ export async function TaskDetailScreen({ id }: { id: string }) {
       {task.notes ? (
         <section aria-labelledby="notes" className="flex flex-col gap-2">
           <h2 id="notes" className="font-medium">
-            Notes
+            {t("Notes")}
           </h2>
           <p className="whitespace-pre-wrap text-sm leading-relaxed">{task.notes}</p>
         </section>

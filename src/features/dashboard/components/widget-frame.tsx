@@ -1,6 +1,7 @@
 import { ArrowRight, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { Tile } from "@/components/ui/tile";
+import { TrL } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import type { WidgetSize } from "../widget-ids";
 
@@ -48,7 +49,7 @@ export function WidgetFrame({
     return (
       <section aria-labelledby={heading} className={cn("min-w-0", SIZE_CLASSES[size])}>
         <h2 id={heading} className="sr-only">
-          {title}
+          <TrL text={title} />
         </h2>
         {children}
       </section>
@@ -67,14 +68,14 @@ export function WidgetFrame({
           <span className="flex size-7 items-center justify-center rounded-lg bg-accent text-accent-foreground">
             <Icon aria-hidden className="size-4" />
           </span>
-          {title}
+          <TrL text={title} />
         </h2>
         {href ? (
           <Link
             href={href}
             className="group/more inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
           >
-            {hrefLabel}
+            <TrL text={hrefLabel} />
             <ArrowRight
               aria-hidden
               className="size-3.5 transition-transform duration-(--dur-fast) group-hover/more:translate-x-0.5"
@@ -89,7 +90,10 @@ export function WidgetFrame({
 
 export function WidgetSkeleton({ rows = 2, label }: { rows?: number; label: string }) {
   return (
-    <div role="status" aria-label={label} className="flex flex-col gap-2">
+    <div role="status" className="flex flex-col gap-2">
+      <span className="sr-only">
+        <TrL text={label} />
+      </span>
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
         <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />

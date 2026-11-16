@@ -9,6 +9,7 @@ import { CancelButton } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n/client";
 import { saveAccount } from "../actions/accounts";
 import { ACCOUNT_TYPE_LABELS, ACCOUNT_TYPES } from "../schemas";
 import { AppearanceFields } from "./appearance-fields";
@@ -24,6 +25,7 @@ export type AccountDefaults = {
 };
 
 export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
+  const t = useT();
   const [state, action, pending] = useActionState(saveAccount, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const value = (name: Exclude<keyof AccountDefaults, "isSpendable">) => state?.values?.[name] ?? defaults[name] ?? "";
@@ -39,16 +41,16 @@ export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
             autoFocus={!defaults.id}
             maxLength={60}
             defaultValue={value("name")}
-            placeholder="e.g. BCA, OVO, Savings jar"
+            placeholder={t("e.g. BCA, OVO, Savings jar")}
             aria-invalid={errors.name ? true : undefined}
             aria-describedby={describedBy("name", errors.name)}
           />
         </Field>
         <ChipGroup
           name="type"
-          legend="Type"
+          legend={t("Type")}
           defaultValue={value("type")}
-          options={ACCOUNT_TYPES.map((t) => ({ value: t, label: ACCOUNT_TYPE_LABELS[t] }))}
+          options={ACCOUNT_TYPES.map((type) => ({ value: type, label: t(ACCOUNT_TYPE_LABELS[type]) }))}
           error={errors.type}
         />
         <Field
@@ -64,7 +66,7 @@ export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
             inputMode="decimal"
             autoComplete="off"
             defaultValue={value("openingBalance")}
-            placeholder="e.g. 250.000"
+            placeholder={t("e.g. {example}", { example: "250.000" })}
             aria-invalid={errors.openingBalance ? true : undefined}
             aria-describedby={describedBy("openingBalance", errors.openingBalance, "hint")}
           />
@@ -77,9 +79,9 @@ export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
             className="mt-0.5 size-4 accent-primary"
           />
           <span>
-            Count it in “safe to spend”
+            {t("Count it in “safe to spend”")}
             <span className="block text-muted-foreground text-xs">
-              Leave savings out so they aren't treated as spending money.
+              {t("Leave savings out so they aren't treated as spending money.")}
             </span>
           </span>
         </label>
@@ -87,7 +89,7 @@ export function AccountForm({ defaults }: { defaults: AccountDefaults }) {
       </FormSection>
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : defaults.id ? "Save changes" : "Add account"}
+          {pending ? t("Saving…") : defaults.id ? t("Save changes") : t("Add account")}
         </Button>
         <CancelButton href="/money/accounts" />
       </FormFooter>

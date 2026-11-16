@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isCivilDate } from "@/lib/dates";
+import type { MessageKey } from "@/lib/i18n/core";
 
 /** v1 defaults. Stored as text with CHECK constraints so user-defined ones can replace them later. */
 export const STATUSES = ["todo", "in_progress", "done"] as const;
@@ -7,8 +8,12 @@ export const PRIORITIES = ["low", "medium", "high", "urgent"] as const;
 export type TaskStatus = (typeof STATUSES)[number];
 export type TaskPriority = (typeof PRIORITIES)[number];
 
-export const STATUS_LABELS: Record<TaskStatus, string> = { todo: "To do", in_progress: "In progress", done: "Done" };
-export const PRIORITY_LABELS: Record<TaskPriority, string> = {
+export const STATUS_LABELS: Record<TaskStatus, MessageKey> = {
+  todo: "To do",
+  in_progress: "In progress",
+  done: "Done",
+};
+export const PRIORITY_LABELS: Record<TaskPriority, MessageKey> = {
   low: "Low",
   medium: "Medium",
   high: "High",

@@ -1,11 +1,13 @@
 import { Archive, ArrowRightLeft, BookCheck, ChevronRight, ListTodo, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import { Pill } from "@/components/ui/pill";
+import { type I18n, plural } from "@/lib/i18n/core";
+import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import { ChangeChips } from "../../schedule/components/change-chips";
 import type { Chip } from "../../schedule/format";
 import { OverlapWarning } from "../../timetable/components/overlap-warning";
-import { findConflicts, WEEKDAYS } from "../../timetable/logic";
+import { findConflicts, WEEKDAYS, weekdayLabel } from "../../timetable/logic";
 import type { TimetableSlot } from "../../timetable/types";
 import type { CourseWithSlots } from "../queries";
 
@@ -25,7 +27,9 @@ type Props = {
   stats: Record<string, CourseCardStats>;
 };
 
-export function CourseList({ courses, stats }: Props) {
+export async function CourseList({ courses, stats }: Props) {
+  const i18n = await getI18n();
+  const { t } = i18n;
   const active = courses.filter((c) => !c.archivedAt);
   const archived = courses.filter((c) => c.archivedAt);
   // Clashes in the weekly pattern (a property of the timetable itself, not of one week).
@@ -36,23 +40,23 @@ export function CourseList({ courses, stats }: Props) {
       {active.length > 0 ? (
         <ul className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {active.map((c, i) => (
-            <CourseCard key={c.id} course={c} stats={stats[c.id]} conflicts={conflicts} index={i} />
+            <CourseCard key={c.id} course={c} stats={stats[c.id]} conflicts={conflicts} index={i} i18n={i18n} />
           ))}
         </ul>
       ) : (
-        <p className="text-muted-foreground text-sm">All your courses are archived.</p>
+        <p className="text-muted-foreground text-sm">{t("All your courses are archived.")}</p>
       )}
 
       {archived.length > 0 ? (
         <details className="group">
           <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-md text-muted-foreground text-sm hover:text-foreground">
             <Archive aria-hidden className="size-4" />
-            Archived ({archived.length})
+            {t("Archived ({n})", { n: archived.length })}
             <ChevronRight aria-hidden className="size-4 transition-transform group-open:rotate-90" />
           </summary>
           <ul className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
             {archived.map((c) => (
-              <CourseCard key={c.id} course={c} stats={stats[c.id]} muted />
+              <CourseCard key={c.id} course={c} stats={stats[c.id]} muted i18n={i18n} />
             ))}
           </ul>
         </details>
@@ -61,30 +65,29 @@ export function CourseList({ courses, stats }: Props) {
   );
 }
 
-function plural(n: number, one: string, many: string) {
-  return `${n} ${n === 1 ? one : many}`;
-}
-
 function CourseCard({
   course,
   stats,
   conflicts,
   index,
   muted = false,
+  i18n,
 }: {
   course: CourseWithSlots;
   stats: CourseCardStats | undefined;
   conflicts?: Map<string, TimetableSlot[]>;
   index?: number;
   muted?: boolean;
+  i18n: I18n;
 }) {
+  const { t, intl } = i18n;
   const clashing = conflicts
     ? [...new Set(course.slots.flatMap((s) => conflicts.get(s.id) ?? []).map((o) => o.course.code ?? o.course.name))]
     : [];
   const days = new Set(stats?.weekdays ?? []);
   const facts = [
-    course.credits > 0 ? `${course.credits} SKS` : null,
-    stats ? plural(stats.openTasks, "open task", "open tasks") : null,
+    course.credits > 0 ? t("{n} SKS", { n: course.credits }) : null,
+    stats ? t(plural(stats.openTasks, "{n} open task", "{n} open tasks"), { n: stats.openTasks }) : null,
   ].filter(Boolean);
 
   return (
@@ -106,7 +109,9 @@ function CourseCard({
               {stats && stats.changesThisWeek > 0 ? (
                 <Pill tone="warning">
                   <ArrowRightLeft aria-hidden />
-                  {plural(stats.changesThisWeek, "change", "changes")} this week
+                  {t(plural(stats.changesThisWeek, "{n} change this week", "{n} changes this week"), {
+                    n: stats.changesThisWeek,
+                  })}
                 </Pill>
               ) : null}
             </span>
@@ -141,7 +146,7 @@ function CourseCard({
               {stats?.next ? (
                 <>
                   <span>
-                    <span className="text-muted-foreground">Next: </span>
+                    <span className="text-muted-foreground">{t("Next:")} </span>
                     <span className="font-medium tabular-nums">{stats.next.label}</span>
                     {stats.next.location ? (
                       <span className="text-muted-foreground"> · {stats.next.location}</span>
@@ -151,11 +156,11 @@ function CourseCard({
                 </>
               ) : (
                 <span className="text-muted-foreground">
-                  {course.slots.length > 0 ? "No classes in the next two weeks" : "No class times yet"}
+                  {course.slots.length > 0 ? t("No classes in the next two weeks") : t("No class times yet")}
                 </span>
               )}
             </span>
-            <span className="flex gap-1" role="img" aria-label={weekdayText(days)}>
+            <span className="flex gap-1" role="img" aria-label={weekdayText(days, i18n)}>
               {WEEKDAYS.map((d) => (
                 <span
                   key={d.value}
@@ -167,7 +172,7 @@ function CourseCard({
                       : "bg-surface-1/70 text-muted-foreground",
                   )}
                 >
-                  {d.short[0]}
+                  {weekdayLabel(d.value, "short", intl)[0]}
                 </span>
               ))}
             </span>
@@ -195,9 +200,11 @@ function CourseCard({
   );
 }
 
-function weekdayText(days: Set<number>) {
-  if (days.size === 0) return "No weekly classes";
-  return `Meets on ${WEEKDAYS.filter((d) => days.has(d.value))
-    .map((d) => d.label)
-    .join(", ")}`;
+function weekdayText(days: Set<number>, { t, intl }: I18n) {
+  if (days.size === 0) return t("No weekly classes");
+  return t("Meets on {days}", {
+    days: WEEKDAYS.filter((d) => days.has(d.value))
+      .map((d) => weekdayLabel(d.value, "label", intl))
+      .join(", "),
+  });
 }

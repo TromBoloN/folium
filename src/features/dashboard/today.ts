@@ -1,4 +1,5 @@
 import type { CivilDate } from "@/lib/dates";
+import type { MessageKey } from "@/lib/i18n/core";
 import { appliesOn, type SlotTiming, sortSlots, toMinutes } from "../timetable/logic";
 
 /** The classes that actually happen on this date (weekday and date range), in time order. */
@@ -24,7 +25,7 @@ export function classMoment(todays: readonly SlotTiming[], nowMinute: number): C
 }
 
 /** "Good morning" (05:00–11:59), "Good afternoon" (12:00–17:59), "Good evening" (otherwise). */
-export function greeting(nowMinute: number): string {
+export function greeting(nowMinute: number): MessageKey {
   const hour = Math.floor(nowMinute / 60);
   if (hour >= 5 && hour < 12) return "Good morning";
   if (hour >= 12 && hour < 18) return "Good afternoon";

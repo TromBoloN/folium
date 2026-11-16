@@ -13,9 +13,13 @@ import { accountGlyph, IconBadge } from "@/features/finance/components/money-ico
 import { formatIdr } from "@/features/finance/lib/format-idr";
 import { ensureFinanceDefaults, listAccounts } from "@/features/finance/queries";
 import { ACCOUNT_TYPE_LABELS } from "@/features/finance/schemas";
+import { Tr } from "@/lib/i18n/client";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Accounts" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Accounts") };
+}
 
 export default function AccountsPage() {
   return (
@@ -28,7 +32,7 @@ export default function AccountsPage() {
           <Button asChild size="sm">
             <Link href="/money/accounts/new">
               <Plus aria-hidden />
-              Add account
+              <Tr k="Add account" />
             </Link>
           </Button>
         }
@@ -43,7 +47,7 @@ export default function AccountsPage() {
 async function Accounts() {
   await requireUser();
   await ensureFinanceDefaults();
-  const accounts = await listAccounts();
+  const [accounts, t] = await Promise.all([listAccounts(), getT()]);
   return (
     <ul className="grid gap-3 md:grid-cols-2">
       {accounts.map((a, i) => (
@@ -66,7 +70,7 @@ async function Accounts() {
                 {a.name}
                 {a.archived ? " (archived)" : ""}
               </Link>
-              <span className="text-muted-foreground text-xs">{ACCOUNT_TYPE_LABELS[a.type]}</span>
+              <span className="text-muted-foreground text-xs">{t(ACCOUNT_TYPE_LABELS[a.type])}</span>
             </div>
             <span className={cn("font-display font-medium text-xl tabular-nums", a.balance < 0n && "text-money-out")}>
               {formatIdr(a.balance)}
@@ -78,7 +82,8 @@ async function Accounts() {
                 <Button asChild size="sm" variant="outline">
                   <Link href={`/money/accounts/${a.id}#reconcile`}>
                     <Scale aria-hidden />
-                    Match balance<span className="sr-only">: {a.name}</span>
+                    {t("Match balance")}
+                    <span className="sr-only">: {a.name}</span>
                   </Link>
                 </Button>
                 <Button asChild size="sm" variant="ghost">
@@ -91,7 +96,7 @@ async function Accounts() {
             ) : null}
             <span className="ml-auto flex items-center gap-1">
               <Button asChild size="icon" variant="ghost">
-                <Link href={`/money/accounts/${a.id}`} aria-label={`Edit ${a.name}`}>
+                <Link href={`/money/accounts/${a.id}`} aria-label={t("Edit {name}", { name: a.name })}>
                   <Pencil aria-hidden />
                 </Link>
               </Button>
@@ -99,7 +104,9 @@ async function Accounts() {
                 <SubmitButton
                   size="icon"
                   variant="ghost"
-                  aria-label={a.archived ? `Unarchive ${a.name}` : `Archive ${a.name}`}
+                  aria-label={
+                    a.archived ? t("Unarchive {name}", { name: a.name }) : t("Archive {name}", { name: a.name })
+                  }
                 >
                   {a.archived ? <ArchiveRestore aria-hidden /> : <Archive aria-hidden />}
                 </SubmitButton>

@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { ClassScreen } from "@/features/schedule/components/class-screen";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Class" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Class") };
+}
 
 export default function ClassPage({ params }: PageProps<"/courses/class/[key]">) {
   return (

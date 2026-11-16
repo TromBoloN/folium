@@ -1,0 +1,50 @@
+/** Sign in, sign up and passwords. */
+export const auth = {
+  "Check your email": "Cek emailmu",
+  "If an account exists for {email}, we sent a link to reset its password. The link works once.":
+    "Jika ada akun untuk {email}, kami sudah mengirim tautan untuk mengatur ulang kata sandinya. Tautan hanya bisa dipakai sekali.",
+  "Back to sign in": "Kembali ke halaman masuk",
+  "Enter your email and we'll send you a link to set a new password.":
+    "Masukkan emailmu dan kami akan mengirim tautan untuk membuat kata sandi baru.",
+  Email: "Email",
+  Password: "Kata sandi",
+  "Sending…": "Mengirim…",
+  "Send reset link": "Kirim tautan",
+  "Remembered it?": "Sudah ingat?",
+  "Forgot password?": "Lupa kata sandi?",
+  "Signing in…": "Masuk…",
+  "New to Folium?": "Baru di Folium?",
+  "Create an account": "Buat akun",
+  "We sent a confirmation link to {email}. Open it on this device to finish signing up.":
+    "Kami mengirim tautan konfirmasi ke {email}. Buka di perangkat ini untuk menyelesaikan pendaftaran.",
+  "At least {n} characters.": "Minimal {n} karakter.",
+  "Creating account…": "Membuat akun…",
+  "Already have an account?": "Sudah punya akun?",
+  "Password updated": "Kata sandi diperbarui",
+  "Use your new password next time you sign in.": "Pakai kata sandi baru saat masuk berikutnya.",
+  "Go to Today": "Ke Hari ini",
+  "New password": "Kata sandi baru",
+  "Repeat new password": "Ulangi kata sandi baru",
+  "Set new password": "Simpan kata sandi baru",
+  "Sign out": "Keluar",
+  You: "Kamu",
+  "Account settings:": "Pengaturan akun:",
+  "Loading account": "Memuat akun",
+  "Set a new password for {email}.": "Buat kata sandi baru untuk {email}.",
+  "That confirmation link is invalid or has expired. Sign in, or sign up again for a new link.":
+    "Tautan konfirmasi itu tidak valid atau sudah kedaluwarsa. Masuk, atau daftar lagi untuk tautan baru.",
+  "Enter a valid email address.": "Masukkan alamat email yang valid.",
+  "Enter your password.": "Masukkan kata sandimu.",
+  "Use at most 72 characters.": "Maksimal 72 karakter.",
+  "The passwords don't match.": "Kata sandinya tidak cocok.",
+  "Email or password is incorrect.": "Email atau kata sandi salah.",
+  "Confirm your email first. Check your inbox for the link.":
+    "Konfirmasi emailmu dulu. Cek kotak masuk untuk tautannya.",
+  "An account with this email already exists. Try signing in.": "Akun dengan email ini sudah ada. Coba masuk.",
+  "For your security, sign out and sign in again (or use “Forgot password?”) before changing your password.":
+    "Demi keamanan, keluar lalu masuk lagi (atau pakai “Lupa kata sandi?”) sebelum mengganti kata sandi.",
+  "Choose a password different from your current one.": "Pilih kata sandi yang berbeda dari yang sekarang.",
+  "That password is too weak. Try a longer one.": "Kata sandi itu terlalu lemah. Coba yang lebih panjang.",
+  "Too many attempts. Wait a minute and try again.": "Terlalu banyak percobaan. Tunggu sebentar lalu coba lagi.",
+  "Something went wrong. Please try again.": "Terjadi kesalahan. Coba lagi.",
+};

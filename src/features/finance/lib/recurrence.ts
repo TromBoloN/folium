@@ -1,3 +1,4 @@
+import { plural, type T, tEn } from "@/lib/i18n/core";
 import { addDays, type IsoDate } from "./local-date";
 
 /**
@@ -88,9 +89,13 @@ export function monthlyEquivalent(amount: bigint, cadence: Cadence, intervalCoun
 }
 
 /** "Every month on the 5th", "Every 2 weeks", "Every year on 14 Aug"-style label parts. */
-export function cadenceLabel(s: Pick<Schedule, "cadence" | "intervalCount" | "dueDay">): string {
+export function cadenceLabel(s: Pick<Schedule, "cadence" | "intervalCount" | "dueDay">, t: T = tEn): string {
   const n = Math.max(1, s.intervalCount);
-  const unit = s.cadence === "weekly" ? "week" : s.cadence === "monthly" ? "month" : "year";
-  const every = n === 1 ? `Every ${unit}` : `Every ${n} ${unit}s`;
-  return s.cadence !== "weekly" && s.dueDay ? `${every} on day ${s.dueDay}` : every;
+  const every =
+    s.cadence === "weekly"
+      ? t(plural(n, "Every week", "Every {n} weeks"), { n })
+      : s.cadence === "monthly"
+        ? t(plural(n, "Every month", "Every {n} months"), { n })
+        : t(plural(n, "Every year", "Every {n} years"), { n });
+  return s.cadence !== "weekly" && s.dueDay ? t("{every} on day {day}", { every, day: s.dueDay }) : every;
 }

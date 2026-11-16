@@ -1,6 +1,7 @@
 import { Trash2 } from "lucide-react";
 import Link from "next/link";
 import { SubmitButton } from "@/components/action-form";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import { deleteBudget } from "../actions/planning";
 import { type BudgetProgress, budgetLabel } from "../lib/budgets";
@@ -30,7 +31,7 @@ function Bar({ p }: { p: BudgetProgress }) {
 }
 
 /** Budget rows: name, "82% used" or "over by", spent / committed / left, and a bar. */
-export function BudgetList({
+export async function BudgetList({
   items,
   month,
   editable = false,
@@ -39,6 +40,7 @@ export function BudgetList({
   month: string;
   editable?: boolean;
 }) {
+  const t = await getT();
   return (
     <ul className="flex flex-col gap-4">
       {items.map((p) => (
@@ -56,27 +58,32 @@ export function BudgetList({
                 p.state === "over" ? "text-money-out" : p.state === "warn" ? "text-warning" : "text-muted-foreground",
               )}
             >
-              {budgetLabel(p, formatIdr)}
+              {budgetLabel(p, formatIdr, t)}
             </span>
           </div>
           <Bar p={p} />
           <div className="flex flex-wrap items-center justify-between gap-x-3 text-muted-foreground text-xs tabular-nums">
             <span>
-              {formatIdr(p.spent)} of {formatIdr(p.limit)}
+              {t("{spent} of {limit}", { spent: formatIdr(p.spent), limit: formatIdr(p.limit) })}
               {p.carry !== 0n
-                ? ` (${p.carry > 0n ? "+" : "−"}${formatIdr(p.carry > 0n ? p.carry : -p.carry)} carried)`
+                ? t(" ({amount} carried)", {
+                    amount: `${p.carry > 0n ? "+" : "−"}${formatIdr(p.carry > 0n ? p.carry : -p.carry)}`,
+                  })
                 : ""}
-              {p.committed > 0n ? ` · ${formatIdr(p.committed)} committed` : ""}
+              {p.committed > 0n ? t(" · {amount} committed", { amount: formatIdr(p.committed) }) : ""}
             </span>
             <span className={cn(p.left < 0n && "text-money-out")}>
-              {p.left >= 0n ? `${formatIdr(p.left)} left` : `${formatIdr(-p.left)} short`}
+              {p.left >= 0n
+                ? t("{amount} left", { amount: formatIdr(p.left) })
+                : t("{amount} short", { amount: formatIdr(-p.left) })}
             </span>
           </div>
           {editable ? (
             <ToastForm action={deleteBudget} fields={{ id: p.id }} className="items-end">
               <SubmitButton size="sm" variant="ghost" className="h-7 text-muted-foreground">
                 <Trash2 aria-hidden />
-                Remove<span className="sr-only"> the {p.name} budget</span>
+                {t("Remove")}
+                <span className="sr-only">{t(" the {name} budget", { name: p.name })}</span>
               </SubmitButton>
             </ToastForm>
           ) : null}

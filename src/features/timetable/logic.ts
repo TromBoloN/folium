@@ -1,4 +1,4 @@
-import { addDays, type CivilDate, isoWeekday } from "@/lib/dates";
+import { addDays, type CivilDate, formatDate, isoWeekday } from "@/lib/dates";
 
 /** The parts of a timetable slot the scheduling logic needs. Times are "HH:MM", local to the app's time zone. */
 export type SlotTiming = {
@@ -20,8 +20,10 @@ export const WEEKDAYS = [
   { value: 7, label: "Sunday", short: "Sun" },
 ] as const;
 
-export function weekdayLabel(weekday: number, form: "label" | "short" = "label"): string {
-  return WEEKDAYS[weekday - 1]?.[form] ?? "";
+export function weekdayLabel(weekday: number, form: "label" | "short" = "label", intl = "en-GB"): string {
+  if (!WEEKDAYS[weekday - 1]) return "";
+  // 2024-01-01 was a Monday: format a date with that weekday in the user's language.
+  return formatDate(addDays("2024-01-01", weekday - 1), { weekday: form === "label" ? "long" : "short" }, intl);
 }
 
 /** "08:30" or "08:30:00" -> minutes since midnight. */

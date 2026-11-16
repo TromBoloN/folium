@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Inter } from "next/font/google";
 import { getSettings } from "@/features/settings/queries";
 import { themeAttributes } from "@/features/settings/theme";
+import { I18nProvider } from "@/lib/i18n/client";
 import { BRAND } from "@/lib/pwa/brand";
 import "./globals.css";
 
@@ -37,13 +38,17 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "sw
 const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap", axes: ["opsz"] });
 
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  // preferences.language is saved but not applied yet: lang must match the
-  // page text, which is English until translations ship.
-  const { theme } = await getSettings();
+  const { theme, preferences } = await getSettings();
 
   return (
-    <html lang="en" className={`${geist.variable} ${inter.variable} ${fraunces.variable}`} {...themeAttributes(theme)}>
-      <body>{children}</body>
+    <html
+      lang={preferences.language}
+      className={`${geist.variable} ${inter.variable} ${fraunces.variable}`}
+      {...themeAttributes(theme)}
+    >
+      <body>
+        <I18nProvider locale={preferences.language}>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

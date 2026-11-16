@@ -5,19 +5,20 @@ import { getSettings } from "@/features/settings/queries";
 import { dueState, formatDue } from "@/features/tasks/due";
 import { listOpenTasks } from "@/features/tasks/queries";
 import { addDays, todayIn } from "@/lib/dates";
+import { getI18n } from "@/lib/i18n/server";
 import { toHeroClass } from "./hero-class";
 import { NextUpHero } from "./next-up-hero";
 
 /** The hero: what's on now or next, with a live countdown. Falls back to tomorrow, then the next deadline. */
 export async function NextUpWidget() {
-  const [tasks, { preferences }] = await Promise.all([listOpenTasks(), getSettings()]);
+  const [tasks, { preferences }, i18n] = await Promise.all([listOpenTasks(), getSettings(), getI18n()]);
   await io();
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
   const tomorrow = addDays(today, 1);
   const schedule = await getSchedule({ from: today, to: tomorrow });
   const fmt = preferences.timeFormat;
-  const hero = (o: (typeof schedule)[number]) => toHeroClass(o, fmt);
+  const hero = (o: (typeof schedule)[number]) => toHeroClass(o, fmt, i18n);
   // Open tasks come sorted by deadline; the first not yet overdue is the next one.
   const next = tasks.find((t) => t.dueAt && dueState(t, now, preferences.timeZone) !== "overdue");
 
@@ -35,7 +36,7 @@ export async function NextUpWidget() {
           ? {
               id: next.id,
               title: next.title,
-              due: formatDue(next, now, preferences.timeZone, preferences.timeFormat) ?? "",
+              due: formatDue(next, now, preferences.timeZone, preferences.timeFormat, i18n) ?? "",
               color: next.course?.color ?? null,
               course: next.course ? (next.course.code ?? next.course.name) : null,
             }

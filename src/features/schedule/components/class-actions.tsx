@@ -9,6 +9,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { addDays } from "@/lib/dates";
+import { useI18n, useT } from "@/lib/i18n/client";
+import { rich } from "@/lib/i18n/rich";
 import { cn } from "@/lib/utils";
 import { toMinutes } from "../../timetable/logic";
 import {
@@ -52,6 +54,7 @@ function shift(time: string, minutes: number) {
 
 /** "Changed?" for one class: cancel (one tap), move, room only; restore; attendance. Everything can be undone. */
 export function ClassActions(props: Props) {
+  const { t, tl } = useI18n();
   const [step, setStep] = useState<Step>("menu");
   const [pending, start] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -64,7 +67,7 @@ export function ClassActions(props: Props) {
       message,
       action: canUndo
         ? {
-            label: "Undo",
+            label: t("Undo"),
             onClick: async () => void (await undoChange({ key: props.occurrenceKey, previous: previous ?? null })),
           }
         : undefined,
@@ -83,14 +86,14 @@ export function ClassActions(props: Props) {
       const result = await cancelOccurrence({ key: props.occurrenceKey });
       if (!result.ok) return setError(result.error);
       // An extra session is deleted: Undo puts the row back.
-      done(`Cancelled ${props.label}`, result.data.previous);
+      done(t("Cancelled {name}", { name: props.label }), result.data.previous);
     });
 
   const restore = () =>
     run(async () => {
       const result = await restoreOccurrence(props.occurrenceKey);
       if (!result.ok) return setError(result.error);
-      done(`${props.label} is back to its usual time`, result.data.previous);
+      done(t("{name} is back to its usual time", { name: props.label }), result.data.previous);
     });
 
   if (step === "move" || step === "room") {
@@ -111,13 +114,15 @@ export function ClassActions(props: Props) {
     <section className="flex flex-col gap-2">
       <p className="text-sm">
         {props.breakLabel && !props.changed
-          ? `No class: it falls in “${props.breakLabel}”. Remove the break on the schedule to bring classes back.`
-          : "This class is cancelled."}
+          ? t("No class: it falls in “{name}”. Remove the break on the schedule to bring classes back.", {
+              name: props.breakLabel,
+            })
+          : t("This class is cancelled.")}
       </p>
       {props.changed ? (
         <Button variant="outline" size="sm" className="w-fit" onClick={restore} disabled={pending}>
           <RotateCcw aria-hidden />
-          It's on after all
+          {t("It's on after all")}
         </Button>
       ) : null}
       {props.changed && !extra ? <NoteField {...props} /> : null}
@@ -125,29 +130,36 @@ export function ClassActions(props: Props) {
   ) : (
     <section aria-labelledby="changed-h" className="flex flex-col gap-2">
       <h3 id="changed-h" className="font-medium text-sm">
-        {props.canMark ? "Something changed?" : "Changed?"}
+        {props.canMark ? t("Something changed?") : t("Changed?")}
       </h3>
       {props.status === "postponed" ? (
         <p className="text-sm">
-          Rescheduled; the new date isn't decided yet. Choose <strong>Moved</strong> to set it, or{" "}
-          <strong>Cancelled</strong> if it won't happen.
+          {rich(
+            t(
+              "Rescheduled; the new date isn't decided yet. Choose {moved} to set it, or {cancelled} if it won't happen.",
+            ),
+            {
+              moved: <strong>{t("Moved")}</strong>,
+              cancelled: <strong>{t("Cancelled")}</strong>,
+            },
+          )}
         </p>
       ) : null}
       <div className="grid grid-cols-3 gap-2">
         <ChoiceButton icon={CircleSlash} tone="danger" onClick={cancel} disabled={pending}>
-          {extra ? "Delete" : "Cancelled"}
+          {extra ? t("Delete") : t("Cancelled")}
         </ChoiceButton>
         <ChoiceButton icon={ArrowRightLeft} tone="warning" onClick={() => setStep("move")} disabled={pending}>
-          Moved
+          {t("Moved")}
         </ChoiceButton>
         <ChoiceButton icon={MapPin} onClick={() => setStep("room")} disabled={pending}>
-          Room only
+          {t("Room only")}
         </ChoiceButton>
       </div>
       {props.changed && props.weekly ? (
         <Button variant="ghost" size="sm" className="w-fit" onClick={restore} disabled={pending}>
           <RotateCcw aria-hidden />
-          Back to the usual time and room
+          {t("Back to the usual time and room")}
         </Button>
       ) : null}
     </section>
@@ -160,13 +172,13 @@ export function ClassActions(props: Props) {
         <>
           <section aria-labelledby="attendance-h" className="flex flex-col gap-2">
             <h3 id="attendance-h" className="font-medium text-sm">
-              Did you attend?
+              {t("Did you attend?")}
             </h3>
             <AttendanceQuick occurrenceKey={props.occurrenceKey} initial={props.attendance} label={props.label} />
           </section>
           <details className="group rounded-xl border border-border-soft">
             <summary className="cursor-pointer list-none rounded-xl px-4 py-3 text-muted-foreground text-sm hover:bg-accent/50">
-              Something changed? Cancelled, moved or another room
+              {t("Something changed? Cancelled, moved or another room")}
             </summary>
             <div className="px-4 pb-4">{changed}</div>
           </details>
@@ -177,7 +189,7 @@ export function ClassActions(props: Props) {
 
       {error ? (
         <p role="alert" className="text-destructive text-sm">
-          {error}
+          {tl(error)}
         </p>
       ) : null}
     </div>
@@ -214,6 +226,7 @@ function ChoiceButton({
 
 /** A cancelled class's note ("Dr. Siti unwell"). Saved on blur or Enter. */
 function NoteField({ occurrenceKey, note }: Props) {
+  const t = useT();
   const [value, setValue] = useState(note ?? "");
   const [saved, setSaved] = useState(note ?? "");
   const [pending, start] = useTransition();
@@ -227,12 +240,12 @@ function NoteField({ occurrenceKey, note }: Props) {
   };
   return (
     <div className="grid gap-1.5">
-      <Label htmlFor={id}>Note (optional)</Label>
+      <Label htmlFor={id}>{t("Note (optional)")}</Label>
       <Input
         id={id}
         value={value}
         maxLength={200}
-        placeholder="e.g. Lecturer unwell"
+        placeholder={t("e.g. Lecturer unwell")}
         onChange={(e) => setValue(e.target.value)}
         onBlur={save}
         onKeyDown={(e) => {
@@ -243,7 +256,7 @@ function NoteField({ occurrenceKey, note }: Props) {
         }}
       />
       <p className="text-muted-foreground text-xs" aria-live="polite">
-        {pending ? "Saving…" : value.trim() !== saved.trim() ? "Press Enter to save" : saved ? "Saved" : ""}
+        {pending ? t("Saving…") : value.trim() !== saved.trim() ? t("Press Enter to save") : saved ? t("Saved") : ""}
       </p>
     </div>
   );
@@ -257,6 +270,7 @@ function ChangeForm(
     onSaved: (message: string, previous: ChangeRow | null, scope: Scope) => void;
   },
 ) {
+  const { t, tl } = useI18n();
   const duration = toMinutes(props.endTime) - toMinutes(props.startTime);
   const [date, setDate] = useState(props.date);
   const [startTime, setStartTime] = useState(props.startTime);
@@ -306,9 +320,11 @@ function ChangeForm(
         setError(result.fieldErrors ? null : result.error);
         return;
       }
-      const what = move ? "Moved" : "Room changed for";
+      const what = move ? "Moved {name}" : "Room changed for {name}";
       props.onSaved(
-        scope === "forward" ? `Updated the weekly time for ${props.label.split(",")[0]}` : `${what} ${props.label}`,
+        scope === "forward"
+          ? t("Updated the weekly time for {name}", { name: props.label.split(",")[0] })
+          : t(what, { name: props.label }),
         result.data.previous,
         scope,
       );
@@ -331,11 +347,11 @@ function ChangeForm(
 
   return (
     <form onSubmit={submit} className="flex flex-col gap-4" noValidate>
-      <h3 className="font-medium text-sm">{move ? "Moved to" : "Room for this class"}</h3>
+      <h3 className="font-medium text-sm">{move ? t("Moved to") : t("Room for this class")}</h3>
       {move ? (
         <>
           <div className="grid gap-1.5">
-            <Label htmlFor={ids.date}>Date</Label>
+            <Label htmlFor={ids.date}>{t("Date")}</Label>
             <Input
               id={ids.date}
               type="date"
@@ -345,15 +361,15 @@ function ChangeForm(
               className="w-fit"
             />
             <div className="flex flex-wrap gap-1.5">
-              {chip("Same day", props.date)}
-              {chip("Day after", addDays(props.date, 1))}
-              {chip("Next week", addDays(props.date, 7))}
+              {chip(t("Same day"), props.date)}
+              {chip(t("Day after"), addDays(props.date, 1))}
+              {chip(t("Next week"), addDays(props.date, 7))}
             </div>
-            {errors.date ? <p className="text-destructive text-xs">{errors.date}</p> : null}
+            {errors.date ? <p className="text-destructive text-xs">{tl(errors.date)}</p> : null}
           </div>
           <div className="grid grid-cols-2 gap-3 sm:w-fit">
             <div className="grid gap-1.5">
-              <Label htmlFor={ids.start}>Starts</Label>
+              <Label htmlFor={ids.start}>{t("Starts")}</Label>
               <Input
                 id={ids.start}
                 type="time"
@@ -366,7 +382,7 @@ function ChangeForm(
               />
             </div>
             <div className="grid gap-1.5">
-              <Label htmlFor={ids.end}>Ends</Label>
+              <Label htmlFor={ids.end}>{t("Ends")}</Label>
               <Input
                 id={ids.end}
                 type="time"
@@ -382,19 +398,19 @@ function ChangeForm(
           </div>
           {errors.endTime ? (
             <p id={`${ids.end}-error`} className="text-destructive text-xs">
-              {errors.endTime}
+              {tl(errors.endTime)}
             </p>
           ) : null}
           {clashes.length > 0 ? (
             <p className="flex items-center gap-1.5 text-sm text-warning" role="status">
               <TriangleAlert aria-hidden className="size-4 shrink-0" />
-              Overlaps with {clashes.join(", ")}
+              {t("Overlaps with {names}", { names: clashes.join(", ") })}
             </p>
           ) : null}
         </>
       ) : null}
       <div className="grid gap-1.5">
-        <Label htmlFor={ids.room}>{move ? "Room (optional)" : "Room"}</Label>
+        <Label htmlFor={ids.room}>{move ? t("Room (optional)") : t("Room")}</Label>
         <Input
           id={ids.room}
           value={room}
@@ -405,17 +421,17 @@ function ChangeForm(
           className="sm:w-64"
         />
         {props.usualRoom && room !== props.usualRoom ? (
-          <p className="text-muted-foreground text-xs">Usually {props.usualRoom}</p>
+          <p className="text-muted-foreground text-xs">{t("Usually {when}", { when: props.usualRoom ?? "" })}</p>
         ) : null}
       </div>
 
       {props.weekly ? (
         <fieldset className="flex flex-col gap-1.5">
-          <legend className="mb-1.5 font-medium text-sm">Applies to</legend>
+          <legend className="mb-1.5 font-medium text-sm">{t("Applies to")}</legend>
           {(
             [
-              ["once", "This week only"],
-              ["forward", "Every week from now on"],
+              ["once", t("This week only")],
+              ["forward", t("Every week from now on")],
             ] as const
           ).map(([value, text]) => (
             <label key={value} className="flex items-center gap-2 text-sm">
@@ -432,7 +448,7 @@ function ChangeForm(
           ))}
           {scope === "forward" ? (
             <p className="text-muted-foreground text-xs">
-              Changes the weekly class time from this date. Earlier weeks stay as they were.
+              {t("Changes the weekly class time from this date. Earlier weeks stay as they were.")}
             </p>
           ) : null}
         </fieldset>
@@ -440,15 +456,15 @@ function ChangeForm(
 
       {error ? (
         <p role="alert" className="text-destructive text-sm">
-          {error}
+          {tl(error)}
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save"}
+          {pending ? t("Saving…") : t("Save")}
         </Button>
         <Button type="button" variant="ghost" onClick={props.onBack}>
-          Back
+          {t("Back")}
         </Button>
       </div>
     </form>

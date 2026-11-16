@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Pill } from "@/components/ui/pill";
+import { useI18n, useT } from "@/lib/i18n/client";
 import { createCourse, updateCourse } from "../actions";
 import type { Course } from "../schema";
 import { ColorField } from "./color-field";
@@ -24,6 +25,7 @@ type Props = { semesters: string[] } & (
  * A live preview of the course card sits on top and the sheet takes the colour.
  */
 export function CourseForm(props: Props) {
+  const { t, tl } = useI18n();
   const [state, action, pending] = useActionState(props.mode === "create" ? createCourse : updateCourse, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const initial: Record<string, string | null | undefined> = props.course
@@ -64,6 +66,7 @@ export function CourseForm(props: Props) {
           aria-invalid={errors[name] ? true : undefined}
           aria-describedby={describedBy(name, errors[name], hint)}
           {...input}
+          placeholder={input.placeholder ? tl(input.placeholder) : undefined}
         />
       </Field>
     );
@@ -79,7 +82,7 @@ export function CourseForm(props: Props) {
         if (["name", "code", "credits", "room"].includes(el.name)) setPreview((p) => ({ ...p, [el.name]: el.value }));
       }}
     >
-      <SheetFormBridge state={state} message={props.mode === "create" ? "Course added" : "Course saved"} />
+      <SheetFormBridge state={state} message={props.mode === "create" ? t("Course added") : t("Course saved")} />
       {props.mode === "edit" ? <input type="hidden" name="id" value={props.course.id} /> : null}
 
       <CoursePreview {...preview} />
@@ -146,7 +149,7 @@ export function CourseForm(props: Props) {
 
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : props.mode === "create" ? "Add course" : "Save changes"}
+          {pending ? t("Saving…") : props.mode === "create" ? t("Add course") : t("Save changes")}
         </Button>
         <CancelButton href={cancelHref} />
       </FormFooter>
@@ -156,6 +159,7 @@ export function CourseForm(props: Props) {
 
 /** The course card as it will look (same tint, code chip, serif name, credits). */
 function CoursePreview({ name, code, credits, room, color }: Record<string, string>) {
+  const t = useT();
   return (
     <div
       aria-hidden
@@ -164,15 +168,19 @@ function CoursePreview({ name, code, credits, room, color }: Record<string, stri
     >
       <span className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
       <span className="flex items-center gap-2">
-        {code ? <Pill tone="course">{code}</Pill> : <span className="text-muted-foreground text-xs">Preview</span>}
+        {code ? (
+          <Pill tone="course">{code}</Pill>
+        ) : (
+          <span className="text-muted-foreground text-xs">{t("Preview")}</span>
+        )}
       </span>
       <span className="font-display font-medium text-xl leading-tight">
-        {name || <span className="text-muted-foreground">Course name</span>}
+        {name || <span className="text-muted-foreground">{t("Course name")}</span>}
       </span>
       <span className="flex flex-wrap gap-x-3 text-muted-foreground text-xs">
         <span className="inline-flex items-center gap-1">
           <CalendarRange className="size-3.5" />
-          {Number(credits) > 0 ? `${credits} SKS` : "Not graded"}
+          {Number(credits) > 0 ? t("{n} SKS", { n: credits }) : t("Not graded")}
         </span>
         {room ? (
           <span className="inline-flex items-center gap-1">
@@ -181,7 +189,8 @@ function CoursePreview({ name, code, credits, room, color }: Record<string, stri
           </span>
         ) : null}
         <span className="inline-flex items-center gap-1">
-          <ListTodo className="size-3.5" />0 open tasks
+          <ListTodo className="size-3.5" />
+          {t("{n} open tasks", { n: 0 })}
         </span>
       </span>
     </div>

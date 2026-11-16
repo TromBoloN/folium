@@ -1,7 +1,11 @@
+"use client";
+
 import { CheckCircle2, MapPin, Moon } from "lucide-react";
 import Link from "next/link";
 import { ChangeChip } from "@/features/schedule/components/change-chips";
 import { formatTime } from "@/features/timetable/logic";
+import { useT } from "@/lib/i18n/client";
+import { plural } from "@/lib/i18n/core";
 import type { HeroClass } from "./next-up-hero";
 
 type Props = {
@@ -19,21 +23,31 @@ type Props = {
  * empty time axis. No hooks, so both the server widget and the live timeline use it.
  */
 export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props) {
-  const time = (t: string) => formatTime(t, timeFormat);
+  const t = useT();
+  const time = (value: string) => formatTime(value, timeFormat);
   return (
     <div className="flex flex-1 flex-col gap-4">
       <p className="flex items-center gap-2 text-sm">
         {past.length > 0 ? (
           <>
             <CheckCircle2 aria-hidden className="size-4 text-primary" />
-            Done for today: {past.length === 1 ? "1 class" : `${past.length} classes`}.
+            {t(plural(past.length, "Done for today: 1 class.", "Done for today: {n} classes."), { n: past.length })}
           </>
         ) : (
           <>
             <Moon aria-hidden className="size-4 text-muted-foreground" />
             {cancelled.length > 0
-              ? `No classes today: ${cancelled.length === 1 ? "1 was" : `${cancelled.length} were`} cancelled.`
-              : "No classes today."}
+              ? t(
+                  plural(
+                    cancelled.length,
+                    "No classes today: 1 was cancelled.",
+                    "No classes today: {n} were cancelled.",
+                  ),
+                  {
+                    n: cancelled.length,
+                  },
+                )
+              : t("No classes today.")}
           </>
         )}
       </p>
@@ -52,7 +66,7 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
               <span className={c.cancelled ? "line-through" : undefined}>
                 {c.code ?? c.name} · {time(c.startTime)}
               </span>
-              {c.cancelled ? <span className="sr-only"> (cancelled)</span> : null}
+              {c.cancelled ? <span className="sr-only">{t(" (cancelled)")}</span> : null}
             </li>
           ))}
         </ul>
@@ -60,10 +74,10 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
 
       <section aria-labelledby="tomorrow-classes" className="flex flex-col gap-2">
         <h3 id="tomorrow-classes" className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-          Tomorrow
+          {t("Tomorrow")}
         </h3>
         {tomorrow.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No classes tomorrow either.</p>
+          <p className="text-muted-foreground text-sm">{t("No classes tomorrow either.")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {tomorrow.map((c) => (
@@ -98,7 +112,7 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
         href="/courses?view=day"
         className="mt-auto w-fit text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
       >
-        See the week
+        {t("See the week")}
       </Link>
     </div>
   );

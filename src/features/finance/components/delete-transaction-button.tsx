@@ -3,6 +3,7 @@
 import { Trash2 } from "lucide-react";
 import { useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { useT } from "@/lib/i18n/client";
 import { deleteTransaction, restoreTransaction } from "../actions/transactions";
 
 /** Hard delete at once; the toast's Undo (about 8 seconds) re-inserts the same row with the same id. */
@@ -16,11 +17,12 @@ export function DeleteTransactionButton({
   onDeleted?: () => void;
 }) {
   const toast = useToast();
+  const t = useT();
   const [pending, start] = useTransition();
   return (
     <button
       type="button"
-      aria-label={`Delete ${label}`}
+      aria-label={t("Delete {name}", { name: label })}
       disabled={pending}
       onClick={() =>
         start(async () => {
@@ -31,10 +33,10 @@ export function DeleteTransactionButton({
           }
           onDeleted?.();
           toast({
-            message: `Deleted: ${label}`,
+            message: t("Deleted: {title}", { title: label }),
             duration: 8000,
             action: {
-              label: "Undo",
+              label: t("Undo"),
               onClick: async () => {
                 const restored = await restoreTransaction(result.data.previous);
                 if (!restored.ok) toast({ message: restored.error, tone: "error" });

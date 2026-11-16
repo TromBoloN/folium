@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewBreakScreen } from "@/features/schedule/components/schedule-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add a break" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add a break") };
+}
 
 export default function NewBreakPage({ searchParams }: PageProps<"/courses/breaks/new">) {
   return (

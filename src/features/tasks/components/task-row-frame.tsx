@@ -3,6 +3,7 @@
 import { Check, Sunrise } from "lucide-react";
 import { useRef, useState, ViewTransition } from "react";
 import { Input } from "@/components/ui/input";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import type { TaskStatus } from "../schema";
 import { type MenuTask, TaskMenu } from "./task-menu";
@@ -29,6 +30,7 @@ const SWIPE = 88;
  */
 export function TaskRowFrame({ task, overdue, checkbox, content, stripe }: Props) {
   const ops = useTaskOps();
+  const t = useT();
   const [renaming, setRenaming] = useState(false);
   const [dx, setDx] = useState(0);
   const swipe = useRef<{ x: number; y: number; active: boolean } | null>(null);
@@ -61,7 +63,8 @@ export function TaskRowFrame({ task, overdue, checkbox, content, stripe }: Props
     swipe.current = null;
     if (!s?.active) return;
     if (dx > SWIPE && !done) ops.setStatus(task, "done");
-    else if (dx < -SWIPE) ops.patch({ id: task.id, reschedule: "tomorrow" }, `Moved to tomorrow: ${task.title}`);
+    else if (dx < -SWIPE)
+      ops.patch({ id: task.id, reschedule: "tomorrow" }, t("Moved to tomorrow: {title}", { title: task.title }));
     setDx(0);
     // Swallow the click that follows the swipe, so it doesn't open the task.
     swallowClick.current = true;
@@ -84,11 +87,11 @@ export function TaskRowFrame({ task, overdue, checkbox, content, stripe }: Props
           >
             {dx > 0 ? (
               <span className={cn("flex items-center gap-2", dx < SWIPE && "opacity-60")}>
-                <Check className="size-4" /> {done ? "Already done" : "Done"}
+                <Check className="size-4" /> {done ? t("Already done") : t("Done")}
               </span>
             ) : (
               <span className={cn("flex items-center gap-2", -dx < SWIPE && "opacity-60")}>
-                Tomorrow <Sunrise className="size-4" />
+                {t("Tomorrow")} <Sunrise className="size-4" />
               </span>
             )}
           </div>
@@ -117,8 +120,8 @@ export function TaskRowFrame({ task, overdue, checkbox, content, stripe }: Props
             {renaming ? <RenameField task={task} onDone={() => setRenaming(false)} /> : content}
             {overdue && !done && !renaming ? (
               <div className="flex gap-1.5 pb-2">
-                <QuickMove label="Today" task={task} choice="today" />
-                <QuickMove label="Tomorrow" task={task} choice="tomorrow" />
+                <QuickMove label={t("Today")} task={task} choice="today" />
+                <QuickMove label={t("Tomorrow")} task={task} choice="tomorrow" />
               </div>
             ) : null}
           </div>
@@ -131,16 +134,20 @@ export function TaskRowFrame({ task, overdue, checkbox, content, stripe }: Props
 
 function QuickMove({ label, task, choice }: { label: string; task: MenuTask; choice: "today" | "tomorrow" }) {
   const ops = useTaskOps();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   return (
     <button
       type="button"
       disabled={busy}
-      aria-label={`Move “${task.title}” to ${label.toLowerCase()}`}
+      aria-label={t("Move “{title}” to {day}", { title: task.title, day: label.toLowerCase() })}
       onClick={() => {
         setBusy(true);
         ops
-          .patch({ id: task.id, reschedule: choice }, `Moved to ${label.toLowerCase()}: ${task.title}`)
+          .patch(
+            { id: task.id, reschedule: choice },
+            t("Moved to {day}: {title}", { day: label.toLowerCase(), title: task.title }),
+          )
           .finally(() => setBusy(false));
       }}
       className="rounded-full border border-border-soft bg-surface-1 px-2.5 py-1 font-medium text-xs transition-colors hover:border-primary hover:bg-accent disabled:opacity-60"
@@ -152,16 +159,17 @@ function QuickMove({ label, task, choice }: { label: string; task: MenuTask; cho
 
 function RenameField({ task, onDone }: { task: MenuTask; onDone: () => void }) {
   const ops = useTaskOps();
+  const t = useT();
   const save = (value: string) => {
     const title = value.trim();
     onDone();
-    if (title && title !== task.title) ops.patch({ id: task.id, title }, `Renamed to “${title}”`);
+    if (title && title !== task.title) ops.patch({ id: task.id, title }, t("Renamed to “{title}”", { title }));
   };
   return (
     <div className="py-1.5">
       <Input
         defaultValue={task.title}
-        aria-label={`Rename “${task.title}”`}
+        aria-label={t("Rename “{title}”", { title: task.title })}
         autoFocus
         maxLength={200}
         onFocus={(e) => e.currentTarget.select()}

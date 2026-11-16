@@ -1,4 +1,5 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
+import { EN, type I18n } from "@/lib/i18n/core";
 import { type Chip, durationLabel, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
 import {
   buildSchedule,
@@ -88,6 +89,7 @@ export type WeekOptions = {
   nowMinute?: number;
   /** Attendance marks by occurrence key, for the quick attended/missed control. */
   marks?: ReadonlyMap<string, AttendanceStatus>;
+  i18n?: I18n;
 };
 
 /** The dates the week containing `anchor` covers: what to load before `buildWeek`. */
@@ -100,20 +102,22 @@ function courseTitle(o: Pick<Occurrence, "course">) {
   return o.course.code ?? o.course.name;
 }
 
-function weekLabel(first: CivilDate, last: CivilDate): string {
+function weekLabel(first: CivilDate, last: CivilDate, intl: string): string {
   const sameYear = first.slice(0, 4) === last.slice(0, 4);
   const sameMonth = sameYear && first.slice(5, 7) === last.slice(5, 7);
   if (sameMonth)
-    return `${formatDate(first, { day: "numeric" })}–${formatDate(last, { day: "numeric", month: "short", year: "numeric" })}`;
+    return `${formatDate(first, { day: "numeric" }, intl)}–${formatDate(last, { day: "numeric", month: "short", year: "numeric" }, intl)}`;
   const start = formatDate(
     first,
     sameYear ? { day: "numeric", month: "short" } : { day: "numeric", month: "short", year: "numeric" },
+    intl,
   );
-  return `${start} – ${formatDate(last, { day: "numeric", month: "short", year: "numeric" })}`;
+  return `${start} – ${formatDate(last, { day: "numeric", month: "short", year: "numeric" }, intl)}`;
 }
 
 /** One week of the schedule, laid out for the week grid and the by-day list. */
 export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
+  const i18n = options.i18n ?? EN;
   const dates = weekDates(options.anchor, options.weekStart);
   const occurrences = buildSchedule(input, { from: dates[0], to: dates[6] });
   const nowMinute = options.nowMinute ?? 0;
@@ -137,7 +141,7 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
       return {
         code: o.course.code,
         lecturer: o.course.lecturer ?? null,
-        durationLabel: durationLabel(o),
+        durationLabel: durationLabel(o, i18n),
         canMark,
         attendance: canMark ? (options.marks?.get(o.key) ?? null) : null,
         id: o.key,
@@ -153,7 +157,7 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
         lanes,
         overlapsWith: [...new Set(others.map(courseTitle))],
         status: o.status,
-        chips: occurrenceChips(o, options.timeFormat),
+        chips: occurrenceChips(o, options.timeFormat, i18n),
         note: o.note,
         meetingUrl: o.meetingUrl,
         past,
@@ -167,16 +171,16 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
           title: courseTitle(o),
           startMinute: toMinutes(o.startTime),
           endMinute: toMinutes(o.endTime),
-          movedToLabel: o.movedTo ? placementLabel(o.movedTo, options.timeFormat, date) : "",
+          movedToLabel: o.movedTo ? placementLabel(o.movedTo, options.timeFormat, date, i18n) : "",
           color: o.course.color,
         }),
       );
     const brk = input.breaks.find((b) => date >= b.startsOn && date <= b.endsOn);
     return {
       date,
-      shortLabel: formatDate(date, { weekday: "short" }),
-      dayNumber: formatDate(date, { day: "numeric" }),
-      fullLabel: formatDate(date, { weekday: "long", day: "numeric", month: "long" }),
+      shortLabel: formatDate(date, { weekday: "short" }, i18n.intl),
+      dayNumber: formatDate(date, { day: "numeric" }, i18n.intl),
+      fullLabel: formatDate(date, { weekday: "long", day: "numeric", month: "long" }, i18n.intl),
       isToday: date === options.today,
       items,
       ghosts,
@@ -189,7 +193,7 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
 
   return {
     days,
-    label: weekLabel(dates[0], dates[6]),
+    label: weekLabel(dates[0], dates[6], i18n.intl),
     previous: addDays(dates[0], -7),
     next: addDays(dates[0], 7),
     containsToday: dates.includes(options.today),

@@ -1,5 +1,6 @@
 import { CalendarClock } from "lucide-react";
 import { Pill, type PillTone } from "@/components/ui/pill";
+import { Tr } from "@/lib/i18n/client";
 import type { DueState } from "../due";
 
 const TONE: Record<DueState, PillTone> = {
@@ -16,7 +17,11 @@ export function DueLabel({ label, state }: { label: string | null; state: DueSta
   return (
     <Pill tone={TONE[state]}>
       <CalendarClock aria-hidden />
-      {state === "overdue" ? <span className="sr-only">Overdue: </span> : null}
+      {state === "overdue" ? (
+        <span className="sr-only">
+          <Tr k="Overdue:" />{" "}
+        </span>
+      ) : null}
       {label}
     </Pill>
   );

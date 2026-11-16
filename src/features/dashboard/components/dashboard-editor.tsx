@@ -23,6 +23,7 @@ import { ArrowDown, ArrowUp, GripVertical } from "lucide-react";
 import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import { TrL, useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { saveDashboardLayout } from "../actions";
 import { moveItem, type ResolvedLayout } from "../layout";
@@ -37,6 +38,7 @@ type Props = { widgets: WidgetMeta[]; layout: ResolvedLayout; defaultOrder: stri
  * buttons do the same in one tap. Nothing is saved until "Save layout".
  */
 export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
+  const t = useT();
   const [order, setOrder] = useState(layout.order);
   const [hidden, setHidden] = useState<string[]>(layout.hidden);
   const [state, action, pending] = useActionState(saveDashboardLayout, null);
@@ -53,16 +55,20 @@ export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
   );
 
   const announcements: Announcements = {
-    onDragStart: ({ active }) => `Picked up ${title(active.id)}.`,
+    onDragStart: ({ active }) => t("Picked up {name}.", { name: title(active.id) }),
     onDragOver: ({ active, over }) =>
       over
-        ? `${title(active.id)} is now at position ${order.indexOf(String(over.id)) + 1} of ${order.length}.`
+        ? t("{name} is now at position {n} of {total}.", {
+            name: title(active.id),
+            n: order.indexOf(String(over.id)) + 1,
+            total: order.length,
+          })
         : undefined,
     onDragEnd: ({ active, over }) =>
       over
-        ? `${title(active.id)} dropped at position ${order.indexOf(String(over.id)) + 1}.`
-        : `${title(active.id)} dropped.`,
-    onDragCancel: ({ active }) => `Moving ${title(active.id)} cancelled.`,
+        ? t("{name} dropped at position {n}.", { name: title(active.id), n: order.indexOf(String(over.id)) + 1 })
+        : t("{name} dropped.", { name: title(active.id) }),
+    onDragCancel: ({ active }) => t("Moving {name} cancelled.", { name: title(active.id) }),
   };
 
   const onDragEnd = ({ active, over }: DragEndEvent) => {
@@ -89,8 +95,9 @@ export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
         accessibility={{
           announcements,
           screenReaderInstructions: {
-            draggable:
+            draggable: t(
               "To reorder, press Space or Enter to pick up, use the arrow keys to move, then press Space or Enter to drop, or Escape to cancel.",
+            ),
           },
         }}
       >
@@ -113,16 +120,16 @@ export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
 
       {state && !state.ok ? (
         <p role="alert" className="text-destructive text-sm">
-          {state.error}
+          <TrL text={state.error} />
         </p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : "Save layout"}
+          {pending ? t("Saving…") : t("Save layout")}
         </Button>
         <Button asChild variant="ghost">
-          <Link href="/">Cancel</Link>
+          <Link href="/">{t("Cancel")}</Link>
         </Button>
         <Button
           type="button"
@@ -133,7 +140,7 @@ export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
             setHidden([]);
           }}
         >
-          Reset to default
+          {t("Reset to default")}
         </Button>
       </div>
     </form>
@@ -150,6 +157,7 @@ type RowProps = {
 };
 
 function SortableRow({ widget, visible, first, last, onToggle, onMove }: RowProps) {
+  const t = useT();
   const { attributes, listeners, setNodeRef, setActivatorNodeRef, transform, transition, isDragging } = useSortable({
     id: widget.id,
   });
@@ -166,7 +174,7 @@ function SortableRow({ widget, visible, first, last, onToggle, onMove }: RowProp
       <button
         ref={setActivatorNodeRef}
         type="button"
-        aria-label={`Reorder ${widget.title}`}
+        aria-label={t("Reorder {name}", { name: widget.title })}
         className="flex size-9 shrink-0 cursor-grab touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring active:cursor-grabbing"
         {...attributes}
         {...listeners}
@@ -179,7 +187,7 @@ function SortableRow({ widget, visible, first, last, onToggle, onMove }: RowProp
           checked={visible}
           onChange={(e) => onToggle(e.target.checked)}
           className="size-4 shrink-0 accent-primary"
-          aria-label={`Show ${widget.title}`}
+          aria-label={t("Show {name}", { name: widget.title })}
         />
         <span className="flex min-w-0 flex-col">
           <span className={cn("font-medium", !visible && "text-muted-foreground")}>{widget.title}</span>
@@ -193,7 +201,7 @@ function SortableRow({ widget, visible, first, last, onToggle, onMove }: RowProp
           size="icon"
           onClick={() => onMove("up")}
           disabled={first}
-          aria-label={`Move ${widget.title} up`}
+          aria-label={t("Move {name} up", { name: widget.title })}
         >
           <ArrowUp aria-hidden />
         </Button>
@@ -203,7 +211,7 @@ function SortableRow({ widget, visible, first, last, onToggle, onMove }: RowProp
           size="icon"
           onClick={() => onMove("down")}
           disabled={last}
-          aria-label={`Move ${widget.title} down`}
+          aria-label={t("Move {name} down", { name: widget.title })}
         >
           <ArrowDown aria-hidden />
         </Button>

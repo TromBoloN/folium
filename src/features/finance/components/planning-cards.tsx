@@ -1,6 +1,8 @@
 import { AlertTriangle, CalendarClock, Gauge, PiggyBank } from "lucide-react";
 import Link from "next/link";
 import { formatDate } from "@/lib/dates";
+import { plural } from "@/lib/i18n/core";
+import { getI18n, getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import type { BudgetProgress } from "../lib/budgets";
 import { formatIdr } from "../lib/format-idr";
@@ -53,7 +55,7 @@ function ForecastChart({ points }: { points: { date: string; balance: bigint }[]
 }
 
 /** "Safe to spend": per day until payday, after the bills already coming, plus the 30-day forecast. */
-export function SafeToSpendCard({
+export async function SafeToSpendCard({
   safe,
   points,
   firstNegative,
@@ -64,7 +66,8 @@ export function SafeToSpendCard({
   firstNegative: string | null;
   today: string;
 }) {
-  const payday = formatDate(safe.payday, { weekday: "short", day: "numeric", month: "short" });
+  const { t, intl } = await getI18n();
+  const payday = formatDate(safe.payday, { weekday: "short", day: "numeric", month: "short" }, intl);
   return (
     <section
       aria-labelledby="safe-h"
@@ -74,44 +77,59 @@ export function SafeToSpendCard({
       <div className={head}>
         <h2 id="safe-h" className="flex items-center gap-2 font-medium">
           <Gauge aria-hidden className="size-4 text-muted-foreground" />
-          Safe to spend
+          {t("Safe to spend")}
         </h2>
         <Link href="/money/recurring" className="text-muted-foreground text-xs hover:text-foreground hover:underline">
-          Bills
+          {t("Bills")}
         </Link>
       </div>
       {safe.perDay !== null ? (
         <p className="font-display font-medium text-3xl tabular-nums">
           {formatIdr(safe.perDay)}
-          <span className="font-normal font-sans text-base text-muted-foreground"> a day</span>
+          <span className="font-normal font-sans text-base text-muted-foreground">{t(" a day")}</span>
         </p>
       ) : (
         <p className="font-display font-medium text-3xl text-money-out tabular-nums">
-          Over by {formatIdr(safe.over ?? 0n)}
+          {t("Over by {amount}", { amount: formatIdr(safe.over ?? 0n) })}
         </p>
       )}
       <p className="text-muted-foreground text-sm">
-        For {safe.days} {safe.days === 1 ? "day" : "days"} until{" "}
-        {safe.paydayFromIncome ? "your next income" : "month end"} ({payday}
-        ), after {formatIdr(safe.outflows)} of bills. {formatIdr(safe.liquid)} in spendable accounts.
+        {t(
+          plural(
+            safe.days,
+            "For 1 day until {until} ({date}), after {bills} of bills. {liquid} in spendable accounts.",
+            "For {n} days until {until} ({date}), after {bills} of bills. {liquid} in spendable accounts.",
+          ),
+          {
+            n: safe.days,
+            until: safe.paydayFromIncome ? t("your next income") : t("month end"),
+            date: payday,
+            bills: formatIdr(safe.outflows),
+            liquid: formatIdr(safe.liquid),
+          },
+        )}
       </p>
       <ForecastChart points={points} />
       {firstNegative ? (
         <p role="note" className="flex items-center gap-2 font-medium text-money-out text-sm">
           <AlertTriangle aria-hidden className="size-4" />
           {firstNegative === today
-            ? "Planned bills already take you below zero."
-            : `Below zero on ${formatDate(firstNegative, { weekday: "short", day: "numeric", month: "short" })} if nothing changes.`}
+            ? t("Planned bills already take you below zero.")
+            : t("Below zero on {date} if nothing changes.", {
+                date: formatDate(firstNegative, { weekday: "short", day: "numeric", month: "short" }, intl),
+              })}
         </p>
       ) : (
-        <p className="text-muted-foreground text-xs">Next 30 days with planned bills and income: never below zero.</p>
+        <p className="text-muted-foreground text-xs">
+          {t("Next 30 days with planned bills and income: never below zero.")}
+        </p>
       )}
     </section>
   );
 }
 
 /** Overdue and this week's bills with "Mark paid". */
-export function UpcomingBillsCard({
+export async function UpcomingBillsCard({
   overdue,
   soon,
   today,
@@ -122,6 +140,7 @@ export function UpcomingBillsCard({
   today: string;
   categories: Category[];
 }) {
+  const t = await getT();
   const bills = [...overdue, ...soon].slice(0, 5);
   return (
     <section
@@ -132,14 +151,14 @@ export function UpcomingBillsCard({
       <div className={cn(head, "px-5 pt-5 pb-2")}>
         <h2 id="bills-h" className="flex items-center gap-2 font-medium">
           <CalendarClock aria-hidden className="size-4 text-muted-foreground" />
-          Upcoming bills
+          {t("Upcoming bills")}
         </h2>
         <Link href="/money/recurring" className="text-muted-foreground text-xs hover:text-foreground hover:underline">
-          All recurring
+          {t("All recurring")}
         </Link>
       </div>
       {bills.length === 0 ? (
-        <p className="px-5 pb-5 text-muted-foreground text-sm">Nothing due in the next 7 days.</p>
+        <p className="px-5 pb-5 text-muted-foreground text-sm">{t("Nothing due in the next 7 days.")}</p>
       ) : (
         <ul className="flex flex-col divide-y divide-border-soft">
           {bills.map((b) => (
@@ -152,7 +171,8 @@ export function UpcomingBillsCard({
 }
 
 /** The three budgets closest to their limit. */
-export function BudgetWatchCard({ items, month }: { items: BudgetProgress[]; month: string }) {
+export async function BudgetWatchCard({ items, month }: { items: BudgetProgress[]; month: string }) {
+  const t = await getT();
   return (
     <section
       aria-labelledby="watch-h"
@@ -162,20 +182,20 @@ export function BudgetWatchCard({ items, month }: { items: BudgetProgress[]; mon
       <div className={head}>
         <h2 id="watch-h" className="flex items-center gap-2 font-medium">
           <PiggyBank aria-hidden className="size-4 text-muted-foreground" />
-          Budgets
+          {t("Budgets")}
         </h2>
         <Link
           href={`/money/budgets?month=${month}`}
           className="text-muted-foreground text-xs hover:text-foreground hover:underline"
         >
-          All budgets
+          {t("All budgets")}
         </Link>
       </div>
       {items.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          No budgets this month.{" "}
+          {t("No budgets this month.")}{" "}
           <Link href="/money/budgets" className="font-medium text-primary underline underline-offset-2">
-            Set one
+            {t("Set one")}
           </Link>
         </p>
       ) : (

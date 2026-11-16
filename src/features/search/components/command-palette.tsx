@@ -28,6 +28,8 @@ import { useScheduleCommand } from "@/features/schedule/components/command-previ
 import { quickAddTask, removeTask } from "@/features/tasks/actions";
 import { ParsePreview } from "@/features/tasks/components/parse-preview";
 import { QUICK_ADD_HINT } from "@/features/tasks/parse";
+import { useI18n } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n/core";
 import { cn } from "@/lib/utils";
 import { type SearchResults, searchEverything } from "../actions";
 
@@ -43,7 +45,7 @@ type Item = {
   run: () => void;
 };
 
-const COMMANDS: { label: string; href: string; icon: LucideIcon; group: string }[] = [
+const COMMANDS: { label: MessageKey; href: string; icon: LucideIcon; group: MessageKey }[] = [
   { label: "Today", href: "/", icon: Sun, group: "Go to" },
   { label: "Money", href: "/money", icon: Wallet, group: "Go to" },
   { label: "All transactions", href: "/money/transactions", icon: Wallet, group: "Go to" },
@@ -68,6 +70,7 @@ const COMMANDS: { label: string; href: string; icon: LucideIcon; group: string }
  * pages. A combobox: arrows move, Enter runs, Escape closes.
  */
 export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteMode; onClose: () => void }) {
+  const { t: tr, tl } = useI18n();
   const [mode, setMode] = useState(initialMode);
   const [text, setText] = useState("");
   const [active, setActive] = useState(0);
@@ -89,7 +92,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
   const addMoney = () => {
     if (!moneyText?.trim()) return;
     if (!money.canSave) {
-      setError(money.draft?.errors[0] ?? "Add an amount and an account.");
+      setError(money.draft?.errors[0] ? tl(money.draft.errors[0]) : tr("Add an amount and an account."));
       return;
     }
     setError(null);
@@ -103,7 +106,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       toast({
         message,
         duration: 8000,
-        action: { label: "Undo", onClick: async () => void (await deleteTransaction(id)) },
+        action: { label: tr("Undo"), onClick: async () => void (await deleteTransaction(id)) },
       });
       router.refresh();
       close();
@@ -123,7 +126,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       toast({
         message,
         action: {
-          label: "Undo",
+          label: tr("Undo"),
           onClick: async () =>
             void (undo.kind === "break"
               ? await removeBreak(undo.id)
@@ -160,13 +163,13 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       form.set("title", text);
       const result = await quickAddTask(null, form);
       if (!result?.ok) {
-        setError(result?.error ?? "Couldn't add the task.");
+        setError(result?.error ? tl(result.error) : tr("Couldn't add the task."));
         return;
       }
       const id = result.result?.id;
       toast({
-        message: `Added: ${result.result?.title ?? text}`,
-        action: id ? { label: "Undo", onClick: async () => void (await removeTask(id)) } : undefined,
+        message: tr("Added: {title}", { title: result.result?.title ?? text }),
+        action: id ? { label: tr("Undo"), onClick: async () => void (await removeTask(id)) } : undefined,
       });
       close();
     });
@@ -184,23 +187,23 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       if (moneyText.trim())
         list.push({
           key: "money",
-          group: "Money",
-          label: money.canSave ? "Add transaction" : "Add an amount and an account",
+          group: tr("Money"),
+          label: money.canSave ? tr("Add transaction") : tr("Add an amount and an account"),
           icon: Wallet,
           run: addMoney,
         });
       return list;
     }
     const applyItem: Item | null = scheduleCommand
-      ? { key: "apply", group: "Schedule", label: scheduleCommand.summary, icon: ArrowRightLeft, run: apply }
+      ? { key: "apply", group: tr("Schedule"), label: scheduleCommand.summary, icon: ArrowRightLeft, run: apply }
       : null;
     if (mode === "add") {
       if (applyItem) list.push(applyItem);
       if (q)
         list.push({
           key: "add",
-          group: "Add",
-          label: applyItem ? `Add “${text.trim()}” as a task` : "Add task",
+          group: tr("Add"),
+          label: applyItem ? tr("Add “{title}” as a task", { title: text.trim() }) : tr("Add task"),
           icon: Plus,
           run: add,
         });
@@ -210,7 +213,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
     for (const t of results?.tasks ?? []) {
       list.push({
         key: `task-${t.id}`,
-        group: "Tasks",
+        group: tr("Tasks"),
         label: t.title,
         detail: t.course ? (t.course.code ?? t.course.name) : undefined,
         color: t.course?.color,
@@ -221,20 +224,29 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
     for (const c of results?.courses ?? []) {
       list.push({
         key: `course-${c.id}`,
-        group: "Courses",
+        group: tr("Courses"),
         label: c.name,
-        detail: [c.code, c.archived ? "archived" : null].filter(Boolean).join(" · ") || undefined,
+        detail: [c.code, c.archived ? tr("archived") : null].filter(Boolean).join(" · ") || undefined,
         color: c.color,
         icon: BookOpen,
         run: go(`/courses/${c.id}`),
       });
     }
     for (const cmd of COMMANDS) {
-      if (!q || cmd.label.toLowerCase().includes(q)) {
-        list.push({ key: cmd.href, group: cmd.group, label: cmd.label, icon: cmd.icon, run: go(cmd.href) });
+      // Matched in the user's language (and in English, so habits from before still work).
+      const label = tr(cmd.label);
+      if (!q || label.toLowerCase().includes(q) || cmd.label.toLowerCase().includes(q)) {
+        list.push({ key: cmd.href, group: tr(cmd.group), label, icon: cmd.icon, run: go(cmd.href) });
       }
     }
-    if (q) list.push({ key: "add", group: "Add", label: `Add “${text.trim()}” as a task`, icon: Plus, run: add });
+    if (q)
+      list.push({
+        key: "add",
+        group: tr("Add"),
+        label: tr("Add “{title}” as a task", { title: text.trim() }),
+        icon: Plus,
+        run: add,
+      });
     return list;
   })();
 
@@ -248,7 +260,9 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
         if (el && !el.open) el.showModal();
       }}
       onClose={onClose}
-      aria-label={mode === "add" ? "Add a task" : mode === "money" ? "Add a transaction" : "Search and commands"}
+      aria-label={
+        mode === "add" ? tr("Add a task") : mode === "money" ? tr("Add a transaction") : tr("Search and commands")
+      }
       className="toast-in mx-auto mt-[12vh] mb-auto w-[min(40rem,calc(100vw-2rem))] overflow-hidden rounded-tile border border-border-soft bg-popover p-0 text-popover-foreground shadow-raised backdrop:bg-foreground/35"
       onClick={(e) => {
         if (e.target === e.currentTarget) close(); // a click on the backdrop
@@ -282,7 +296,11 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
           aria-activedescendant={items.length ? optionId(safeActive) : undefined}
           aria-autocomplete="list"
           aria-label={
-            mode === "money" ? "New transaction" : mode === "add" ? "New task" : "Search tasks, courses and pages"
+            mode === "money"
+              ? tr("New transaction")
+              : mode === "add"
+                ? tr("New task")
+                : tr("Search tasks, courses and pages")
           }
           value={text}
           onChange={(e) => {
@@ -290,7 +308,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
             setActive(0);
           }}
           placeholder={
-            mode === "money" ? "gofood 32k #food @gopay" : mode === "add" ? "Add a task…" : "Search or jump to…"
+            mode === "money" ? "gofood 32k #food @gopay" : mode === "add" ? tr("Add a task…") : tr("Search or jump to…")
           }
           className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none placeholder:text-muted-foreground"
           autoComplete="off"
@@ -304,7 +322,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
           }}
           className="shrink-0 rounded-md px-2 py-1 text-muted-foreground text-xs hover:bg-accent hover:text-foreground"
         >
-          {mode === "search" ? "Add a task" : "Search instead"}
+          {mode === "search" ? tr("Add a task") : tr("Search instead")}
         </button>
       </div>
 
@@ -315,30 +333,36 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
           ) : (
             <p className="text-muted-foreground text-xs">
               {money.loading
-                ? "Loading your accounts…"
-                : "One line: amount, then #category, @account, “to dana” for a transfer, + for income, “kemarin” for yesterday."}
+                ? tr("Loading your accounts…")
+                : tr(
+                    "One line: amount, then #category, @account, “to dana” for a transfer, + for income, “kemarin” for yesterday.",
+                  )}
             </p>
           )}
           {error ? (
             <p role="alert" className="text-destructive text-xs">
-              {error}
+              {tl(error)}
             </p>
           ) : null}
         </div>
       ) : mode === "add" ? (
         <div className="flex min-h-12 flex-col gap-1 px-4 py-3">
           {scheduleCommand ? (
-            <p className="text-muted-foreground text-xs">Schedule change: press Enter to apply (you can undo it).</p>
+            <p className="text-muted-foreground text-xs">
+              {tr("Schedule change: press Enter to apply (you can undo it).")}
+            </p>
           ) : text ? (
             <ParsePreview text={text} />
           ) : (
             <p className="text-muted-foreground text-xs">
-              {QUICK_ADD_HINT}, change a class: “cancel physics tomorrow”, or start with $ for money: “$ gofood 32k”
+              {tr("{hint}, change a class: “cancel physics tomorrow”, or start with $ for money: “$ gofood 32k”", {
+                hint: tr(QUICK_ADD_HINT),
+              })}
             </p>
           )}
           {error ? (
             <p role="alert" className="text-destructive text-xs">
-              {error}
+              {tl(error)}
             </p>
           ) : null}
         </div>
@@ -346,11 +370,16 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
 
       {mode === "search" && error ? (
         <p role="alert" className="px-4 pt-3 text-destructive text-xs">
-          {error}
+          {tl(error)}
         </p>
       ) : null}
 
-      <div id={listId} role="listbox" aria-label="Results" className="max-h-[50vh] overflow-y-auto p-2 empty:hidden">
+      <div
+        id={listId}
+        role="listbox"
+        aria-label={tr("Results")}
+        className="max-h-[50vh] overflow-y-auto p-2 empty:hidden"
+      >
         {items.map((item, i) => {
           const showGroup = i === 0 || items[i - 1].group !== item.group;
           return (
@@ -382,7 +411,7 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
                 {item.detail ? <span className="shrink-0 text-muted-foreground text-xs">{item.detail}</span> : null}
                 {(item.key === "add" || item.key === "apply") && adding ? (
                   <span className="text-muted-foreground text-xs">
-                    {item.key === "apply" ? "Applying…" : "Adding…"}
+                    {item.key === "apply" ? tr("Applying…") : tr("Adding…")}
                   </span>
                 ) : null}
               </div>
@@ -392,16 +421,16 @@ export function CommandPalette({ initialMode, onClose }: { initialMode: PaletteM
       </div>
       <p className="flex flex-wrap gap-x-4 gap-y-1 border-border-soft border-t px-4 py-2 text-muted-foreground text-xs">
         <span>
-          <kbd className="font-sans">↑↓</kbd> move
+          <kbd className="font-sans">↑↓</kbd> {tr("move")}
         </span>
         <span>
-          <kbd className="font-sans">Enter</kbd> {mode === "add" ? "add" : "open"}
+          <kbd className="font-sans">Enter</kbd> {mode === "add" ? tr("add") : tr("open")}
         </span>
         <span>
-          <kbd className="font-sans">Esc</kbd> close
+          <kbd className="font-sans">Esc</kbd> {tr("close")}
         </span>
         <span className="ml-auto inline-flex items-center gap-1">
-          <CalendarClock aria-hidden className="size-3" /> N to add · Ctrl/⌘K to search
+          <CalendarClock aria-hidden className="size-3" /> {tr("N to add · Ctrl/⌘K to search")}
         </span>
       </p>
     </dialog>

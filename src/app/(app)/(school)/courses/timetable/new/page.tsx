@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewSlotScreen } from "@/features/timetable/components/slot-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add class time" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add class time") };
+}
 
 /** Add a class time from the timetable (any course). ?weekday=1-7&start=HH:MM prefill it. */
 export default function NewTimetableSlotPage({ searchParams }: PageProps<"/courses/timetable/new">) {

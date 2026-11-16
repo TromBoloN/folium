@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
 import { SectionTabs, tabClass } from "@/components/section-tabs";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/client";
 import { isMoneyManagePath, MONEY_TABS } from "@/lib/sections";
 import { cn } from "@/lib/utils";
 
@@ -20,6 +21,7 @@ const isTab = (path: string) => MONEY_TABS.some((t) => t.href === path.replace(/
  */
 export function MoneyChrome({ quick, children }: { quick: React.ReactNode; children: React.ReactNode }) {
   const pathname = usePathname();
+  const t = useT();
   if (isFormPage(pathname)) return children;
   const tab = isTab(pathname);
   return (
@@ -27,12 +29,12 @@ export function MoneyChrome({ quick, children }: { quick: React.ReactNode; child
       <div className="flex flex-col gap-4">
         {tab ? (
           <div className="flex flex-wrap items-center justify-between gap-3">
-            <h1 className="font-display font-medium text-3xl tracking-tight md:text-4xl">Money</h1>
+            <h1 className="font-display font-medium text-3xl tracking-tight md:text-4xl">{t("Money")}</h1>
             <div className="flex items-center gap-2">
               <Button asChild size="sm" variant="outline">
                 <Link href="/money/new">
                   <Plus aria-hidden />
-                  Add transaction
+                  {t("Add transaction")}
                 </Link>
               </Button>
               <ManageMenu />
@@ -46,7 +48,7 @@ export function MoneyChrome({ quick, children }: { quick: React.ReactNode; child
             isMoneyManagePath(pathname) ? (
               <span aria-current="page" className={cn(tabClass, "border-primary")}>
                 <Settings2 aria-hidden className="size-4" />
-                Manage
+                {t("Manage")}
               </span>
             ) : null
           }
@@ -63,6 +65,7 @@ const menuItem =
 
 /** Setup, not daily use: accounts, categories, export. A native <details>, so it works without JavaScript. */
 function ManageMenu() {
+  const t = useT();
   const ref = useRef<HTMLDetailsElement>(null);
   useEffect(() => {
     const close = (e: Event) => {
@@ -83,7 +86,7 @@ function ManageMenu() {
   return (
     <details ref={ref} className="relative">
       <summary
-        aria-label="Manage money"
+        aria-label={t("Manage money")}
         className="flex size-9 cursor-pointer list-none items-center justify-center rounded-md border border-border bg-surface-1 text-muted-foreground outline-none hover:text-foreground focus-visible:ring-[3px] focus-visible:ring-ring/30 [&::-webkit-details-marker]:hidden"
       >
         <Settings2 aria-hidden className="size-4" />
@@ -91,15 +94,15 @@ function ManageMenu() {
       <div className="absolute right-0 z-30 mt-2 flex w-52 flex-col gap-0.5 rounded-xl border border-border-soft bg-popover p-1.5 shadow-raised">
         <Link href="/money/accounts" className={menuItem}>
           <Landmark aria-hidden className="size-4 text-muted-foreground" />
-          Accounts
+          {t("Accounts")}
         </Link>
         <Link href="/money/categories" className={menuItem}>
           <Tags aria-hidden className="size-4 text-muted-foreground" />
-          Categories
+          {t("Categories")}
         </Link>
         <Link href="/money/import" className={menuItem}>
           <Download aria-hidden className="size-4 text-muted-foreground" />
-          Import and export
+          {t("Import and export")}
         </Link>
       </div>
     </details>

@@ -1,3 +1,4 @@
+import { type T, tEn } from "@/lib/i18n/core";
 import type { IsoDate } from "./local-date";
 import { daysBetween } from "./safe-to-spend";
 import { splitEvenly } from "./split-evenly";
@@ -56,10 +57,10 @@ export function splitBill(
 }
 
 /** "Budi owes you Rp 45.000" / "You owe Budi Rp 45.000" / "Settled". */
-export function personBalanceLabel(name: string, balance: bigint, format: (n: bigint) => string): string {
-  if (balance > 0n) return `${name} owes you ${format(balance)}`;
-  if (balance < 0n) return `You owe ${name} ${format(-balance)}`;
-  return "Settled";
+export function personBalanceLabel(name: string, balance: bigint, format: (n: bigint) => string, t: T = tEn): string {
+  if (balance > 0n) return t("{name} owes you {amount}", { name, amount: format(balance) });
+  if (balance < 0n) return t("You owe {name} {amount}", { name, amount: format(-balance) });
+  return t("Settled");
 }
 
 /** The transaction that settles a person's balance: they repay you, or you pay them back. */

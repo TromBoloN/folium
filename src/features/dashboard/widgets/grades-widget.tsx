@@ -3,11 +3,12 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { courseResult, formatGpa, formatPercent, gpaBySemester } from "@/features/grades/logic";
 import { listGradebook } from "@/features/grades/queries";
 import { getSettings } from "@/features/settings/queries";
+import { getT } from "@/lib/i18n/server";
 import { WidgetEmpty } from "../components/widget-frame";
 
 /** This semester's GPA (with a ring against the top of the scale) and a bar per active course. */
 export async function GradesWidget() {
-  const [courses, { preferences }] = await Promise.all([listGradebook(), getSettings()]);
+  const [courses, { preferences }, t] = await Promise.all([listGradebook(), getSettings(), getT()]);
   const active = courses
     .filter((c) => !c.archived)
     .map((course) => ({ course, result: courseResult(course.assessments, preferences.gradeScale) }))
@@ -16,9 +17,9 @@ export async function GradesWidget() {
   if (active.length === 0) {
     return (
       <WidgetEmpty>
-        Record assessment scores to see your grades.{" "}
+        {t("Record assessment scores to see your grades.")}{" "}
         <Link href="/grades" className="text-foreground underline underline-offset-4">
-          Open grades
+          {t("Open grades")}
         </Link>
       </WidgetEmpty>
     );
@@ -41,14 +42,16 @@ export async function GradesWidget() {
       <div className="flex items-center gap-4">
         <ProgressRing
           value={gpa === null ? 0 : gpa / maxPoints}
-          label={gpa === null ? "No GPA yet" : `GPA ${formatGpa(gpa)} of ${maxPoints.toFixed(2)}`}
+          label={
+            gpa === null ? t("No GPA yet") : t("GPA {gpa} of {max}", { gpa: formatGpa(gpa), max: maxPoints.toFixed(2) })
+          }
           size={64}
         >
           <span className="font-display font-medium text-lg tabular-nums">{gpa === null ? "–" : formatGpa(gpa)}</span>
         </ProgressRing>
         <p className="flex flex-col">
-          <span className="font-medium">GPA so far</span>
-          <span className="text-muted-foreground text-sm">{current?.label ?? "This semester"}</span>
+          <span className="font-medium">{t("GPA so far")}</span>
+          <span className="text-muted-foreground text-sm">{current?.label ?? t("This semester")}</span>
         </p>
       </div>
       <ul className="flex flex-col gap-2.5">

@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { requireUser } from "@/features/auth/queries";
 import { getCourse, listActiveSlots, listCourseOptions } from "@/features/courses/queries";
 import { getSettings } from "@/features/settings/queries";
+import { Tr } from "@/lib/i18n/client";
 import { commonStartTimes } from "../logic";
 import { type ExistingSlot, SlotForm } from "./slot-form";
 
@@ -39,7 +40,9 @@ export async function NewSlotForCourseScreen({ courseId, variant }: { courseId: 
       {variant === "page" ? (
         <PageHeader title="Add class time" back={<BackLink href={`/courses/${course.id}`}>{course.name}</BackLink>} />
       ) : (
-        <p className="mb-4 text-muted-foreground text-sm">For {course.name}</p>
+        <p className="mb-4 text-muted-foreground text-sm">
+          <Tr k="For {name}" vars={{ name: course.name }} />
+        </p>
       )}
       <SlotForm courseId={course.id} credits={course.credits} defaultLocation={course.room} {...context} />
     </>
@@ -67,9 +70,13 @@ export async function NewSlotScreen({
       ) : null}
       {courses.length === 0 ? (
         <div className="flex flex-col items-start gap-3">
-          <p className="text-muted-foreground text-sm">Add a course first, then give it class times.</p>
+          <p className="text-muted-foreground text-sm">
+            <Tr k="Add a course first, then give it class times." />
+          </p>
           <Button asChild size="sm">
-            <Link href="/courses/new">Add a course</Link>
+            <Link href="/courses/new">
+              <Tr k="Add a course" />
+            </Link>
           </Button>
         </div>
       ) : (

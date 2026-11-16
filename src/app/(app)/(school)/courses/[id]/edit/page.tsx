@@ -8,8 +8,11 @@ import { requireUser } from "@/features/auth/queries";
 import { CourseForm } from "@/features/courses/components/course-form";
 import { getCourse, listCourses } from "@/features/courses/queries";
 import { semesterLabels } from "@/features/courses/schema";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit course" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit course") };
+}
 
 export default function EditCoursePage({ params }: PageProps<"/courses/[id]/edit">) {
   return (

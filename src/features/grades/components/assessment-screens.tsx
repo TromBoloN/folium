@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
 import { getSettings } from "@/features/settings/queries";
 import { dueParts } from "@/features/tasks/due";
+import { Tr } from "@/lib/i18n/client";
 import { getCourseGradebook } from "../queries";
 import { AssessmentForm } from "./assessment-form";
 
@@ -18,7 +19,9 @@ export async function NewAssessmentScreen({ courseId, variant }: { courseId: str
       {variant === "page" ? (
         <PageHeader title="Add assessment" back={<BackLink href={`/grades/${course.id}`}>{course.name}</BackLink>} />
       ) : (
-        <p className="mb-4 text-muted-foreground text-sm">For {course.name}</p>
+        <p className="mb-4 text-muted-foreground text-sm">
+          <Tr k="For {name}" vars={{ name: course.name }} />
+        </p>
       )}
       <AssessmentForm
         courseId={course.id}
@@ -42,7 +45,9 @@ export async function EditAssessmentScreen({
       {variant === "page" ? (
         <PageHeader title="Edit assessment" back={<BackLink href={`/grades/${course.id}`}>{course.name}</BackLink>} />
       ) : (
-        <p className="mb-4 text-muted-foreground text-sm">For {course.name}</p>
+        <p className="mb-4 text-muted-foreground text-sm">
+          <Tr k="For {name}" vars={{ name: course.name }} />
+        </p>
       )}
       <AssessmentForm
         courseId={course.id}

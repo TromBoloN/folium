@@ -1,6 +1,7 @@
 "use client";
 
 import { useSheet } from "@/components/sheet";
+import { TrL } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 /**
@@ -18,7 +19,7 @@ export function FormFooter({ children, error }: { children: React.ReactNode; err
     >
       {error ? (
         <p role="alert" className="text-destructive text-sm">
-          {error}
+          <TrL text={error} />
         </p>
       ) : null}
       <div className="flex flex-row-reverse flex-wrap items-center justify-start gap-2">{children}</div>

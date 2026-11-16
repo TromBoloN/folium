@@ -4,9 +4,11 @@ import { CalendarDays, LayoutGrid, Rows3 } from "lucide-react";
 import Link from "next/link";
 import { rememberCoursesView } from "@/features/settings/actions";
 import type { CoursesView } from "@/features/settings/schema";
+import { useT } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n/core";
 import { cn } from "@/lib/utils";
 
-const VIEWS: { value: CoursesView; label: string; icon: typeof LayoutGrid }[] = [
+const VIEWS: { value: CoursesView; label: MessageKey; icon: typeof LayoutGrid }[] = [
   { value: "cards", label: "Cards", icon: LayoutGrid },
   { value: "day", label: "By day", icon: Rows3 },
   { value: "week", label: "Week", icon: CalendarDays },
@@ -17,9 +19,10 @@ const VIEWS: { value: CoursesView; label: string; icon: typeof LayoutGrid }[] = 
  * same view) and remembered for next time.
  */
 export function ViewSwitch({ current, week }: { current: CoursesView; week?: string }) {
+  const t = useT();
   return (
     <nav
-      aria-label="View"
+      aria-label={t("View")}
       className="flex w-fit max-w-full gap-1 rounded-full border border-border-soft bg-surface-1 p-1 shadow-tile"
     >
       {VIEWS.map((v) => {
@@ -40,7 +43,7 @@ export function ViewSwitch({ current, week }: { current: CoursesView; week?: str
             )}
           >
             <v.icon aria-hidden className="size-4" />
-            {v.label}
+            {t(v.label)}
           </Link>
         );
       })}

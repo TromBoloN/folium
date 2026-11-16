@@ -17,8 +17,12 @@ import { ensureFinanceDefaults, listCategories } from "@/features/finance/querie
 import { loadBudgetProgress } from "@/features/finance/queries/budget-progress";
 import { moneyToday } from "@/features/finance/queries/today";
 import { formatDate } from "@/lib/dates";
+import { rich } from "@/lib/i18n/rich";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Budgets" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Budgets") };
+}
 
 export default function BudgetsPage({ searchParams }: PageProps<"/money/budgets">) {
   return (
@@ -36,13 +40,18 @@ const input =
 async function Budgets({ searchParams }: Pick<PageProps<"/money/budgets">, "searchParams">) {
   await requireUser();
   await ensureFinanceDefaults();
-  const [{ today }, params, categories] = await Promise.all([moneyToday(), searchParams, listCategories()]);
+  const [{ today }, params, categories, { t, intl }] = await Promise.all([
+    moneyToday(),
+    searchParams,
+    listCategories(),
+    getI18n(),
+  ]);
   const current = today.slice(0, 7);
   // Budgets may be planned a month ahead.
   const requested = typeof params.month === "string" ? params.month : undefined;
   const month = resolveMonth(requested, shiftMonth(current, 1));
   const { items, uncategorised } = await loadBudgetProgress(month);
-  const label = formatDate(`${month}-01`, { month: "long", year: "numeric" });
+  const label = formatDate(`${month}-01`, { month: "long", year: "numeric" }, intl);
   const parents = categories.filter((c) => c.kind === "expense" && !c.parentId && !c.archived);
   const withoutBudget = parents.filter((c) => !items.some((i) => i.categoryId === c.id));
   const totalLimit = items.reduce((s, i) => s + i.limit, 0n);
@@ -69,14 +78,15 @@ async function Budgets({ searchParams }: Pick<PageProps<"/money/budgets">, "sear
       {uncategorised > 0n ? (
         <p className="tile flex flex-wrap items-center justify-between gap-2 p-4 text-sm">
           <span>
-            <span className="font-medium tabular-nums">{formatIdr(uncategorised)}</span> of spending has no category, so
-            no budget counts it.
+            {rich(t("{amount} of spending has no category, so no budget counts it."), {
+              amount: <span className="font-medium tabular-nums">{formatIdr(uncategorised)}</span>,
+            })}
           </span>
           <Link
             href={`/money/transactions?category=none&kind=expense&month=${month}`}
             className="font-medium text-primary underline underline-offset-2"
           >
-            Categorise
+            {t("Categorise")}
           </Link>
         </p>
       ) : null}
@@ -91,63 +101,63 @@ async function Budgets({ searchParams }: Pick<PageProps<"/money/budgets">, "sear
             <ToastForm action={copyLastMonthBudgets} fields={{ month }}>
               <SubmitButton size="sm" variant="outline">
                 <Copy aria-hidden />
-                Copy last month
+                {t("Copy last month")}
               </SubmitButton>
             </ToastForm>
             <ToastForm action={suggestBudgets} fields={{ month }}>
               <SubmitButton size="sm">
                 <Sparkles aria-hidden />
-                Suggest from 3 months
+                {t("Suggest from 3 months")}
               </SubmitButton>
             </ToastForm>
           </div>
         </EmptyState>
       ) : (
-        <section aria-label="Budgets" className="tile p-5">
+        <section aria-label={t("Budgets")} className="tile p-5">
           <BudgetList items={items} month={month} editable />
         </section>
       )}
 
       <section aria-labelledby="set-budget-h" className="tile flex flex-col gap-3 p-5">
         <h2 id="set-budget-h" className="font-medium">
-          Set a budget
+          {t("Set a budget")}
         </h2>
         <ToastForm action={saveBudget} fields={{ month }} className="gap-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="grid gap-1.5">
               <label htmlFor="b-category" className="font-medium text-sm">
-                Category
+                {t("Category")}
               </label>
               <select id="b-category" name="categoryId" className={input} defaultValue={withoutBudget[0]?.id ?? ""}>
                 {parents.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.name}
-                    {items.some((i) => i.categoryId === c.id) ? " (update)" : ""}
+                    {items.some((i) => i.categoryId === c.id) ? t(" (update)") : ""}
                   </option>
                 ))}
               </select>
             </div>
             <div className="grid gap-1.5">
               <label htmlFor="b-amount" className="font-medium text-sm">
-                Monthly limit
+                {t("Monthly limit")}
               </label>
               <input
                 id="b-amount"
                 name="amount"
                 inputMode="decimal"
                 required
-                placeholder="e.g. 600k"
+                placeholder={t("e.g. {example}", { example: "600k" })}
                 className={`${input} w-36`}
               />
             </div>
             <label className="flex h-10 items-center gap-2 text-sm">
               <input type="checkbox" name="rollover" className="size-4 accent-primary" />
-              Carry the rest over
+              {t("Carry the rest over")}
             </label>
-            <SubmitButton size="sm">Save budget</SubmitButton>
+            <SubmitButton size="sm">{t("Save budget")}</SubmitButton>
           </div>
           <p className="text-muted-foreground text-xs">
-            A category's budget includes its subcategories. Planned bills show as “committed”.
+            {t("A category's budget includes its subcategories. Planned bills show as “committed”.")}
           </p>
         </ToastForm>
         {items.length > 0 ? (
@@ -155,13 +165,13 @@ async function Budgets({ searchParams }: Pick<PageProps<"/money/budgets">, "sear
             <ToastForm action={copyLastMonthBudgets} fields={{ month }}>
               <SubmitButton size="sm" variant="ghost">
                 <Copy aria-hidden />
-                Copy missing from last month
+                {t("Copy missing from last month")}
               </SubmitButton>
             </ToastForm>
             <ToastForm action={suggestBudgets} fields={{ month }}>
               <SubmitButton size="sm" variant="ghost">
                 <Sparkles aria-hidden />
-                Suggest the rest
+                {t("Suggest the rest")}
               </SubmitButton>
             </ToastForm>
           </div>

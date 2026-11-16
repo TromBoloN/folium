@@ -117,7 +117,8 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 - [2026-11-15: Motion is a theme setting; the OS reduced-motion setting always wins](frontend.md#2026-11-15-motion-is-a-theme-setting-the-os-reduced-motion-setting-always-wins)
 - [2026-11-15: Theme tokens are re-declared on any `[data-preset]` element](frontend.md#2026-11-15-theme-tokens-are-re-declared-on-any-data-preset-element)
 - [2026-11-15: Theme tokens come from one hue, light and dark via `light-dark()`](frontend.md#2026-11-15-theme-tokens-come-from-one-hue-light-and-dark-via-light-dark)
-- [2026-11-15: Language preference is saved but `lang` stays `en`](frontend.md#2026-11-15-language-preference-is-saved-but-lang-stays-en)
+- [2026-11-16: Translations are gettext-style, keyed by the English text](frontend.md#2026-11-16-translations-are-gettext-style-keyed-by-the-english-text)
+- [2026-11-15: Language preference is saved but `lang` stays `en`](frontend.md#2026-11-15-language-preference-is-saved-but-lang-stays-en) (superseded)
 
 **Forms and interaction**
 
@@ -158,4 +159,4 @@ Questions that need a choice before code. Each lists the options known so far.
 - A subscribable calendar feed ([backend.md: Calendar export](backend.md#2026-11-15-calendar-export-is-a-download-not-a-feed)).
 - A semesters table ([backend.md: Semesters stay free text](backend.md#2026-11-16-semesters-stay-free-text-normalised-on-save)).
 - Minutes per credit as a preference ([backend.md: 50 minutes per SKS](backend.md#2026-11-16-50-minutes-per-sks-is-a-constant)).
-- Applying the language preference ([frontend.md: Language preference](frontend.md#2026-11-15-language-preference-is-saved-but-lang-stays-en)).
+- Indonesian quick-add words ("besok", "#makan") and translating the seeded money categories ([frontend.md: Translations](frontend.md#2026-11-16-translations-are-gettext-style-keyed-by-the-english-text)).

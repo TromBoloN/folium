@@ -1,15 +1,17 @@
 import { io } from "next/cache";
 import { getSettings } from "@/features/settings/queries";
 import { formatDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { Tr } from "@/lib/i18n/client";
+import { getI18n } from "@/lib/i18n/server";
 import { getDisplayName } from "../queries";
 import { greeting } from "../today";
 
 export async function Greeting() {
-  const [{ preferences }, name] = await Promise.all([getSettings(), getDisplayName()]);
+  const [{ preferences }, name, { t, intl }] = await Promise.all([getSettings(), getDisplayName(), getI18n()]);
   await io();
   const now = new Date();
-  const hello = greeting(minutesNowIn(preferences.timeZone, now));
-  const date = formatDate(todayIn(preferences.timeZone, now), { weekday: "long", day: "numeric", month: "long" });
+  const hello = t(greeting(minutesNowIn(preferences.timeZone, now)));
+  const date = formatDate(todayIn(preferences.timeZone, now), { weekday: "long", day: "numeric", month: "long" }, intl);
   return (
     <div className="reveal flex flex-col gap-1.5">
       <p className="font-medium text-muted-foreground text-sm">{date}</p>
@@ -27,7 +29,10 @@ export async function Greeting() {
 
 export function GreetingSkeleton() {
   return (
-    <div role="status" aria-label="Loading" className="flex flex-col gap-2">
+    <div role="status" className="flex flex-col gap-2">
+      <span className="sr-only">
+        <Tr k="Loading" />
+      </span>
       <div className="h-4 w-40 animate-pulse rounded bg-muted" />
       <div className="h-10 w-72 max-w-full animate-pulse rounded bg-muted" />
     </div>

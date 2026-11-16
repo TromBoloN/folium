@@ -12,8 +12,12 @@ import { ProfileForm } from "@/features/settings/components/profile-form";
 import { SettingsForm } from "@/features/settings/components/settings-form";
 import { getSettings } from "@/features/settings/queries";
 import { listTimeZones } from "@/lib/dates";
+import { Tr } from "@/lib/i18n/client";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Settings" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Settings") };
+}
 
 export default function SettingsPage() {
   return (
@@ -27,29 +31,29 @@ export default function SettingsPage() {
 }
 
 async function SettingsContent() {
-  const [user, settings, displayName] = await Promise.all([requireUser(), getSettings(), getDisplayName()]);
+  const [user, settings, displayName, t] = await Promise.all([requireUser(), getSettings(), getDisplayName(), getT()]);
   return (
     <div className="flex flex-col gap-6">
       <SettingsForm settings={settings} timeZones={listTimeZones(settings.preferences.timeZone)} />
       <InstallCard />
       <Card>
         <CardHeader>
-          <CardTitle>Money</CardTitle>
+          <CardTitle>{t("Money")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-wrap items-center justify-between gap-3">
           <p className="text-muted-foreground text-sm">
-            Categories for spending and income, your accounts, and a CSV of everything.
+            {t("Categories for spending and income, your accounts, and a CSV of everything.")}
           </p>
           <div className="flex flex-wrap gap-2">
             <Button asChild variant="outline" size="sm">
-              <Link href="/money/categories">Categories</Link>
+              <Link href="/money/categories">{t("Categories")}</Link>
             </Button>
             <Button asChild variant="outline" size="sm">
-              <Link href="/money/accounts">Accounts</Link>
+              <Link href="/money/accounts">{t("Accounts")}</Link>
             </Button>
             <Button asChild variant="ghost" size="sm">
               <a href="/money/export.csv" download>
-                Export CSV
+                {t("Export CSV")}
               </a>
             </Button>
           </div>
@@ -57,17 +61,17 @@ async function SettingsContent() {
       </Card>
       <Card>
         <CardHeader>
-          <CardTitle>Account</CardTitle>
+          <CardTitle>{t("Account")}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
           <ProfileForm displayName={displayName ?? ""} />
           <div className="flex flex-wrap items-center justify-between gap-3 border-border-soft border-t pt-4">
             <p className="text-muted-foreground text-sm">
-              Signed in as <span className="text-foreground">{user.email}</span>
+              {t("Signed in as")} <span className="text-foreground">{user.email}</span>
             </p>
             <div className="flex flex-wrap gap-2">
               <Button asChild variant="outline" size="sm">
-                <Link href="/update-password">Change password</Link>
+                <Link href="/update-password">{t("Change password")}</Link>
               </Button>
               <SignOutButton />
             </div>
@@ -80,7 +84,10 @@ async function SettingsContent() {
 
 function SettingsSkeleton() {
   return (
-    <div role="status" aria-label="Loading settings" className="flex flex-col gap-6">
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">
+        <Tr k="Loading settings" />
+      </span>
       <div className="h-96 animate-pulse rounded-xl bg-muted" />
       <div className="h-48 animate-pulse rounded-xl bg-muted" />
     </div>

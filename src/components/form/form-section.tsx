@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { TrL } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 /** A short group of fields under a small heading with an icon ("Basics", "Lecturer and contact"). */
@@ -23,9 +24,13 @@ export function FormSection({
             <Icon aria-hidden className="size-3.5" />
           </span>
         ) : null}
-        {title}
+        <TrL text={title} />
       </legend>
-      {description ? <p className="-mt-2 text-muted-foreground text-sm">{description}</p> : null}
+      {description ? (
+        <p className="-mt-2 text-muted-foreground text-sm">
+          <TrL text={description} />
+        </p>
+      ) : null}
       {children}
     </fieldset>
   );
@@ -50,8 +55,12 @@ export function MoreDetails({
     <details open={open} className="group rounded-xl border border-border-soft bg-surface-1/40">
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-4 py-3 font-medium text-sm hover:bg-accent/50 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30">
         <span className="flex flex-col">
-          {summary}
-          {hint ? <span className="font-normal text-muted-foreground text-xs">{hint}</span> : null}
+          <TrL text={summary} />
+          {hint ? (
+            <span className="font-normal text-muted-foreground text-xs">
+              <TrL text={hint} />
+            </span>
+          ) : null}
         </span>
         <span aria-hidden className="text-muted-foreground transition-transform group-open:rotate-45">
           +

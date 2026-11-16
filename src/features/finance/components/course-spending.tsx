@@ -1,4 +1,6 @@
 import { Receipt } from "lucide-react";
+import { plural } from "@/lib/i18n/core";
+import { getT } from "@/lib/i18n/server";
 import { formatIdr } from "../lib/format-idr";
 import { courseSpending } from "../queries/planning";
 
@@ -8,17 +10,17 @@ import { courseSpending } from "../queries/planning";
  * Renders nothing until something is tagged.
  */
 export async function CourseSpending({ courseId, courseName }: { courseId: string; courseName: string }) {
-  const { count, total } = await courseSpending(courseId);
+  const [{ count, total }, t] = await Promise.all([courseSpending(courseId), getT()]);
   if (count === 0) return null;
   return (
     <section aria-labelledby="course-cost-h" className="tile flex items-center gap-3 p-4">
       <Receipt aria-hidden className="size-5 text-muted-foreground" />
       <div className="flex min-w-0 flex-1 flex-col">
         <h2 id="course-cost-h" className="font-medium text-sm">
-          Spent on {courseName}
+          {t("Spent on {name}", { name: courseName })}
         </h2>
         <p className="text-muted-foreground text-xs">
-          {count} {count === 1 ? "expense" : "expenses"} tagged to this course
+          {t(plural(count, "1 expense tagged to this course", "{n} expenses tagged to this course"), { n: count })}
         </p>
       </div>
       <span className="font-display font-medium text-lg tabular-nums">{formatIdr(total)}</span>

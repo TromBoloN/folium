@@ -3,8 +3,11 @@ import { Suspense } from "react";
 import { BackLink } from "@/components/back-link";
 import { ListSkeleton } from "@/components/skeletons";
 import { TaskDetailScreen } from "@/features/tasks/components/task-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Task" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Task") };
+}
 
 export default function TaskPage({ params }: PageProps<"/tasks/[id]">) {
   return (

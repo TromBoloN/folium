@@ -1,4 +1,5 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
+import { EN, type I18n } from "@/lib/i18n/core";
 import { formatTime, toMinutes } from "../timetable/logic";
 import { isLive, type Occurrence, type Placement } from "./occurrences";
 import type { AttendanceStatus } from "./schema";
@@ -13,9 +14,14 @@ export type ChipKind = "cancelled" | "postponed" | "moved" | "extra" | "room" | 
 export type Chip = { kind: ChipKind; text: string };
 
 /** "Wed 07:30", or just "07:30" when it's the same day as `sameDay`. */
-export function placementLabel(p: Pick<Placement, "date" | "startTime">, format: TimeFormat, sameDay?: CivilDate) {
+export function placementLabel(
+  p: Pick<Placement, "date" | "startTime">,
+  format: TimeFormat,
+  sameDay?: CivilDate,
+  { intl }: I18n = EN,
+) {
   const time = formatTime(p.startTime, format);
-  return p.date === sameDay ? time : `${formatDate(p.date, { weekday: "short" })} ${time}`;
+  return p.date === sameDay ? time : `${formatDate(p.date, { weekday: "short" }, intl)} ${time}`;
 }
 
 export function timeRange(o: { startTime: string; endTime: string }, format: TimeFormat) {
@@ -24,32 +30,40 @@ export function timeRange(o: { startTime: string; endTime: string }, format: Tim
 
 type ChipSource = Pick<Occurrence, "status" | "date" | "from" | "room" | "label" | "online" | "breakLabel">;
 
-export function occurrenceChips(o: ChipSource, format: TimeFormat): Chip[] {
+export function occurrenceChips(o: ChipSource, format: TimeFormat, i18n: I18n = EN): Chip[] {
+  const { t } = i18n;
   const chips: Chip[] = [];
   if (o.status === "cancelled") {
-    chips.push({ kind: "cancelled", text: o.breakLabel ? `Cancelled · ${o.breakLabel}` : "Cancelled" });
+    chips.push({
+      kind: "cancelled",
+      text: o.breakLabel ? t("Cancelled · {reason}", { reason: o.breakLabel }) : t("Cancelled"),
+    });
   }
-  if (o.status === "postponed") chips.push({ kind: "postponed", text: "Rescheduled · new date TBD" });
+  if (o.status === "postponed") chips.push({ kind: "postponed", text: t("Rescheduled · new date TBD") });
   if (o.status === "moved" && o.from)
-    chips.push({ kind: "moved", text: `Moved from ${placementLabel(o.from, format, o.date)}` });
-  if (o.status === "extra") chips.push({ kind: "extra", text: o.label ? `Extra · ${o.label}` : "Extra" });
+    chips.push({ kind: "moved", text: t("Moved from {when}", { when: placementLabel(o.from, format, o.date, i18n) }) });
+  if (o.status === "extra")
+    chips.push({ kind: "extra", text: o.label ? t("Extra · {label}", { label: o.label }) : t("Extra") });
   // The new room is already shown as the location; the chip says what changed.
   const held = o.status !== "cancelled" && o.status !== "postponed";
   if (o.room && held) {
-    chips.push({ kind: "room", text: o.room.from ? `Room changed · was ${o.room.from}` : "Room changed" });
+    chips.push({
+      kind: "room",
+      text: o.room.from ? t("Room changed · was {room}", { room: o.room.from }) : t("Room changed"),
+    });
   }
-  if (o.online && held) chips.push({ kind: "online", text: "Online" });
+  if (o.online && held) chips.push({ kind: "online", text: t("Online") });
   return chips;
 }
 
 /** One sentence for screen readers and titles, e.g. "Calculus I, Wed 07:30–09:10, B2.04, cancelled: Dr. Siti unwell". */
-export function describeOccurrence(o: Occurrence, format: TimeFormat): string {
+export function describeOccurrence(o: Occurrence, format: TimeFormat, i18n: I18n = EN): string {
   const parts = [
     o.course.name,
-    `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" })} ${timeRange(o, format)}`,
+    `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, i18n.intl)} ${timeRange(o, format)}`,
   ];
   if (o.location) parts.push(o.location);
-  const chips = occurrenceChips(o, format).map((c) => c.text.toLowerCase());
+  const chips = occurrenceChips(o, format, i18n).map((c) => c.text.toLowerCase());
   let text = parts.join(", ");
   if (chips.length) text += `, ${chips.join(", ")}`;
   if (o.note && o.status !== "ghost") text += `: ${o.note}`;
@@ -61,15 +75,17 @@ export function nextLabel(
   o: Pick<Occurrence, "date" | "startTime" | "endTime">,
   now: { date: CivilDate; minute: number },
   format: TimeFormat,
+  { t, intl }: I18n = EN,
 ): string {
   const start = toMinutes(o.startTime);
-  if (o.date === now.date && start <= now.minute) return `On now, until ${formatTime(o.endTime, format)}`;
+  if (o.date === now.date && start <= now.minute)
+    return t("On now, until {time}", { time: formatTime(o.endTime, format) });
   const time = formatTime(o.startTime, format);
-  if (o.date === now.date) return `Today ${time}`;
-  if (o.date === addDays(now.date, 1)) return `Tomorrow ${time}`;
+  if (o.date === now.date) return t("Today {time}", { time });
+  if (o.date === addDays(now.date, 1)) return t("Tomorrow {time}", { time });
   // Within the coming week the weekday is enough; further out, add the date.
-  if (o.date <= addDays(now.date, 6)) return `${formatDate(o.date, { weekday: "short" })} ${time}`;
-  return `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" })} ${time}`;
+  if (o.date <= addDays(now.date, 6)) return `${formatDate(o.date, { weekday: "short" }, intl)} ${time}`;
+  return `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, intl)} ${time}`;
 }
 
 /** What a day-list row shows (see OccurrenceRow). The week view's items have the same fields. */
@@ -96,19 +112,24 @@ export type RowItem = {
   overlapsWith: string[];
 };
 
-export function toRowItem(o: Occurrence, format: TimeFormat, now: { date: CivilDate; minute: number }): RowItem {
+export function toRowItem(
+  o: Occurrence,
+  format: TimeFormat,
+  now: { date: CivilDate; minute: number },
+  i18n: I18n = EN,
+): RowItem {
   return {
     id: o.key,
     courseName: o.course.name,
     code: o.course.code,
     lecturer: o.course.lecturer ?? null,
-    durationLabel: durationLabel(o),
+    durationLabel: durationLabel(o, i18n),
     color: o.course.color,
     timeLabel: timeRange(o, format),
-    dateLabel: formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }),
+    dateLabel: formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, i18n.intl),
     location: o.location,
     status: o.status,
-    chips: occurrenceChips(o, format),
+    chips: occurrenceChips(o, format, i18n),
     note: o.note,
     past: o.date < now.date || (o.date === now.date && toMinutes(o.endTime) <= now.minute),
     overlapsWith: [],
@@ -116,10 +137,10 @@ export function toRowItem(o: Occurrence, format: TimeFormat, now: { date: CivilD
 }
 
 /** "50 min", "1 h 40 min", "2 h". */
-export function durationLabel(o: { startTime: string; endTime: string }): string {
+export function durationLabel(o: { startTime: string; endTime: string }, { t }: I18n = EN): string {
   const m = toMinutes(o.endTime) - toMinutes(o.startTime);
-  if (m < 60) return `${m} min`;
-  return m % 60 === 0 ? `${m / 60} h` : `${Math.floor(m / 60)} h ${m % 60} min`;
+  if (m < 60) return t("{m} min", { m });
+  return m % 60 === 0 ? t("{h} h", { h: m / 60 }) : t("{h} h {m} min", { h: Math.floor(m / 60), m: m % 60 });
 }
 
 /** Attendance fields for a row: markable once a live class is over. */

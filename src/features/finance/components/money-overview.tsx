@@ -1,6 +1,8 @@
 import { ArrowDownLeft, ArrowUpRight, ChevronLeft, ChevronRight, Plus } from "lucide-react";
 import Link from "next/link";
 import { Tile } from "@/components/ui/tile";
+import type { T } from "@/lib/i18n/core";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import type { SeriesPoint } from "../lib/balance-series";
 import { formatIdr } from "../lib/format-idr";
@@ -64,13 +66,21 @@ function Sparkline({ points }: { points: SeriesPoint[] }) {
   );
 }
 
-function changeText(change: bigint) {
-  if (change === 0n) return "No change this week";
-  return `${change > 0n ? "Up" : "Down"} ${formatIdr(change > 0n ? change : -change)} this week`;
+function changeText(change: bigint, t: T) {
+  if (change === 0n) return t("No change this week");
+  const amount = formatIdr(change > 0n ? change : -change);
+  return change > 0n ? t("Up {amount} this week", { amount }) : t("Down {amount} this week", { amount });
 }
 
 /** The total across active accounts (hero) and one card per account with a 7-day sparkline. */
-export function AccountCards({ accounts, series }: { accounts: Account[]; series: Record<string, SeriesPoint[]> }) {
+export async function AccountCards({
+  accounts,
+  series,
+}: {
+  accounts: Account[];
+  series: Record<string, SeriesPoint[]>;
+}) {
+  const t = await getT();
   const active = accounts.filter((a) => !a.archived);
   const total = active.reduce((sum, a) => sum + a.balance, 0n);
   return (
@@ -78,7 +88,7 @@ export function AccountCards({ accounts, series }: { accounts: Account[]; series
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div className="flex flex-col gap-1">
           <h2 id="accounts-h" className="text-muted-foreground text-sm">
-            Total across accounts
+            {t("Total across accounts")}
           </h2>
           <p
             className={cn(
@@ -94,14 +104,15 @@ export function AccountCards({ accounts, series }: { accounts: Account[]; series
             href="/money/accounts"
             className="rounded-md px-2 py-1.5 text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
           >
-            Manage accounts
+            {t("Manage accounts")}
           </Link>
           <Link
             href="/money/accounts/new"
             className="flex items-center gap-1 rounded-md px-2 py-1.5 font-medium text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
           >
             <Plus aria-hidden className="size-4" />
-            Add<span className="sr-only"> account</span>
+            {t("Add")}
+            <span className="sr-only">{t(" account")}</span>
           </Link>
         </div>
       </div>
@@ -128,7 +139,7 @@ export function AccountCards({ accounts, series }: { accounts: Account[]; series
                   <IconBadge icon={accountGlyph(a)} color={a.color} size="sm" />
                   <span className="truncate font-medium">{a.name}</span>
                   {/* The link's name is its visible text plus this (no aria-label: it must contain what's shown). */}
-                  <span className="sr-only">, {ACCOUNT_TYPE_LABELS[a.type]}, balance</span>
+                  <span className="sr-only">{t(", {type}, balance", { type: t(ACCOUNT_TYPE_LABELS[a.type]) })}</span>
                 </span>
                 <span
                   data-testid={`balance-${a.id}`}
@@ -139,9 +150,9 @@ export function AccountCards({ accounts, series }: { accounts: Account[]; series
                 >
                   <MoneyCountUp amount={a.balance.toString()} />
                 </span>
-                {negative ? <span className="font-medium text-money-out text-xs">Overdrawn</span> : null}
+                {negative ? <span className="font-medium text-money-out text-xs">{t("Overdrawn")}</span> : null}
                 <Sparkline points={points} />
-                <span className="text-muted-foreground text-xs">{changeText(change)}</span>
+                <span className="text-muted-foreground text-xs">{changeText(change, t)}</span>
               </Tile>
             </li>
           );
@@ -163,7 +174,8 @@ export type MonthSummary = {
 };
 
 /** One wide card: in, out, net, a proportion bar, and how spending compares with last month. */
-export function MonthOverview({ summary }: { summary: MonthSummary }) {
+export async function MonthOverview({ summary }: { summary: MonthSummary }) {
+  const t = await getT();
   const { income, expense, comparison } = summary;
   const net = income - expense;
   const total = income + expense;
@@ -185,7 +197,7 @@ export function MonthOverview({ summary }: { summary: MonthSummary }) {
         <div className="flex flex-col gap-1">
           <dt className="flex items-center gap-1.5 text-muted-foreground text-sm">
             <ArrowDownLeft aria-hidden className="size-4 text-money-in" />
-            In
+            {t("In")}
           </dt>
           <dd className="font-display font-medium text-lg text-money-in leading-tight sm:text-2xl">
             <MoneyCountUp amount={income.toString()} />
@@ -194,14 +206,14 @@ export function MonthOverview({ summary }: { summary: MonthSummary }) {
         <div className="flex flex-col gap-1">
           <dt className="flex items-center gap-1.5 text-muted-foreground text-sm">
             <ArrowUpRight aria-hidden className="size-4 text-money-out" />
-            Out
+            {t("Out")}
           </dt>
           <dd className="font-display font-medium text-lg text-money-out leading-tight sm:text-2xl">
             <MoneyCountUp amount={expense.toString()} />
           </dd>
         </div>
         <div className="flex flex-col gap-1">
-          <dt className="text-muted-foreground text-sm">Net</dt>
+          <dt className="text-muted-foreground text-sm">{t("Net")}</dt>
           <dd
             className={cn(
               "font-display font-medium text-lg leading-tight sm:text-2xl",
@@ -223,28 +235,40 @@ export function MonthOverview({ summary }: { summary: MonthSummary }) {
       </div>
       <p className="text-muted-foreground text-sm">
         {total === 0n
-          ? "Nothing in or out yet this month."
+          ? t("Nothing in or out yet this month.")
           : comparison === null
-            ? "Transfers and adjustments aren't counted as in or out."
+            ? t("Transfers and adjustments aren't counted as in or out.")
             : comparison.direction === "same"
-              ? `Spent the same as ${summary.previousLabel}.`
-              : `Spent ${comparison.percent}% ${comparison.direction} than ${summary.previousLabel}.`}
+              ? t("Spent the same as {month}.", { month: summary.previousLabel })
+              : t(comparison.direction === "more" ? "Spent {n}% more than {month}." : "Spent {n}% less than {month}.", {
+                  n: comparison.percent,
+                  month: summary.previousLabel,
+                })}
       </p>
     </section>
   );
 }
 
 /** Previous / next month links (?month=YYYY-MM). No "next" past the current month. */
-export function MonthNav({ prevHref, nextHref, label }: { prevHref: string; nextHref: string | null; label: string }) {
+export async function MonthNav({
+  prevHref,
+  nextHref,
+  label,
+}: {
+  prevHref: string;
+  nextHref: string | null;
+  label: string;
+}) {
+  const t = await getT();
   const base =
     "flex size-9 items-center justify-center rounded-full border border-border-soft text-muted-foreground transition-colors duration-(--dur-fast) hover:bg-accent hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95";
   return (
-    <nav aria-label={`Month: ${label}`} className="flex items-center gap-1">
-      <Link href={prevHref} className={base} aria-label="Previous month" scroll={false}>
+    <nav aria-label={t("Month: {label}", { label })} className="flex items-center gap-1">
+      <Link href={prevHref} className={base} aria-label={t("Previous month")} scroll={false}>
         <ChevronLeft aria-hidden className="size-4" />
       </Link>
       {nextHref ? (
-        <Link href={nextHref} className={base} aria-label="Next month" scroll={false}>
+        <Link href={nextHref} className={base} aria-label={t("Next month")} scroll={false}>
           <ChevronRight aria-hidden className="size-4" />
         </Link>
       ) : (

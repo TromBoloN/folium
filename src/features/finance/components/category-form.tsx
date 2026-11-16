@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { useT } from "@/lib/i18n/client";
 import { saveCategory } from "../actions/categories";
 import { AppearanceFields } from "./appearance-fields";
 
@@ -23,6 +24,7 @@ type Parent = { id: string; name: string; kind: "expense" | "income" };
 
 /** Add or edit a category. Parents are top-level categories of the same kind (one level of nesting). */
 export function CategoryForm({ defaults, parents }: { defaults: CategoryDefaults; parents: Parent[] }) {
+  const t = useT();
   const [state, action, pending] = useActionState(saveCategory, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const value = (name: keyof CategoryDefaults) => state?.values?.[name] ?? defaults[name] ?? "";
@@ -48,18 +50,18 @@ export function CategoryForm({ defaults, parents }: { defaults: CategoryDefaults
             required
             maxLength={60}
             defaultValue={value("name")}
-            placeholder="e.g. Coffee"
+            placeholder={t("e.g. Coffee")}
             aria-invalid={errors.name ? true : undefined}
             aria-describedby={describedBy("name", errors.name)}
           />
         </Field>
         <ChipGroup
           name="kind"
-          legend="Kind"
+          legend={t("Kind")}
           defaultValue={value("kind")}
           options={[
-            { value: "expense", label: "Expense" },
-            { value: "income", label: "Income" },
+            { value: "expense", label: t("Expense") },
+            { value: "income", label: t("Income") },
           ]}
           error={errors.kind}
         />
@@ -71,7 +73,7 @@ export function CategoryForm({ defaults, parents }: { defaults: CategoryDefaults
           hint="Leave as top level, or put it under another category of the same kind."
         >
           <NativeSelect id="parentId" name="parentId" defaultValue={value("parentId")} aria-describedby="parentId-hint">
-            <option value="">Top level</option>
+            <option value="">{t("Top level")}</option>
             {(options.length ? options : parents).map((p) => (
               <option key={p.id} value={p.id}>
                 {p.name}
@@ -88,7 +90,7 @@ export function CategoryForm({ defaults, parents }: { defaults: CategoryDefaults
       ) : null}
       <div>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : defaults.id ? "Save changes" : "Add category"}
+          {pending ? t("Saving…") : defaults.id ? t("Save changes") : t("Add category")}
         </Button>
       </div>
     </form>

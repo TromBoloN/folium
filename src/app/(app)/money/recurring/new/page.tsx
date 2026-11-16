@@ -8,8 +8,11 @@ import { RuleForm } from "@/features/finance/components/rule-form";
 import { RULE_TEMPLATES, ruleTemplate } from "@/features/finance/lib/rule-templates";
 import { ensureFinanceDefaults, lastUsedAccountId, listAccounts, listCategories } from "@/features/finance/queries";
 import { moneyToday } from "@/features/finance/queries/today";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add recurring" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add recurring") };
+}
 
 /** ?template=subscription|kos|ukt|data|service|allowance|sinking prefills the form. */
 export default function NewRulePage({ searchParams }: PageProps<"/money/recurring/new">) {
@@ -25,16 +28,17 @@ export default function NewRulePage({ searchParams }: PageProps<"/money/recurrin
 async function New({ searchParams }: Pick<PageProps<"/money/recurring/new">, "searchParams">) {
   await requireUser();
   await ensureFinanceDefaults();
-  const [{ template }, accounts, categories, { today }] = await Promise.all([
+  const [{ template }, accounts, categories, { today }, { t, tl }] = await Promise.all([
     searchParams,
     listAccounts(),
     listCategories(),
     moneyToday(),
+    getI18n(),
   ]);
   const active = accounts.filter((a) => !a.archived);
   const live = categories.filter((c) => !c.archived);
   const key = typeof template === "string" ? template : undefined;
-  const t = ruleTemplate(key, {
+  const preset = ruleTemplate(key, {
     today,
     expense: live.filter((c) => c.kind === "expense"),
     income: live.filter((c) => c.kind === "income"),
@@ -44,12 +48,14 @@ async function New({ searchParams }: Pick<PageProps<"/money/recurring/new">, "se
   return (
     <>
       <PageHeader
-        title={label ? `Add: ${label}` : "Add recurring"}
+        title={label ? t("Add: {name}", { name: t(label) }) : t("Add recurring")}
         back={<BackLink href="/money/recurring">Recurring</BackLink>}
       />
       <RuleForm
         defaults={{
-          ...t,
+          ...preset,
+          // Template names ("Kos", "Allowance") are prefills: shown in the user's language.
+          name: tl(preset.name),
           accountId: (await lastUsedAccountId(accounts)) ?? "",
           payee: "",
           endsOn: "",

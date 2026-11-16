@@ -1,3 +1,4 @@
+import { type T, tEn } from "@/lib/i18n/core";
 import { safeHttpsUrl } from "@/lib/safe-links";
 import { dueAtFrom } from "../tasks/due";
 import { isLive, type Occurrence } from "./occurrences";
@@ -52,15 +53,16 @@ export function foldLine(line: string) {
 
 export function buildIcs(
   occurrences: readonly Occurrence[],
-  options: { timeZone: string; stamp: Date; host: string },
+  options: { timeZone: string; stamp: Date; host: string; t?: T },
 ): string {
+  const t = options.t ?? tEn;
   const lines = [
     "BEGIN:VCALENDAR",
     "VERSION:2.0",
     "PRODID:-//Folium//Timetable//EN",
     "CALSCALE:GREGORIAN",
     "METHOD:PUBLISH",
-    "X-WR-CALNAME:Folium classes",
+    `X-WR-CALNAME:${escapeText(t("Folium classes"))}`,
   ];
   const stamp = icsUtc(options.stamp.toISOString());
   for (const o of occurrences) {
@@ -70,8 +72,9 @@ export function buildIcs(
     const summary = o.status === "extra" && o.label ? `${o.course.name} (${o.label})` : o.course.name;
     const notes: string[] = [];
     if (o.course.code) notes.push(o.course.code);
-    if (o.status === "moved" && o.from) notes.push(`Moved from ${o.from.date} ${o.from.startTime}`);
-    if (o.room) notes.push(`Room changed from ${o.room.from ?? "the usual room"}`);
+    if (o.status === "moved" && o.from)
+      notes.push(t("Moved from {when}", { when: `${o.from.date} ${o.from.startTime}` }));
+    if (o.room) notes.push(t("Room changed from {room}", { room: o.room.from ?? t("the usual room") }));
     if (o.note) notes.push(o.note);
     const url = safeHttpsUrl(o.meetingUrl);
     if (url) notes.push(url);

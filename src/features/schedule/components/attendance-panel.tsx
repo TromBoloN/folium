@@ -6,6 +6,8 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import { ProgressRing } from "@/components/ui/progress-ring";
+import { useT } from "@/lib/i18n/client";
+import { plural } from "@/lib/i18n/core";
 import { cn } from "@/lib/utils";
 import { clearAttendance, markUnmarkedAttended } from "../actions";
 import type { AttendanceStats } from "../attendance";
@@ -24,6 +26,7 @@ type Props = {
 /** Attendance for a course: the share attended against the campus target, and quick marks for recent classes. */
 export function AttendancePanel({ courseId, stats, target, recent }: Props) {
   const toast = useToast();
+  const t = useT();
   const [pending, start] = useTransition();
   const [confirming, setConfirming] = useState(false);
   const percent = stats.percent;
@@ -37,8 +40,13 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
       }
       const n = result.data.keys.length;
       toast({
-        message: n === 0 ? "Nothing left to mark" : `Marked ${n} ${n === 1 ? "class" : "classes"} attended`,
-        action: n ? { label: "Undo", onClick: async () => void (await clearAttendance(result.data.keys)) } : undefined,
+        message:
+          n === 0
+            ? t("Nothing left to mark")
+            : t(plural(n, "Marked 1 class attended", "Marked {n} classes attended"), { n }),
+        action: n
+          ? { label: t("Undo"), onClick: async () => void (await clearAttendance(result.data.keys)) }
+          : undefined,
       });
     });
 
@@ -48,16 +56,22 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
         <ProgressRing
           value={percent === null ? 0 : percent / 100}
           size={64}
-          label={percent === null ? "No marks" : `${Math.round(percent)}%`}
+          label={percent === null ? t("No marks") : `${Math.round(percent)}%`}
         />
         <div className="flex min-w-0 flex-col gap-0.5">
           <h2 id="attendance-h" className="font-medium">
-            Attendance
+            {t("Attendance")}
           </h2>
           <p className="text-muted-foreground text-sm">
             {percent === null
-              ? `${stats.held} ${stats.held === 1 ? "class" : "classes"} so far, none marked yet.`
-              : `${stats.attended} of ${stats.attended + stats.missed} marked classes · target ${target}%`}
+              ? t(plural(stats.held, "1 class so far, none marked yet.", "{n} classes so far, none marked yet."), {
+                  n: stats.held,
+                })
+              : t("{n} of {total} marked classes · target {target}%", {
+                  n: stats.attended,
+                  total: stats.attended + stats.missed,
+                  target,
+                })}
           </p>
           {stats.canMiss !== null ? (
             <p
@@ -68,15 +82,15 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
             >
               {stats.belowTarget ? <TriangleAlert aria-hidden className="size-4" /> : null}
               {stats.canMiss < 0
-                ? `Over the limit by ${-stats.canMiss}: check with your lecturer.`
+                ? t("Over the limit by {n}: check with your lecturer.", { n: -stats.canMiss })
                 : stats.canMiss === 0
-                  ? "You can't miss any more classes this term."
-                  : `You can miss ${stats.canMiss} more of ${stats.planned} this term.`}
+                  ? t("You can't miss any more classes this term.")
+                  : t("You can miss {n} more of {total} this term.", { n: stats.canMiss, total: stats.planned ?? 0 })}
             </p>
           ) : stats.belowTarget ? (
             <p className="flex items-center gap-1 text-destructive text-sm">
               <TriangleAlert aria-hidden className="size-4" />
-              Below your {target}% target.
+              {t("Below your {target}% target.", { target })}
             </p>
           ) : null}
         </div>
@@ -94,7 +108,7 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
         {stats.unmarked > 0 ? (
           confirming ? (
             <span className="flex flex-wrap items-center gap-2 text-sm">
-              Mark all {stats.unmarked} unmarked classes as attended?
+              {t("Mark all {n} unmarked classes as attended?", { n: stats.unmarked })}
               <Button
                 size="sm"
                 onClick={() => {
@@ -103,16 +117,16 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
                 }}
                 disabled={pending}
               >
-                Yes, mark {stats.unmarked}
+                {t("Yes, mark {n}", { n: stats.unmarked })}
               </Button>
               <Button size="sm" variant="ghost" onClick={() => setConfirming(false)}>
-                Cancel
+                {t("Cancel")}
               </Button>
             </span>
           ) : (
             <Button size="sm" variant="outline" onClick={() => setConfirming(true)} disabled={pending}>
               <CheckCheck aria-hidden />
-              Mark {stats.unmarked} unmarked as attended…
+              {t("Mark {n} unmarked as attended…", { n: stats.unmarked })}
             </Button>
           )
         ) : (
@@ -122,7 +136,7 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
           href="/settings"
           className="text-muted-foreground text-xs underline-offset-4 hover:text-foreground hover:underline"
         >
-          Change target
+          {t("Change target")}
         </Link>
       </div>
     </section>

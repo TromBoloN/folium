@@ -1,6 +1,10 @@
+"use client";
+
+import { useI18n } from "@/lib/i18n/client";
+
 export function ListSkeleton({ rows = 3, label = "Loading" }: { rows?: number; label?: string }) {
   return (
-    <div role="status" aria-label={label} className="flex flex-col gap-2">
+    <div role="status" aria-label={useI18n().tl(label)} className="flex flex-col gap-2">
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
         <div key={i} className="h-20 animate-pulse rounded-lg bg-muted" />
@@ -11,7 +15,7 @@ export function ListSkeleton({ rows = 3, label = "Loading" }: { rows?: number; l
 
 export function FormSkeleton({ label = "Loading" }: { label?: string }) {
   return (
-    <div role="status" aria-label={label} className="flex flex-col gap-5">
+    <div role="status" aria-label={useI18n().tl(label)} className="flex flex-col gap-5">
       {Array.from({ length: 4 }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
         <div key={i} className="flex flex-col gap-2">

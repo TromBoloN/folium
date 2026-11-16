@@ -3,6 +3,7 @@
 import { CalendarClock, Flag, Tag, TriangleAlert } from "lucide-react";
 import { Pill } from "@/components/ui/pill";
 import { formatDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { useI18n } from "@/lib/i18n/client";
 import { formatTime } from "../../timetable/logic";
 import { matchCourse, type ParsedQuickAdd, parseQuickAdd } from "../parse";
 import { PRIORITY_LABELS } from "../schema";
@@ -32,18 +33,19 @@ export function useQuickAddParse(
 /** What the quick-add text will become: the title and chips for date, course and priority. */
 export function ParsePreview({ text, id }: { text: string; id?: string }) {
   const data = useClientData();
+  const { t, intl } = useI18n();
   const result = useQuickAddParse(text);
   if (!result || !data || result.parsed.tokens.length === 0) return null;
   const { parsed, course } = result;
   const today = todayIn(data.timeZone);
   const day = parsed.dueDate
     ? parsed.dueDate === today
-      ? "Today"
-      : formatDate(parsed.dueDate, { weekday: "short", day: "numeric", month: "short" })
+      ? t("Today")
+      : formatDate(parsed.dueDate, { weekday: "short", day: "numeric", month: "short" }, intl)
     : null;
   return (
     <p id={id} className="flex flex-wrap items-center gap-1.5 text-xs" aria-live="polite">
-      <span className="text-muted-foreground">Adds “{parsed.title}”</span>
+      <span className="text-muted-foreground">{t("Adds “{title}”", { title: parsed.title })}</span>
       {day ? (
         <Pill tone="accent">
           <CalendarClock aria-hidden />
@@ -59,14 +61,15 @@ export function ParsePreview({ text, id }: { text: string; id?: string }) {
           </Pill>
         ) : (
           <Pill tone="warning">
-            <TriangleAlert aria-hidden />#{parsed.course}: no such course, kept in the title
+            <TriangleAlert aria-hidden />
+            {t("#{course}: no such course, kept in the title", { course: parsed.course })}
           </Pill>
         )
       ) : null}
       {parsed.priority ? (
         <Pill tone={parsed.priority === "urgent" ? "danger" : "neutral"}>
           <Flag aria-hidden />
-          {PRIORITY_LABELS[parsed.priority]}
+          {t(PRIORITY_LABELS[parsed.priority])}
         </Pill>
       ) : null}
     </p>

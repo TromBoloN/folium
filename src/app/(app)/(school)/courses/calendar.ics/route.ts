@@ -3,6 +3,7 @@ import { buildIcs } from "@/features/schedule/ics";
 import { getSchedule } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { addDays, todayIn } from "@/lib/dates";
+import { getT } from "@/lib/i18n/server";
 
 /**
  * Download the timetable as an .ics file: four weeks back to six months ahead,
@@ -11,13 +12,14 @@ import { addDays, todayIn } from "@/lib/dates";
  */
 export async function GET(request: Request) {
   await requireUser();
-  const { preferences } = await getSettings();
+  const [{ preferences }, t] = await Promise.all([getSettings(), getT()]);
   const today = todayIn(preferences.timeZone);
   const occurrences = await getSchedule({ from: addDays(today, -28), to: addDays(today, 183) });
   const body = buildIcs(occurrences, {
     timeZone: preferences.timeZone,
     stamp: new Date(),
     host: new URL(request.url).hostname,
+    t,
   });
   return new Response(body, {
     headers: {

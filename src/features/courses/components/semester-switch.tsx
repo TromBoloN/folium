@@ -2,18 +2,20 @@
 
 import { useRouter } from "next/navigation";
 import { NativeSelect } from "@/components/ui/native-select";
+import { useT } from "@/lib/i18n/client";
 
 /**
  * "2026 Ganjil ▾": which semester the course cards show. A GET form, so it works
  * without JavaScript (with a Show button); with it, choosing navigates at once.
  */
 export function SemesterSwitch({ semesters, current }: { semesters: string[]; current: string }) {
+  const t = useT();
   const router = useRouter();
   return (
     <form action="/courses" method="get" className="flex items-center gap-2">
       <input type="hidden" name="view" value="cards" />
       <label htmlFor="semester" className="sr-only">
-        Semester
+        {t("Semester")}
       </label>
       <NativeSelect
         id="semester"
@@ -27,11 +29,11 @@ export function SemesterSwitch({ semesters, current }: { semesters: string[]; cu
             {s}
           </option>
         ))}
-        <option value="all">All semesters</option>
+        <option value="all">{t("All semesters")}</option>
       </NativeSelect>
       <noscript>
         <button type="submit" className="h-10 rounded-lg border border-border px-3 text-sm">
-          Show
+          {t("Show")}
         </button>
       </noscript>
     </form>

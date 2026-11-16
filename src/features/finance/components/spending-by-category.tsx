@@ -1,5 +1,6 @@
 import { PieChart } from "lucide-react";
 import Link from "next/link";
+import { getI18n } from "@/lib/i18n/server";
 import { formatIdr } from "../lib/format-idr";
 import { OTHER, type Slice, UNCATEGORISED } from "../lib/rollup-by-category";
 
@@ -19,7 +20,8 @@ function colorOf(slice: Slice) {
  * This month's spending by category: one stacked bar (decorative) and a legend
  * list that carries the numbers. Child categories are already rolled up.
  */
-export function SpendingByCategory({ slices, total, month }: { slices: Slice[]; total: bigint; month: string }) {
+export async function SpendingByCategory({ slices, total, month }: { slices: Slice[]; total: bigint; month: string }) {
+  const { t, tl } = await getI18n();
   return (
     <section
       aria-labelledby="spending-h"
@@ -28,14 +30,14 @@ export function SpendingByCategory({ slices, total, month }: { slices: Slice[]; 
     >
       <div className="flex items-baseline justify-between gap-3">
         <h2 id="spending-h" className="font-medium">
-          Spending by category
+          {t("Spending by category")}
         </h2>
         {total > 0n ? <span className="text-muted-foreground text-sm tabular-nums">{formatIdr(total)}</span> : null}
       </div>
       {slices.length === 0 ? (
         <p className="flex items-center gap-2 text-muted-foreground text-sm">
           <PieChart aria-hidden className="size-4" />
-          No spending this month yet.
+          {t("No spending this month yet.")}
         </p>
       ) : (
         <>
@@ -64,11 +66,13 @@ export function SpendingByCategory({ slices, total, month }: { slices: Slice[]; 
                   />
                   {s.id === UNCATEGORISED ? (
                     <span className="flex min-w-0 flex-1 items-baseline gap-2">
-                      <span className="truncate text-muted-foreground">{s.name}</span>
-                      <span className="font-medium text-primary text-xs underline underline-offset-2">Categorise</span>
+                      <span className="truncate text-muted-foreground">{tl(s.name)}</span>
+                      <span className="font-medium text-primary text-xs underline underline-offset-2">
+                        {t("Categorise")}
+                      </span>
                     </span>
                   ) : (
-                    <span className="min-w-0 flex-1 truncate">{s.name}</span>
+                    <span className="min-w-0 flex-1 truncate">{s.id === OTHER ? tl(s.name) : s.name}</span>
                   )}
                   <span className="tabular-nums">{formatIdr(s.amount)}</span>
                   <span className="w-10 text-right text-muted-foreground tabular-nums">{s.percent}%</span>

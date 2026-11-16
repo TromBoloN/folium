@@ -17,8 +17,12 @@ import { TaskList } from "@/features/tasks/components/task-list";
 import { dueSummary } from "@/features/tasks/due";
 import { listOpenTasks, listTasks } from "@/features/tasks/queries";
 import { taskFiltersSchema } from "@/features/tasks/schema";
+import { Tr } from "@/lib/i18n/client";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Tasks" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Tasks") };
+}
 
 export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
   return (
@@ -30,7 +34,7 @@ export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
           <Button asChild size="sm" variant="outline">
             <Link href="/tasks/new">
               <Plus aria-hidden />
-              New task
+              <Tr k="New task" />
             </Link>
           </Button>
         }
@@ -44,7 +48,12 @@ export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
 
 async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">) {
   await requireUser();
-  const [params, { preferences }, courses] = await Promise.all([searchParams, getSettings(), listCourseOptions()]);
+  const [params, { preferences }, courses, t] = await Promise.all([
+    searchParams,
+    getSettings(),
+    listCourseOptions(),
+    getT(),
+  ]);
   const filters = taskFiltersSchema.parse(params);
   await io(); // "now" must be read per request
   const now = new Date();
@@ -60,7 +69,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
     // Wide screens: the list on the left, summary and filters in a rail on the right.
     <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
       <aside
-        aria-label="Summary and filters"
+        aria-label={t("Summary and filters")}
         className="flex flex-col gap-5 xl:sticky xl:top-8 xl:col-start-2 xl:row-span-2 xl:row-start-1"
       >
         <div className="grid grid-cols-3 gap-3">
@@ -78,7 +87,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
           filtered ? (
             <EmptyState icon={SearchX} title="Nothing here" description="No tasks match these filters.">
               <Button asChild size="sm" variant="outline">
-                <Link href="/tasks">Show all open tasks</Link>
+                <Link href="/tasks">{t("Show all open tasks")}</Link>
               </Button>
             </EmptyState>
           ) : (

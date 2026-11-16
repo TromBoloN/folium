@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewTransactionScreen } from "@/features/finance/components/transaction-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Add transaction" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Add transaction") };
+}
 
 /** ?kind=expense|income|transfer|adjustment preselects the kind. */
 export default function NewTransactionPage({ searchParams }: PageProps<"/money/new">) {

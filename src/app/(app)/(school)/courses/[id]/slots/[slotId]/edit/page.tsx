@@ -8,8 +8,11 @@ import { requireUser } from "@/features/auth/queries";
 import { getCourse } from "@/features/courses/queries";
 import { SlotForm } from "@/features/timetable/components/slot-form";
 import { slotFormContext } from "@/features/timetable/components/slot-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit class time" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit class time") };
+}
 
 export default function EditSlotPage({ params }: PageProps<"/courses/[id]/slots/[slotId]/edit">) {
   return (

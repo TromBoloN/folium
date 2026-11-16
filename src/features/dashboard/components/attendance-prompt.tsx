@@ -5,6 +5,7 @@ import { getSchedule, listAttendanceMarks, listPostponed } from "@/features/sche
 import { getSettings } from "@/features/settings/queries";
 import { formatTime } from "@/features/timetable/logic";
 import { addDays, type CivilDate, formatDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { getI18n } from "@/lib/i18n/server";
 import { AttendancePromptList } from "./attendance-prompt-list";
 
 /**
@@ -14,7 +15,7 @@ import { AttendancePromptList } from "./attendance-prompt-list";
  * date. It disappears when there's nothing to answer.
  */
 export async function AttendancePrompt() {
-  const { preferences } = await getSettings();
+  const [{ preferences }, { t, intl }] = await Promise.all([getSettings(), getI18n()]);
   await io();
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
@@ -26,10 +27,10 @@ export async function AttendancePrompt() {
   ]);
   const dayLabel = (date: CivilDate) =>
     date === today
-      ? "Today"
+      ? t("Today")
       : date === addDays(today, -1)
-        ? "Yesterday"
-        : formatDate(date, { weekday: "short", day: "numeric", month: "short" });
+        ? t("Yesterday")
+        : formatDate(date, { weekday: "short", day: "numeric", month: "short" }, intl);
   const toItem = (o: Occurrence) => ({
     key: o.key,
     color: o.course.color,
@@ -55,7 +56,7 @@ export async function AttendancePrompt() {
     >
       <h2 id="attendance-prompt-h" className="flex shrink-0 items-center gap-2 font-medium sm:w-44 sm:pt-2">
         <CheckCircle2 aria-hidden className="size-5 text-primary" />
-        {pending.length > 0 ? "Did you go?" : "Classes to reschedule"}
+        {pending.length > 0 ? t("Did you go?") : t("Classes to reschedule")}
       </h2>
       <AttendancePromptList items={pending} waiting={waiting} />
     </section>

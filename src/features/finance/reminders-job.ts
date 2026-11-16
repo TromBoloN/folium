@@ -1,3 +1,4 @@
+import { makeT, plural } from "@/lib/i18n/core";
 import "server-only";
 import { DEFAULT_TIME_ZONE, isValidTimeZone } from "@/lib/dates";
 import { emailConfigured, escapeHtml, sendEmail } from "@/lib/email";
@@ -33,6 +34,8 @@ export async function runReminders(now: Date) {
     const weekly = prefs.weeklySummaryEmail === true;
     if (!bills && !weekly) continue;
     const timeZone = isValidTimeZone(prefs.timeZone) ? prefs.timeZone : DEFAULT_TIME_ZONE;
+    // Emails go out in the user's language too.
+    const t = makeT(prefs.language === "id" ? "id" : "en");
     const today = localDateFor(now, timeZone);
     const { data: user } = await admin.auth.admin.getUserById(row.user_id);
     const to = user.user?.email;
@@ -59,14 +62,14 @@ export async function runReminders(now: Date) {
         recurring_rule_id: string;
       }[]
     )
-      .filter((t) => t.kind !== "income")
-      .map((t) => {
-        const rule = ruleById.get(t.recurring_rule_id);
+      .filter((tx) => tx.kind !== "income")
+      .map((tx) => {
+        const rule = ruleById.get(tx.recurring_rule_id);
         return {
-          id: t.id,
-          name: rule?.name ?? "Bill",
-          amount: BigInt(t.amount),
-          dueOn: t.due_on ?? t.occurred_on,
+          id: tx.id,
+          name: rule?.name ?? t("Bill"),
+          amount: BigInt(tx.amount),
+          dueOn: tx.due_on ?? tx.occurred_on,
           remindDaysBefore: rule?.remind_days_before ?? 3,
         };
       });
@@ -96,14 +99,21 @@ export async function runReminders(now: Date) {
       );
       const toSend = due.filter((d) => claimed.includes(d.refKey));
       if (toSend.length > 0) {
-        const lines = toSend.map(
-          (b) => `${b.name}: ${formatIdr(b.amount)}, due ${b.dueOn === today ? "today" : b.dueOn}`,
+        const lines = toSend.map((b) =>
+          t("{name}: {amount}, due {when}", {
+            name: b.name,
+            amount: formatIdr(b.amount),
+            when: b.dueOn === today ? t("today") : b.dueOn,
+          }),
         );
         const result = await sendEmail({
           to,
-          subject: toSend.length === 1 ? `Due soon: ${toSend[0].name}` : `${toSend.length} bills due soon`,
-          text: `${lines.join("\n")}\n\nMark them paid in Folium → Money → Recurring.`,
-          html: `<ul>${lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul><p>Mark them paid in Folium → Money → Recurring.</p>`,
+          subject:
+            toSend.length === 1
+              ? t("Due soon: {name}", { name: toSend[0].name })
+              : t("{n} bills due soon", { n: toSend.length }),
+          text: `${lines.join("\n")}\n\n${t("Mark them paid in Folium → Money → Recurring.")}`,
+          html: `<ul>${lines.map((l) => `<li>${escapeHtml(l)}</li>`).join("")}</ul><p>${escapeHtml(t("Mark them paid in Folium → Money → Recurring."))}</p>`,
         });
         if (result.ok) sent++;
         else {
@@ -130,13 +140,19 @@ export async function runReminders(now: Date) {
         const week = billRows.filter((b) => b.dueOn >= today && b.dueOn <= addDays(today, 7));
         const dueTotal = week.reduce((s, b) => s + b.amount, 0n);
         const lines = [
-          `Spent last week: ${formatIdr(spent)}`,
-          `Due this week: ${week.length} ${week.length === 1 ? "bill" : "bills"}, ${formatIdr(dueTotal)}`,
-          ...week.map((b) => `  · ${b.name}: ${formatIdr(b.amount)} on ${b.dueOn}`),
+          t("Spent last week: {amount}", { amount: formatIdr(spent) }),
+          t(plural(week.length, "Due this week: 1 bill, {amount}", "Due this week: {n} bills, {amount}"), {
+            n: week.length,
+            amount: formatIdr(dueTotal),
+          }),
+          ...week.map(
+            (b) =>
+              `  · ${t("{name}: {amount} on {date}", { name: b.name, amount: formatIdr(b.amount), date: b.dueOn })}`,
+          ),
         ];
         const result = await sendEmail({
           to,
-          subject: "Your week in money",
+          subject: t("Your week in money"),
           text: lines.join("\n"),
           html: `<p>${lines.map(escapeHtml).join("<br>")}</p>`,
         });

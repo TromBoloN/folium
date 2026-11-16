@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { useI18n } from "@/lib/i18n/client";
 import { setTaskStatus } from "../actions";
 import type { TaskStatus } from "../schema";
 import { CheckMark } from "./check-mark";
@@ -20,6 +21,7 @@ type Props = {
  */
 export function TaskCheckbox({ task, style }: Props) {
   const ops = useTaskOps();
+  const { t, tl } = useI18n();
   const [state, formAction] = useActionState(setTaskStatus, null);
   const [pending, setPending] = useState(false);
   const done = task.status === "done";
@@ -29,7 +31,9 @@ export function TaskCheckbox({ task, style }: Props) {
       <input type="hidden" name="status" value={done ? "todo" : "done"} />
       <button
         type="submit"
-        aria-label={done ? `Reopen “${task.title}”` : `Mark “${task.title}” as done`}
+        aria-label={
+          done ? t("Reopen “{title}”", { title: task.title }) : t("Mark “{title}” as done", { title: task.title })
+        }
         disabled={pending}
         onClick={(event) => {
           event.preventDefault();
@@ -43,7 +47,7 @@ export function TaskCheckbox({ task, style }: Props) {
       </button>
       {state && !state.ok ? (
         <p role="alert" className="text-destructive text-xs">
-          {state.error}
+          {tl(state.error)}
         </p>
       ) : null}
     </form>

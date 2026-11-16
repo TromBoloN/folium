@@ -1,11 +1,13 @@
 import { Pill } from "@/components/ui/pill";
+import type { MessageKey } from "@/lib/i18n/core";
+import { getI18n } from "@/lib/i18n/server";
 import { type DueState, dueState, formatDue } from "../due";
 import type { Task } from "../queries";
 import { TaskRow } from "./task-row";
 
 type Props = { tasks: Task[]; now: Date; timeZone: string; timeFormat: "24h" | "12h"; grouped: boolean };
 
-const GROUPS: { state: DueState; title: string }[] = [
+const GROUPS: { state: DueState; title: MessageKey }[] = [
   { state: "overdue", title: "Overdue" },
   { state: "today", title: "Today" },
   { state: "soon", title: "Next few days" },
@@ -13,11 +15,12 @@ const GROUPS: { state: DueState; title: string }[] = [
   { state: "none", title: "No deadline" },
 ];
 
-export function TaskList({ tasks, now, timeZone, timeFormat, grouped }: Props) {
+export async function TaskList({ tasks, now, timeZone, timeFormat, grouped }: Props) {
+  const i18n = await getI18n();
   const rows = tasks.map((task) => ({
     task,
     state: dueState(task, now, timeZone),
-    label: formatDue(task, now, timeZone, timeFormat),
+    label: formatDue(task, now, timeZone, timeFormat, i18n),
   }));
 
   if (!grouped) {
@@ -42,7 +45,7 @@ export function TaskList({ tasks, now, timeZone, timeFormat, grouped }: Props) {
             style={{ "--i": i + 3 } as React.CSSProperties}
           >
             <h2 id={`group-${state}`} className="flex items-center gap-2 px-1 font-medium text-sm">
-              {title}{" "}
+              {i18n.t(title)}{" "}
               <Pill tone={state === "overdue" ? "danger" : state === "today" ? "warning" : "neutral"}>
                 {group.length}
               </Pill>

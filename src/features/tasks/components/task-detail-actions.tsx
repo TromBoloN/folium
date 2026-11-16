@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useActionState, useState } from "react";
 import { useSheet } from "@/components/sheet";
 import { Button } from "@/components/ui/button";
+import { useT } from "@/lib/i18n/client";
 import { deleteTask, setTaskStatus } from "../actions";
 import type { TaskStatus } from "../schema";
 import { useTaskOps } from "./task-ops";
@@ -19,6 +20,7 @@ type Props = { task: { id: string; title: string; status: TaskStatus } };
  */
 export function TaskDetailActions({ task }: Props) {
   const ops = useTaskOps();
+  const t = useT();
   const sheet = useSheet();
   const router = useRouter();
   const [, statusAction] = useActionState(setTaskStatus, null);
@@ -43,13 +45,13 @@ export function TaskDetailActions({ task }: Props) {
           }}
         >
           {done ? <RotateCcw aria-hidden /> : <CheckCircle2 aria-hidden />}
-          {done ? "Reopen" : "Mark done"}
+          {done ? t("Reopen") : t("Mark done")}
         </Button>
       </form>
       <Button asChild variant="outline" size="sm">
         <Link href={`/tasks/${task.id}/edit`}>
           <Pencil aria-hidden />
-          Edit
+          {t("Edit")}
         </Link>
       </Button>
       <form action={deleteAction}>
@@ -72,7 +74,7 @@ export function TaskDetailActions({ task }: Props) {
           }}
         >
           <Trash2 aria-hidden />
-          Delete
+          {t("Delete")}
         </Button>
       </form>
     </div>

@@ -12,8 +12,11 @@ import { GpaStat } from "@/features/grades/components/gpa-summary";
 import { courseResult, formatGpa, gpaBySemester } from "@/features/grades/logic";
 import { listGradebook } from "@/features/grades/queries";
 import { getSettings } from "@/features/settings/queries";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Grades" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Grades") };
+}
 
 export default function GradesPage() {
   return (
@@ -28,7 +31,7 @@ export default function GradesPage() {
 
 async function Grades() {
   await requireUser();
-  const [courses, { preferences }] = await Promise.all([listGradebook(), getSettings()]);
+  const [courses, { preferences }, t] = await Promise.all([listGradebook(), getSettings(), getT()]);
 
   if (courses.length === 0) {
     return (
@@ -38,7 +41,7 @@ async function Grades() {
         description="Add your courses with their credits, then record assessments to see grades and your GPA."
       >
         <Button asChild size="sm">
-          <Link href="/courses/new">Add a course</Link>
+          <Link href="/courses/new">{t("Add a course")}</Link>
         </Button>
       </EmptyState>
     );
@@ -59,10 +62,10 @@ async function Grades() {
   return (
     // Wide screens: semesters on the left, the GPA summary in a rail on the right.
     <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
-      <aside aria-label="GPA" className="flex flex-col gap-3 xl:sticky xl:top-8 xl:col-start-2 xl:row-start-1">
+      <aside aria-label={t("GPA")} className="flex flex-col gap-3 xl:sticky xl:top-8 xl:col-start-2 xl:row-start-1">
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-1">
           <GpaStat
-            label={current?.label ? `GPA · ${current.label}` : "GPA · this semester"}
+            label={current?.label ? t("GPA · {semester}", { semester: current.label }) : t("GPA · this semester")}
             gpa={current?.gpa ?? null}
             credits={current?.credits ?? 0}
             maxPoints={maxPoints}
@@ -77,8 +80,9 @@ async function Grades() {
           />
         </div>
         <p className="text-muted-foreground text-xs">
-          GPA counts courses with credits and at least one graded assessment, weighted by credits. Grades in progress
-          use what&apos;s graded so far.
+          {t(
+            "GPA counts courses with credits and at least one graded assessment, weighted by credits. Grades in progress use what's graded so far.",
+          )}
         </p>
       </aside>
       <div className="flex min-w-0 flex-col gap-6 xl:col-start-1 xl:row-start-1">
@@ -88,9 +92,9 @@ async function Grades() {
           return (
             <section key={s.label ?? "none"} aria-labelledby={id} className="flex flex-col gap-2">
               <h2 id={id} className="flex items-baseline justify-between gap-2 px-1 font-display font-medium text-lg">
-                {s.label ?? "No semester"}
+                {s.label ?? t("No semester")}
                 <span className="font-normal font-sans text-muted-foreground text-sm tabular-nums">
-                  {s.gpa === null ? "No GPA yet" : `GPA ${formatGpa(s.gpa)}`}
+                  {s.gpa === null ? t("No GPA yet") : t("GPA {gpa}", { gpa: formatGpa(s.gpa) })}
                 </span>
               </h2>
               <ul className="tile reveal divide-y divide-border-soft overflow-hidden">

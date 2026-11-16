@@ -5,6 +5,7 @@ import { Tile } from "@/components/ui/tile";
 import { listCourses } from "@/features/courses/queries";
 import { hasAnyTransaction } from "@/features/finance/queries";
 import { hasAnyTask } from "@/features/tasks/queries";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
 /**
@@ -13,35 +14,40 @@ import { cn } from "@/lib/utils";
  * everything is done (no "dismiss" state to store).
  */
 export async function Onboarding() {
-  const [courses, anyTask, anyTransaction] = await Promise.all([listCourses(), hasAnyTask(), hasAnyTransaction()]);
+  const [courses, anyTask, anyTransaction, t] = await Promise.all([
+    listCourses(),
+    hasAnyTask(),
+    hasAnyTransaction(),
+    getT(),
+  ]);
   const steps = [
     {
       done: courses.length > 0,
-      title: "Add your first course",
-      detail: "In School: name, code and a colour. Colours follow the course everywhere.",
+      title: t("Add your first course"),
+      detail: t("In School: name, code and a colour. Colours follow the course everywhere."),
       href: "/courses/new",
-      cta: "Add a course",
+      cta: t("Add a course"),
     },
     {
       done: courses.some((c) => c.slots.length > 0),
-      title: "Add its class times",
-      detail: "Your timetable, the Next up countdown and the day timeline come from these.",
+      title: t("Add its class times"),
+      detail: t("Your timetable, the Next up countdown and the day timeline come from these."),
       href: courses.length > 0 ? "/courses/timetable/new" : null,
-      cta: "Add class times",
+      cta: t("Add class times"),
     },
     {
       done: anyTask,
-      title: "Add an assignment",
-      detail: "A task for a class, in one line: “Essay outline tomorrow 5pm #ING101”. Press N anywhere.",
+      title: t("Add an assignment"),
+      detail: t("A task for a class, in one line: “Essay outline tomorrow 5pm #ING101”. Press N anywhere."),
       href: "/tasks/new",
-      cta: "Add a task",
+      cta: t("Add a task"),
     },
     {
       done: anyTransaction,
-      title: "Track some money",
-      detail: "Add what you spent or received; your accounts keep their balance. “gofood 32k #food @gopay”.",
+      title: t("Track some money"),
+      detail: t("Add what you spent or received; your accounts keep their balance. “gofood 32k #food @gopay”."),
       href: "/money/new",
-      cta: "Add a transaction",
+      cta: t("Add a transaction"),
     },
   ];
   const doneCount = steps.filter((s) => s.done).length;
@@ -53,7 +59,11 @@ export async function Onboarding() {
       <span aria-hidden className="leaf-veins pointer-events-none absolute -top-10 -right-8 size-56 opacity-15" />
       <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <div className="flex items-center gap-4 md:w-64 md:shrink-0 md:flex-col md:items-start">
-          <ProgressRing value={doneCount / steps.length} label={`${doneCount} of ${steps.length} steps done`} size={64}>
+          <ProgressRing
+            value={doneCount / steps.length}
+            label={t("{n} of {total} steps done", { n: doneCount, total: steps.length })}
+            size={64}
+          >
             <span className="font-display font-medium text-lg tabular-nums">
               {doneCount}/{steps.length}
             </span>
@@ -61,9 +71,9 @@ export async function Onboarding() {
           <div className="flex flex-col gap-1">
             <h2 id="onboarding" className="flex items-center gap-2 font-display font-medium text-2xl">
               <Sprout aria-hidden className="size-5 text-primary" />
-              Set up Folium
+              {t("Set up Folium")}
             </h2>
-            <p className="text-muted-foreground text-sm">Four steps and Today fills itself in.</p>
+            <p className="text-muted-foreground text-sm">{t("Four steps and Today fills itself in.")}</p>
           </div>
         </div>
         <ol className="flex flex-1 flex-col gap-2">
@@ -88,7 +98,7 @@ export async function Onboarding() {
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className={cn("font-medium", step.done && "text-muted-foreground line-through")}>
                   {step.title}
-                  {step.done ? <span className="sr-only"> (done)</span> : null}
+                  {step.done ? <span className="sr-only">{t(" (done)")}</span> : null}
                 </span>
                 {step.done ? null : <span className="text-muted-foreground text-sm">{step.detail}</span>}
               </span>

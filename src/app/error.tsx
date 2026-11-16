@@ -4,6 +4,7 @@ import { TriangleAlert } from "lucide-react";
 import { useEffect } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { Button } from "@/components/ui/button";
+import { Tr } from "@/lib/i18n/client";
 
 /** Errors outside the signed-in area (auth pages). Signed-in pages use (app)/error.tsx inside the shell. */
 export default function RootError({ error, retry }: { error: Error & { digest?: string }; retry: () => void }) {
@@ -19,7 +20,7 @@ export default function RootError({ error, retry }: { error: Error & { digest?: 
         description="This page couldn't load. Check your connection and try again."
       >
         <Button size="sm" onClick={() => retry()}>
-          Try again
+          <Tr k="Try again" />
         </Button>
       </EmptyState>
     </main>

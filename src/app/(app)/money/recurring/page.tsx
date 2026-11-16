@@ -17,8 +17,11 @@ import { ensureRecurringGenerated, listBills, listPaidFromRules, listRules } fro
 import { moneyToday } from "@/features/finance/queries/today";
 import { monthBounds } from "@/features/finance/schemas/money-math";
 import { formatDate } from "@/lib/dates";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Recurring" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Recurring") };
+}
 
 export default function RecurringPage() {
   return (
@@ -48,11 +51,12 @@ async function Recurring() {
   const { today } = await moneyToday();
   await ensureRecurringGenerated(today);
   const { from, to: monthEnd } = monthBounds(today.slice(0, 7));
-  const [bills, rules, categories, paid] = await Promise.all([
+  const [bills, rules, categories, paid, { t, intl }] = await Promise.all([
     listBills(),
     listRules(),
     listCategories(),
     listPaidFromRules(from, monthEnd),
+    getI18n(),
   ]);
   const weekEnd = addDays(today, 7);
   const overdue = bills.filter((b) => (b.dueOn ?? b.occurredOn) < today);
@@ -79,10 +83,10 @@ async function Recurring() {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <dl className="grid flex-1 grid-cols-2 gap-3 sm:grid-cols-4">
           {[
-            ["Fixed per month", fixedMonthly],
-            ["Paid this month", paidThisMonth],
-            ["Still to pay this month", remainingThisMonth],
-            ["Next 30 days", next30],
+            [t("Fixed per month"), fixedMonthly],
+            [t("Paid this month"), paidThisMonth],
+            [t("Still to pay this month"), remainingThisMonth],
+            [t("Next 30 days"), next30],
           ].map(([term, value]) => (
             <div key={String(term)} className="tile flex flex-col gap-1 p-4">
               <dt className="text-muted-foreground text-xs">{String(term)}</dt>
@@ -94,17 +98,17 @@ async function Recurring() {
 
       <section aria-labelledby="templates-h" className="flex flex-col gap-2">
         <h2 id="templates-h" className="px-1 font-medium text-sm">
-          Add
+          {t("Add")}
         </h2>
         <ul className="flex flex-wrap gap-2">
-          {RULE_TEMPLATES.map((t) => (
-            <li key={t.key}>
+          {RULE_TEMPLATES.map((tpl) => (
+            <li key={tpl.key}>
               <Link
-                href={`/money/recurring/new?template=${t.key}`}
+                href={`/money/recurring/new?template=${tpl.key}`}
                 className="inline-flex h-9 items-center gap-1.5 rounded-full border border-border bg-surface-1 px-3 text-sm transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
               >
                 <Plus aria-hidden className="size-3.5" />
-                {t.label}
+                {t(tpl.label)}
               </Link>
             </li>
           ))}
@@ -118,33 +122,33 @@ async function Recurring() {
           description="Add kos, UKT, subscriptions and your allowance once; Folium plans them ahead so you see what's coming and what's safe to spend."
         >
           <Button asChild size="sm">
-            <Link href="/money/recurring/new?template=kos">Add your kos</Link>
+            <Link href="/money/recurring/new?template=kos">{t("Add your kos")}</Link>
           </Button>
         </EmptyState>
       ) : (
         <>
-          <Group title="Overdue" count={overdue.length}>
+          <Group title={t("Overdue")} count={overdue.length}>
             {overdue.map((b) => (
               <BillRow key={b.id} bill={b} today={today} categories={categories} />
             ))}
           </Group>
-          <Group title="Due this week" count={thisWeek.length}>
+          <Group title={t("Due this week")} count={thisWeek.length}>
             {thisWeek.map((b) => (
               <BillRow key={b.id} bill={b} today={today} categories={categories} />
             ))}
           </Group>
-          <Group title="Later this month" count={laterMonth.length}>
+          <Group title={t("Later this month")} count={laterMonth.length}>
             {laterMonth.map((b) => (
               <BillRow key={b.id} bill={b} today={today} categories={categories} />
             ))}
           </Group>
           {overdue.length + thisWeek.length + laterMonth.length === 0 ? (
-            <p className="px-1 text-muted-foreground text-sm">Nothing left to pay this month.</p>
+            <p className="px-1 text-muted-foreground text-sm">{t("Nothing left to pay this month.")}</p>
           ) : null}
 
           <section aria-labelledby="rules-h" className="flex flex-col gap-1.5">
             <h2 id="rules-h" className="px-1 font-medium text-sm">
-              All recurring <span className="text-muted-foreground">· {rules.length}</span>
+              {t("All recurring")} <span className="text-muted-foreground">· {rules.length}</span>
             </h2>
             <ul className="tile flex flex-col divide-y divide-border-soft overflow-hidden">
               {rules.map((r) => {
@@ -156,16 +160,18 @@ async function Recurring() {
                         {r.name}
                       </Link>
                       <span className="text-muted-foreground text-xs">
-                        {cadenceLabel(r)}
-                        {r.instalmentsTotal ? ` · ${r.instalmentsTotal} payments` : ""}
+                        {cadenceLabel(r, t)}
+                        {r.instalmentsTotal ? t(" · {n} payments", { n: r.instalmentsTotal }) : ""}
                         {isPaused
                           ? r.pausedUntil
-                            ? ` · paused until ${formatDate(r.pausedUntil, { day: "numeric", month: "short" })}`
-                            : " · paused"
+                            ? t(" · paused until {date}", {
+                                date: formatDate(r.pausedUntil, { day: "numeric", month: "short" }, intl),
+                              })
+                            : t(" · paused")
                           : ""}
                       </span>
                     </div>
-                    {isPaused ? <Pause aria-label="Paused" className="size-4 text-muted-foreground" /> : null}
+                    {isPaused ? <Pause aria-label={t("Paused")} className="size-4 text-muted-foreground" /> : null}
                     <span className="font-medium text-sm tabular-nums">
                       {r.isEstimate ? "~" : ""}
                       {formatIdr(r.amount)}

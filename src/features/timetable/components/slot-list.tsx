@@ -2,6 +2,7 @@ import { CalendarRange, MapPin, Pencil, Trash2, Video } from "lucide-react";
 import Link from "next/link";
 import { ActionForm, SubmitButton } from "@/components/action-form";
 import { Button } from "@/components/ui/button";
+import { getI18n } from "@/lib/i18n/server";
 import { deleteSlot } from "../actions";
 import { describeSlot, formatDateRange, formatTimeRange } from "../format";
 import { sortSlots, weekdayLabel } from "../logic";
@@ -15,18 +16,20 @@ type Props = {
   timeFormat: "24h" | "12h";
 };
 
-export function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
+export async function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
+  const i18n = await getI18n();
+  const { t } = i18n;
   return (
     <ul className="flex flex-col tile divide-y divide-border-soft overflow-hidden">
       {sortSlots(slots).map((slot) => {
         const location = slot.location ?? courseRoom;
-        const range = formatDateRange(slot.startsOn, slot.endsOn);
-        const overlaps = (conflicts.get(slot.id) ?? []).map((o) => describeSlot(o, timeFormat));
+        const range = formatDateRange(slot.startsOn, slot.endsOn, i18n);
+        const overlaps = (conflicts.get(slot.id) ?? []).map((o) => describeSlot(o, timeFormat, i18n.intl));
         return (
           <li key={slot.id} className="flex flex-wrap items-start gap-3 px-4 py-3">
             <div className="flex min-w-0 flex-1 flex-col gap-1">
               <p className="font-medium">
-                {weekdayLabel(slot.weekday)}{" "}
+                {weekdayLabel(slot.weekday, "label", i18n.intl)}{" "}
                 <span className="font-normal text-muted-foreground tabular-nums">
                   {formatTimeRange(slot, timeFormat)}
                 </span>
@@ -40,7 +43,7 @@ export function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
               {slot.online ? (
                 <p className="flex items-center gap-1 text-muted-foreground text-sm">
                   <Video aria-hidden className="size-3.5" />
-                  Online
+                  {t("Online")}
                   {slot.meetingUrl ? (
                     <>
                       {" · "}
@@ -50,7 +53,7 @@ export function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
                         rel="noopener noreferrer"
                         className="text-foreground underline underline-offset-4"
                       >
-                        Open link
+                        {t("Open link")}
                       </a>
                     </>
                   ) : null}
@@ -68,13 +71,17 @@ export function SlotList({ slots, conflicts, courseRoom, timeFormat }: Props) {
               <Button asChild variant="ghost" size="icon">
                 <Link
                   href={`/courses/${slot.courseId}/slots/${slot.id}/edit`}
-                  aria-label={`Edit ${weekdayLabel(slot.weekday)} class`}
+                  aria-label={t("Edit {day} class", { day: weekdayLabel(slot.weekday, "label", i18n.intl) })}
                 >
                   <Pencil aria-hidden />
                 </Link>
               </Button>
               <ActionForm action={deleteSlot} fields={{ id: slot.id }}>
-                <SubmitButton variant="ghost" size="icon" aria-label={`Delete ${weekdayLabel(slot.weekday)} class`}>
+                <SubmitButton
+                  variant="ghost"
+                  size="icon"
+                  aria-label={t("Delete {day} class", { day: weekdayLabel(slot.weekday, "label", i18n.intl) })}
+                >
                   <Trash2 aria-hidden />
                 </SubmitButton>
               </ActionForm>

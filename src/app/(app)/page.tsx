@@ -16,8 +16,11 @@ import { visibleWidgets } from "@/features/dashboard/layout";
 import { getDashboardLayout } from "@/features/dashboard/queries";
 import { WIDGETS } from "@/features/dashboard/registry";
 import { WIDGET_IDS, type WidgetId } from "@/features/dashboard/widget-ids";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Today" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Today") };
+}
 
 export default function TodayPage({ searchParams }: PageProps<"/">) {
   return (
@@ -49,13 +52,13 @@ export default function TodayPage({ searchParams }: PageProps<"/">) {
 }
 
 async function EditToggle({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
-  const { edit } = await searchParams;
+  const [{ edit }, t] = await Promise.all([searchParams, getT()]);
   if (edit === "1") return null;
   return (
     <Button asChild variant="outline" size="sm">
       <Link href="/?edit=1">
         <SlidersHorizontal aria-hidden />
-        Customize
+        {t("Customize")}
       </Link>
     </Button>
   );
@@ -63,19 +66,23 @@ async function EditToggle({ searchParams }: Pick<PageProps<"/">, "searchParams">
 
 async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
   await requireUser();
-  const [{ edit }, layout] = await Promise.all([searchParams, getDashboardLayout()]);
+  const [{ edit }, layout, t] = await Promise.all([searchParams, getDashboardLayout(), getT()]);
 
   if (edit === "1") {
     return (
       <section aria-labelledby="customize" className="flex max-w-2xl flex-col gap-3">
         <div>
           <h2 id="customize" className="font-medium">
-            Customize your dashboard
+            {t("Customize your dashboard")}
           </h2>
-          <p className="text-muted-foreground text-sm">Choose which widgets to show and drag them into order.</p>
+          <p className="text-muted-foreground text-sm">{t("Choose which widgets to show and drag them into order.")}</p>
         </div>
         <DashboardEditor
-          widgets={WIDGET_IDS.map((id) => ({ id, title: WIDGETS[id].title, description: WIDGETS[id].description }))}
+          widgets={WIDGET_IDS.map((id) => ({
+            id,
+            title: t(WIDGETS[id].title),
+            description: t(WIDGETS[id].description),
+          }))}
           layout={layout}
           defaultOrder={[...WIDGET_IDS]}
         />
@@ -92,7 +99,7 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
         description="Turn some back on to fill your dashboard."
       >
         <Button asChild size="sm">
-          <Link href="/?edit=1">Customize</Link>
+          <Link href="/?edit=1">{t("Customize")}</Link>
         </Button>
       </EmptyState>
     );
@@ -121,10 +128,13 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
                 fallback={
                   widget.frame === "bare" ? (
                     <Tile className="p-5">
-                      <WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />
+                      <WidgetSkeleton
+                        rows={widget.skeletonRows}
+                        label={t("Loading {name}", { name: t(widget.title) })}
+                      />
                     </Tile>
                   ) : (
-                    <WidgetSkeleton rows={widget.skeletonRows} label={`Loading ${widget.title}`} />
+                    <WidgetSkeleton rows={widget.skeletonRows} label={t("Loading {name}", { name: t(widget.title) })} />
                   )
                 }
               >

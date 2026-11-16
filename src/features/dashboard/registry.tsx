@@ -10,6 +10,7 @@ import {
   Sun,
   Wallet,
 } from "lucide-react";
+import type { MessageKey } from "@/lib/i18n/core";
 import type { WidgetId, WidgetSize } from "./widget-ids";
 import { ClassesWidget } from "./widgets/classes-widget";
 import { GradesWidget } from "./widgets/grades-widget";
@@ -21,8 +22,8 @@ import { DueSoonWidget, OverdueWidget } from "./widgets/task-widgets";
 import { WeekWidget } from "./widgets/week-widget";
 
 export type WidgetDefinition = {
-  title: string;
-  description: string;
+  title: MessageKey;
+  description: MessageKey;
   icon: LucideIcon;
   /** Rendered inside its own <Suspense>, so it may read data and the clock. */
   Component: () => React.ReactNode | Promise<React.ReactNode>;
@@ -33,7 +34,7 @@ export type WidgetDefinition = {
   /** Fill the whole grid area instead of sizing to content. Only for elastic content (the timeline). */
   stretch?: boolean;
   href?: string;
-  hrefLabel?: string;
+  hrefLabel?: MessageKey;
   /** Skeleton rows while it loads. */
   skeletonRows: number;
 };

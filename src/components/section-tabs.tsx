@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef } from "react";
+import { useI18n } from "@/lib/i18n/client";
 import { activeTabHref, type SectionTab } from "@/lib/sections";
 import { cn } from "@/lib/utils";
 
@@ -26,13 +27,14 @@ export function SectionTabs({
   extra?: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { t: tr, tl } = useI18n();
   const activeHref = activeTabHref(pathname, items);
   const active = useRef<HTMLAnchorElement>(null);
   useEffect(() => {
     if (pathname) active.current?.scrollIntoView({ block: "nearest", inline: "nearest" });
   }, [pathname]);
   return (
-    <nav aria-label={label} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
+    <nav aria-label={tl(label)} className="-mx-4 overflow-x-auto px-4 [scrollbar-width:none] md:mx-0 md:px-0">
       <ul className="flex min-w-max items-center gap-1 border-border-soft border-b">
         {items.map((t) => {
           const current = activeHref === t.href;
@@ -49,7 +51,7 @@ export function SectionTabs({
                     : "border-transparent text-muted-foreground hover:text-foreground",
                 )}
               >
-                {t.label}
+                {tr(t.label)}
               </Link>
             </li>
           );

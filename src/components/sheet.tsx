@@ -7,6 +7,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
 import type { FormState } from "@/lib/action-result";
+import { useI18n, useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 type SheetApi = {
@@ -31,6 +32,7 @@ export const SHEET_FIELD = "_sheet";
  * Closing goes back in history, which drops the intercepted URL.
  */
 export function Sheet({ title, children }: { title: string; children: React.ReactNode }) {
+  const { t, tl } = useI18n();
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const refreshAfterClose = useRef(false);
@@ -76,12 +78,12 @@ export function Sheet({ title, children }: { title: string; children: React.Reac
             )}
           >
             <h2 id="sheet-title" className="font-display font-medium text-xl">
-              {title}
+              {tl(title)}
             </h2>
             <button
               type="button"
               onClick={() => dialog.current?.close()}
-              aria-label="Close"
+              aria-label={t("Close")}
               className="flex size-9 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
             >
               <X aria-hidden className="size-5" />
@@ -117,16 +119,17 @@ export function SheetFormBridge({ state, message }: { state: FormState; message:
 /** A form's Cancel: closes the sheet when in one, otherwise a link back. */
 export function CancelButton({ href }: { href: string }) {
   const sheet = useSheet();
+  const t = useT();
   if (sheet) {
     return (
       <Button type="button" variant="ghost" onClick={() => sheet.close()}>
-        Cancel
+        {t("Cancel")}
       </Button>
     );
   }
   return (
     <Button asChild variant="ghost">
-      <Link href={href}>Cancel</Link>
+      <Link href={href}>{t("Cancel")}</Link>
     </Button>
   );
 }

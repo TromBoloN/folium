@@ -11,6 +11,8 @@ import { describedBy } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
+import { useI18n } from "@/lib/i18n/client";
+import type { MessageKey } from "@/lib/i18n/core";
 import { cn } from "@/lib/utils";
 import { saveTransaction } from "../actions/transactions";
 import { formatIdr } from "../lib/format-idr";
@@ -70,7 +72,7 @@ type Props = {
   courses?: { id: string; name: string; code: string | null }[];
 };
 
-const KINDS: { value: TransactionKind; label: string; tone: string }[] = [
+const KINDS: { value: TransactionKind; label: MessageKey; tone: string }[] = [
   {
     value: "expense",
     label: "Expense",
@@ -85,7 +87,7 @@ const KINDS: { value: TransactionKind; label: string; tone: string }[] = [
   { value: "adjustment", label: "Adjust", tone: "has-checked:border-foreground/40 has-checked:bg-muted" },
 ];
 
-const DEBT_CHOICES: { value: TransactionKind; label: string }[] = [
+const DEBT_CHOICES: { value: TransactionKind; label: MessageKey }[] = [
   { value: "lend", label: "I lent" },
   { value: "borrow", label: "I borrowed" },
   { value: "repay", label: "Paid me back" },
@@ -96,9 +98,10 @@ const chip =
   "relative flex cursor-pointer select-none items-center gap-2 rounded-xl border border-border bg-surface-1 text-sm transition-[border-color,background-color,transform] duration-(--dur-fast) hover:border-foreground/25 active:scale-[0.98] has-checked:border-primary has-checked:bg-accent has-checked:text-accent-foreground has-focus-visible:ring-[3px] has-focus-visible:ring-ring/30";
 
 function ErrorText({ id, error }: { id: string; error?: string }) {
+  const { tl } = useI18n();
   return error ? (
     <p id={`${id}-error`} className="text-destructive text-xs">
-      {error}
+      {tl(error)}
     </p>
   ) : null;
 }
@@ -118,6 +121,7 @@ export function TransactionForm({
   people = [],
   courses = [],
 }: Props) {
+  const { t, tl } = useI18n();
   const [state, action, pending] = useActionState(saveTransaction, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const submitted = state && !state.ok ? state.values : undefined;
@@ -221,9 +225,11 @@ export function TransactionForm({
                 />
                 <span className="line-clamp-2 text-xs leading-tight">
                   {c.name}
-                  {parent ? <span className="sr-only"> (in {parent.name})</span> : null}
+                  {parent ? <span className="sr-only">{t(" (in {name})", { name: parent.name })}</span> : null}
                 </span>
-                {isSuggested ? <span className="font-medium text-[0.625rem] text-primary">Suggested</span> : null}
+                {isSuggested ? (
+                  <span className="font-medium text-[0.625rem] text-primary">{t("Suggested")}</span>
+                ) : null}
               </label>
             );
           })}
@@ -244,11 +250,11 @@ export function TransactionForm({
         if (el.name === "kind") onKind(el.value as TransactionKind);
       }}
     >
-      <SheetFormBridge state={state} message={id ? "Transaction saved" : "Transaction added"} />
+      <SheetFormBridge state={state} message={id ? t("Transaction saved") : t("Transaction added")} />
       {id ? <input type="hidden" name="id" value={id} /> : null}
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="sr-only">Kind</legend>
+        <legend className="sr-only">{t("Kind")}</legend>
         <div className="grid grid-cols-4 gap-1 rounded-xl border border-border-soft bg-muted/50 p-1">
           {KINDS.map((k) => (
             <label
@@ -264,14 +270,14 @@ export function TransactionForm({
                 value={k.value}
                 defaultChecked={value("kind") === k.value}
                 className="sr-only"
-                aria-label={k.value === "adjustment" ? "Adjustment" : undefined}
+                aria-label={k.value === "adjustment" ? t("Adjustment") : undefined}
               />
-              {k.label}
+              {t(k.label)}
             </label>
           ))}
         </div>
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-muted-foreground text-xs">With a person:</span>
+          <span className="text-muted-foreground text-xs">{t("With a person:")}</span>
           {DEBT_CHOICES.map((k) => (
             <label
               key={k.value}
@@ -284,7 +290,7 @@ export function TransactionForm({
                 defaultChecked={value("kind") === k.value}
                 className="sr-only"
               />
-              {k.label}
+              {t(k.label)}
             </label>
           ))}
         </div>
@@ -293,7 +299,7 @@ export function TransactionForm({
 
       <div className="flex flex-col items-center gap-1 text-center">
         <label htmlFor="amount" className="font-medium text-muted-foreground text-sm">
-          Amount
+          {t("Amount")}
         </label>
         <div className="flex items-baseline justify-center gap-2">
           <span aria-hidden className="font-display text-2xl text-muted-foreground">
@@ -322,7 +328,7 @@ export function TransactionForm({
           {parsedAmount?.ok ? (
             <span className="font-medium">{formatIdr(parsedAmount.value)}</span>
           ) : parsedAmount ? (
-            <span className="text-muted-foreground">Not an amount yet</span>
+            <span className="text-muted-foreground">{t("Not an amount yet")}</span>
           ) : (
             <span className="text-muted-foreground">25.000, 25k or 1,5jt</span>
           )}
@@ -333,8 +339,8 @@ export function TransactionForm({
       {accountChips(
         "accountId",
         <>
-          <span data-kinds="expense income adjustment lend repay borrow payback">Account</span>
-          <span data-kinds="transfer">From</span>
+          <span data-kinds="expense income adjustment lend repay borrow payback">{t("Account")}</span>
+          <span data-kinds="transfer">{t("From")}</span>
         </>,
       )}
 
@@ -343,13 +349,13 @@ export function TransactionForm({
           <div className="-my-2 flex justify-center">
             <Button type="button" variant="outline" size="sm" onClick={swap} className="rounded-full">
               <ArrowDownUp aria-hidden />
-              Swap
+              {t("Swap")}
             </Button>
           </div>
-          {accountChips("toAccountId", "To")}
+          {accountChips("toAccountId", t("To"))}
           <div className="grid gap-1.5 sm:max-w-xs">
             <label htmlFor="feeAmount" className="font-medium text-sm">
-              Fee <span className="font-normal text-muted-foreground">(optional)</span>
+              {t("Fee")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
             </label>
             <Input
               id="feeAmount"
@@ -357,12 +363,12 @@ export function TransactionForm({
               defaultValue={value("feeAmount")}
               inputMode="decimal"
               autoComplete="off"
-              placeholder="e.g. 2.500"
+              placeholder={t("e.g. {example}", { example: "2.500" })}
               aria-invalid={errors.feeAmount ? true : undefined}
               aria-describedby={describedBy("feeAmount", errors.feeAmount, "hint")}
             />
             <p id="feeAmount-hint" className="text-muted-foreground text-xs">
-              Taken from the sending account.
+              {t("Taken from the sending account.")}
             </p>
             <ErrorText id="feeAmount" error={errors.feeAmount} />
           </div>
@@ -372,7 +378,7 @@ export function TransactionForm({
       <div data-kinds="lend repay borrow payback">
         <div className="grid gap-1.5">
           <label htmlFor="personName" className="font-medium text-sm">
-            Person
+            {t("Person")}
           </label>
           <Input
             id="personName"
@@ -381,7 +387,7 @@ export function TransactionForm({
             defaultValue={value("personName")}
             autoComplete="off"
             maxLength={60}
-            placeholder="e.g. Budi"
+            placeholder={t("e.g. Budi")}
             aria-invalid={errors.personId || errors.personName ? true : undefined}
             aria-describedby={errors.personId || errors.personName ? "personName-error" : "personName-hint"}
           />
@@ -392,11 +398,11 @@ export function TransactionForm({
           </datalist>
           {errors.personId || errors.personName ? (
             <p id="personName-error" className="text-destructive text-xs">
-              {errors.personId ?? errors.personName}
+              {tl(errors.personId ?? errors.personName ?? "")}
             </p>
           ) : (
             <p id="personName-hint" className="text-muted-foreground text-xs">
-              A new name is added to your people. Debts never count as spending or income.
+              {t("A new name is added to your people. Debts never count as spending or income.")}
             </p>
           )}
         </div>
@@ -405,11 +411,11 @@ export function TransactionForm({
       <div data-kinds="adjustment">
         <ChipGroup
           name="adjustmentDirection"
-          legend="Direction"
+          legend={t("Direction")}
           defaultValue={value("adjustmentDirection")}
           options={[
-            { value: "in", label: "Money in" },
-            { value: "out", label: "Money out" },
+            { value: "in", label: t("Money in") },
+            { value: "out", label: t("Money out") },
           ]}
           error={errors.adjustmentDirection}
         />
@@ -419,15 +425,15 @@ export function TransactionForm({
         <div className="flex flex-col gap-4">
           <div className="grid gap-1.5">
             <label htmlFor="payee" className="font-medium text-sm">
-              {kind === "income" ? "From (payer)" : "Payee"}{" "}
-              <span className="font-normal text-muted-foreground">(optional)</span>
+              {kind === "income" ? t("From (payer)") : t("Payee")}{" "}
+              <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
             </label>
             <Input
               id="payee"
               name="payee"
               defaultValue={value("payee")}
               autoComplete="off"
-              placeholder={kind === "income" ? "e.g. Mama" : "e.g. GoFood"}
+              placeholder={kind === "income" ? t("e.g. Mama") : t("e.g. GoFood")}
               aria-invalid={errors.payee ? true : undefined}
               aria-describedby={describedBy("payee", errors.payee)}
               onChange={(e) => suggestFrom(e.target.value)}
@@ -439,7 +445,7 @@ export function TransactionForm({
             aria-describedby={errors.categoryId ? "categoryId-error" : undefined}
           >
             <legend className="mb-1.5 flex w-full items-center justify-between gap-2 font-medium text-sm">
-              Category
+              {t("Category")}
               <label className="flex cursor-pointer items-center gap-1.5 font-normal text-muted-foreground text-xs has-checked:text-foreground">
                 <input
                   type="radio"
@@ -448,7 +454,7 @@ export function TransactionForm({
                   defaultChecked={!value("categoryId")}
                   className="accent-primary"
                 />
-                None
+                {t("None")}
               </label>
             </legend>
             {categoryGrid("expense")}
@@ -458,10 +464,10 @@ export function TransactionForm({
           {courses.length > 0 && kind === "expense" ? (
             <div className="grid gap-1.5 sm:max-w-xs">
               <label htmlFor="courseId" className="font-medium text-sm">
-                For a course <span className="font-normal text-muted-foreground">(optional)</span>
+                {t("For a course")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
               </label>
               <NativeSelect id="courseId" name="courseId" defaultValue={value("courseId")}>
-                <option value="">None</option>
+                <option value="">{t("None")}</option>
                 {courses.map((c) => (
                   <option key={c.id} value={c.id}>
                     {c.code ? `${c.code} · ${c.name}` : c.name}
@@ -476,12 +482,12 @@ export function TransactionForm({
       <div className="flex flex-col gap-4">
         <div className="grid gap-1.5">
           <label htmlFor="occurredOn" className="font-medium text-sm">
-            Date
+            {t("Date")}
           </label>
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { label: "Today", date: today },
-              { label: "Yesterday", date: addDays(today, -1) },
+              { label: t("Today"), date: today },
+              { label: t("Yesterday"), date: addDays(today, -1) },
             ].map((d) => (
               <Button
                 key={d.label}
@@ -489,7 +495,7 @@ export function TransactionForm({
                 variant="outline"
                 size="sm"
                 className="rounded-full"
-                aria-label={`Set date to ${d.label.toLowerCase()}`}
+                aria-label={t("Set date to {day}", { day: d.label.toLowerCase() })}
                 onClick={() => {
                   if (dateRef.current) dateRef.current.value = d.date;
                 }}
@@ -513,31 +519,31 @@ export function TransactionForm({
         </div>
         <ChipGroup
           name="status"
-          legend="Status"
+          legend={t("Status")}
           defaultValue={value("status")}
           options={[
-            { value: "posted", label: "Done" },
-            { value: "planned", label: "Planned" },
+            { value: "posted", label: t("Done") },
+            { value: "planned", label: t("Planned") },
           ]}
-          hint="Planned ones don't change balances yet."
+          hint={t("Planned ones don't change balances yet.")}
         />
       </div>
 
       <details open={Boolean(value("note")) || Boolean(errors.note)} className="group">
         <summary className="flex w-fit cursor-pointer list-none items-center gap-2 rounded-md font-medium text-muted-foreground text-sm hover:text-foreground focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 group-open:mb-2">
           <StickyNote aria-hidden className="size-4" />
-          <span className="group-open:hidden">Add note</span>
-          <span className="hidden group-open:inline">Note</span>
+          <span className="group-open:hidden">{t("Add note")}</span>
+          <span className="hidden group-open:inline">{t("Note")}</span>
         </summary>
         <label htmlFor="note" className="sr-only">
-          Note
+          {t("Note")}
         </label>
         <Textarea
           id="note"
           name="note"
           defaultValue={value("note")}
           rows={2}
-          placeholder="Anything to remember"
+          placeholder={t("Anything to remember")}
           aria-invalid={errors.note ? true : undefined}
           aria-describedby={describedBy("note", errors.note)}
         />
@@ -546,14 +552,14 @@ export function TransactionForm({
 
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : id ? "Save changes" : "Add transaction"}
+          {pending ? t("Saving…") : id ? t("Save changes") : t("Add transaction")}
         </Button>
         <CancelButton href="/money" />
         {id ? (
           <span className="mr-auto">
             <DeleteTransactionButton
               id={id}
-              label="this transaction"
+              label={t("this transaction")}
               onDeleted={() => (sheet ? sheet.close({ refresh: true }) : router.push("/money"))}
             />
           </span>

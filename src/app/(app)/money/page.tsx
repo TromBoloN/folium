@@ -35,8 +35,11 @@ import { moneyToday } from "@/features/finance/queries/today";
 import { monthBounds, monthTotals } from "@/features/finance/schemas/money-math";
 import { getSettings } from "@/features/settings/queries";
 import { formatDate } from "@/lib/dates";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Money" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Money") };
+}
 
 type Search = Pick<PageProps<"/money">, "searchParams">;
 
@@ -78,16 +81,16 @@ export default function MoneyPage({ searchParams }: PageProps<"/money">) {
 
 /** Today in the user's zone, and the month the page shows (?month=, never in the future). */
 async function pageMonth(searchParams: Search["searchParams"]) {
-  const [{ preferences }, params] = await Promise.all([getSettings(), searchParams]);
+  const [{ preferences }, params, i18n] = await Promise.all([getSettings(), searchParams, getI18n()]);
   await io();
   const today = localDateFor(new Date(), preferences.timeZone);
   const current = today.slice(0, 7);
   const month = resolveMonth(params.month, current);
-  return { today, month, current, timeZone: preferences.timeZone, params };
+  return { today, month, current, timeZone: preferences.timeZone, params, i18n };
 }
 
-const monthLabel = (month: string, withYear: boolean) =>
-  formatDate(`${month}-01`, withYear ? { month: "long", year: "numeric" } : { month: "long" });
+const monthLabel = (month: string, withYear: boolean, intl: string) =>
+  formatDate(`${month}-01`, withYear ? { month: "long", year: "numeric" } : { month: "long" }, intl);
 
 /** Safe to spend, bills due soon and the budgets closest to their limit (generates planned bills first). */
 async function Planning() {
@@ -135,7 +138,7 @@ async function Accounts() {
 async function Month({ searchParams }: Search) {
   await requireUser();
   await ensureFinanceDefaults();
-  const { month, current } = await pageMonth(searchParams);
+  const { month, current, i18n } = await pageMonth(searchParams);
   const previous = shiftMonth(month, -1);
   const [thisRows, lastRows] = await Promise.all([
     listPostedInOut(monthBounds(month).from, monthBounds(month).to),
@@ -148,11 +151,11 @@ async function Month({ searchParams }: Search) {
       summary={{
         month,
         // Always the month's name, so the arrows beside it make sense.
-        label: monthLabel(month, true),
+        label: monthLabel(month, true, i18n.intl),
         income: totals.income,
         expense: totals.expense,
         comparison: compareMonths(totals.expense, last.expense),
-        previousLabel: monthLabel(previous, previous.slice(0, 4) !== current.slice(0, 4)),
+        previousLabel: monthLabel(previous, previous.slice(0, 4) !== current.slice(0, 4), i18n.intl),
         prevHref: `/money?month=${previous}`,
         nextHref:
           month < current
@@ -178,7 +181,8 @@ async function Spending({ searchParams }: Search) {
 async function Recent({ searchParams }: Search) {
   await requireUser();
   await ensureFinanceDefaults();
-  const { today, month, current } = await pageMonth(searchParams);
+  const { today, month, current, i18n } = await pageMonth(searchParams);
+  const { t } = i18n;
   const [{ rows: transactions, more }, accounts, categories, any, people] = await Promise.all([
     listTransactions({ month }, 15),
     listAccounts(),
@@ -192,11 +196,13 @@ async function Recent({ searchParams }: Search) {
     <section aria-labelledby="recent-h" className="flex flex-col gap-3">
       <div className="flex items-center justify-between gap-3">
         <h2 id="recent-h" className="font-medium">
-          {month === current ? "Recent" : `In ${monthLabel(month, month.slice(0, 4) !== current.slice(0, 4))}`}
+          {month === current
+            ? t("Recent")
+            : t("In {month}", { month: monthLabel(month, month.slice(0, 4) !== current.slice(0, 4), i18n.intl) })}
         </h2>
         {transactions.length > 0 ? (
           <Button asChild size="sm" variant="ghost">
-            <Link href={listHref}>{more ? "See all" : "Open in list"}</Link>
+            <Link href={listHref}>{more ? t("See all") : t("Open in list")}</Link>
           </Button>
         ) : null}
       </div>

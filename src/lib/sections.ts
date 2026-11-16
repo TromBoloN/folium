@@ -3,8 +3,10 @@
  * ONE source for both the sidebar's active state and the section tab bars.
  */
 
+import type { MessageKey } from "@/lib/i18n/core";
+
 export type SectionTab = {
-  label: string;
+  label: MessageKey;
   href: string;
   /** Also active on nested routes (/courses/[id]); false = exact (Money's Overview). */
   matchPrefix: boolean;

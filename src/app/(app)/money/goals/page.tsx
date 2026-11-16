@@ -16,9 +16,13 @@ import { ensureFinanceDefaults, listAccounts } from "@/features/finance/queries"
 import { listGoals } from "@/features/finance/queries/planning";
 import { moneyToday } from "@/features/finance/queries/today";
 import { formatDate } from "@/lib/dates";
+import type { MessageKey } from "@/lib/i18n/core";
+import { getI18n, getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Goals" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Goals") };
+}
 
 export default function GoalsPage() {
   return (
@@ -33,7 +37,7 @@ export default function GoalsPage() {
 const input =
   "h-10 rounded-md border border-border bg-surface-1 px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30";
 
-const STATUS: Record<string, string> = {
+const STATUS: Record<string, MessageKey> = {
   done: "Reached",
   ahead: "Ahead of pace",
   behind: "Behind pace",
@@ -44,7 +48,12 @@ const STATUS: Record<string, string> = {
 async function Goals() {
   await requireUser();
   await ensureFinanceDefaults();
-  const [{ today }, goals, accounts] = await Promise.all([moneyToday(), listGoals(), listAccounts()]);
+  const [{ today }, goals, accounts, { t, intl }] = await Promise.all([
+    moneyToday(),
+    listGoals(),
+    listAccounts(),
+    getI18n(),
+  ]);
   const savings = accounts.filter((a) => a.type === "savings" && !a.archived);
   const free = savings.filter((a) => !goals.some((g) => g.accountId === a.id));
 
@@ -81,40 +90,45 @@ async function Goals() {
                       pace.status === "behind" || pace.status === "past" ? "text-warning" : "text-money-in",
                     )}
                   >
-                    {STATUS[pace.status]}
+                    {t(STATUS[pace.status])}
                   </span>
                 </div>
                 <p className="font-display font-medium text-2xl tabular-nums">
                   {formatIdr(pace.saved)}
                   <span className="font-normal font-sans text-muted-foreground text-sm">
                     {" "}
-                    of {formatIdr(g.targetAmount)}
+                    {t("of {amount}", { amount: formatIdr(g.targetAmount) })}
                   </span>
                 </p>
                 <div aria-hidden className="h-2.5 overflow-hidden rounded-full bg-muted">
                   <span className="money-accent block h-full" style={{ width: `${pace.percent}%` }} />
                 </div>
                 <p className="text-muted-foreground text-sm">
-                  {pace.percent}% · in {account?.name ?? "an account"}
+                  {t("{n}% · in {account}", { n: pace.percent, account: account?.name ?? t("an account") })}
                   {g.targetOn
-                    ? ` · by ${formatDate(g.targetOn, { day: "numeric", month: "short", year: "numeric" })}`
+                    ? t(" · by {date}", {
+                        date: formatDate(g.targetOn, { day: "numeric", month: "short", year: "numeric" }, intl),
+                      })
                     : ""}
-                  {pace.monthlyNeeded ? ` · ${formatIdr(pace.monthlyNeeded)} a month to get there` : ""}
+                  {pace.monthlyNeeded
+                    ? t(" · {amount} a month to get there", { amount: formatIdr(pace.monthlyNeeded) })
+                    : ""}
                 </p>
                 <div className="flex flex-wrap items-center gap-2">
                   {pace.status !== "done" ? (
                     <Button asChild size="sm" variant="outline">
                       <Link href={`/money/new?kind=transfer&to=${g.accountId}`}>
                         <Plus aria-hidden />
-                        Add money<span className="sr-only"> to {g.name}</span>
+                        {t("Add money")}
+                        <span className="sr-only">{t(" to {name}", { name: g.name })}</span>
                       </Link>
                     </Button>
                   ) : null}
                   <Button asChild size="sm" variant="ghost">
-                    <Link href={`/money/recurring/new?template=sinking`}>Set aside monthly</Link>
+                    <Link href={`/money/recurring/new?template=sinking`}>{t("Set aside monthly")}</Link>
                   </Button>
                   <ToastForm action={deleteGoal} fields={{ id: g.id }} className="ml-auto">
-                    <SubmitButton size="sm" variant="ghost" aria-label={`Delete the goal ${g.name}`}>
+                    <SubmitButton size="sm" variant="ghost" aria-label={t("Delete the goal {name}", { name: g.name })}>
                       <Trash2 aria-hidden />
                     </SubmitButton>
                   </ToastForm>
@@ -127,47 +141,54 @@ async function Goals() {
 
       <section aria-labelledby="new-goal-h" className="tile flex flex-col gap-3 p-5">
         <h2 id="new-goal-h" className="font-medium">
-          New goal
+          {t("New goal")}
         </h2>
         {free.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            A goal needs its own savings account.{" "}
+            {t("A goal needs its own savings account.")}{" "}
             <Link href="/money/accounts/new" className="font-medium text-primary underline underline-offset-2">
-              Add a savings account
+              {t("Add a savings account")}
             </Link>{" "}
-            (type “Savings”) first.
+            {t("(type “Savings”) first.")}
           </p>
         ) : (
           <ToastForm action={saveGoal} className="gap-3">
             <div className="flex flex-wrap items-end gap-3">
               <div className="grid gap-1.5">
                 <label htmlFor="g-name" className="font-medium text-sm">
-                  Name
+                  {t("Name")}
                 </label>
-                <input id="g-name" name="name" required maxLength={80} placeholder="e.g. Laptop" className={input} />
+                <input
+                  id="g-name"
+                  name="name"
+                  required
+                  maxLength={80}
+                  placeholder={t("e.g. Laptop")}
+                  className={input}
+                />
               </div>
               <div className="grid gap-1.5">
                 <label htmlFor="g-target" className="font-medium text-sm">
-                  Target
+                  {t("Target")}
                 </label>
                 <input
                   id="g-target"
                   name="targetAmount"
                   inputMode="decimal"
                   required
-                  placeholder="e.g. 8jt"
+                  placeholder={t("e.g. 8jt")}
                   className={`${input} w-32`}
                 />
               </div>
               <div className="grid gap-1.5">
                 <label htmlFor="g-date" className="font-medium text-sm">
-                  By <span className="font-normal text-muted-foreground">(optional)</span>
+                  {t("By")} <span className="font-normal text-muted-foreground">{t("(optional)")}</span>
                 </label>
                 <input id="g-date" name="targetOn" type="date" min={today} className={input} />
               </div>
               <div className="grid gap-1.5">
                 <label htmlFor="g-account" className="font-medium text-sm">
-                  Savings account
+                  {t("Savings account")}
                 </label>
                 <select id="g-account" name="accountId" className={input}>
                   {free.map((a) => (
@@ -177,7 +198,7 @@ async function Goals() {
                   ))}
                 </select>
               </div>
-              <SubmitButton size="sm">Add goal</SubmitButton>
+              <SubmitButton size="sm">{t("Add goal")}</SubmitButton>
             </div>
           </ToastForm>
         )}

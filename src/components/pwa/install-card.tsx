@@ -4,10 +4,13 @@ import { Download, Smartphone } from "lucide-react";
 import { useEffect, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { useT } from "@/lib/i18n/client";
+import { rich } from "@/lib/i18n/rich";
 import { clearInstallPrompt, getInstallPrompt, onInstallPromptChange } from "./pwa-runtime";
 
 /** "Install Folium": the browser's prompt where there is one, instructions on iPhone/iPad, nothing once installed. */
 export function InstallCard() {
+  const t = useT();
   const prompt = useSyncExternalStore(onInstallPromptChange, getInstallPrompt, () => null);
   const [env, setEnv] = useState<{ standalone: boolean; ios: boolean } | null>(null);
   useEffect(() => {
@@ -22,9 +25,9 @@ export function InstallCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Smartphone aria-hidden className="size-4" /> Install Folium
+          <Smartphone aria-hidden className="size-4" /> {t("Install Folium")}
         </CardTitle>
-        <CardDescription>Open it from your home screen or dock like an app, in its own window.</CardDescription>
+        <CardDescription>{t("Open it from your home screen or dock like an app, in its own window.")}</CardDescription>
       </CardHeader>
       <CardContent>
         {prompt ? (
@@ -37,12 +40,14 @@ export function InstallCard() {
             }}
           >
             <Download aria-hidden />
-            Install
+            {t("Install")}
           </Button>
         ) : (
           <p className="text-sm">
-            In Safari, tap <span className="font-medium">Share</span>, then{" "}
-            <span className="font-medium">Add to Home Screen</span>.
+            {rich(t("In Safari, tap {share}, then {add}."), {
+              share: <span className="font-medium">{t("Share")}</span>,
+              add: <span className="font-medium">{t("Add to Home Screen")}</span>,
+            })}
           </p>
         )}
       </CardContent>

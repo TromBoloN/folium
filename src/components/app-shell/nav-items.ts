@@ -1,9 +1,10 @@
 import { GraduationCap, type LucideIcon, Settings, Sun, Wallet } from "lucide-react";
+import type { MessageKey } from "@/lib/i18n/core";
 import { isUnder, SCHOOL_PATHS } from "@/lib/sections";
 
 export type NavItem = {
   href: string;
-  label: string;
+  label: MessageKey;
   icon: LucideIcon;
   /** Paths that light this item up (default: its own href and below). */
   match?: readonly string[];

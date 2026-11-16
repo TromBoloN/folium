@@ -3,6 +3,7 @@
 import { Plus } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useT } from "@/lib/i18n/client";
 
 type Props = { weekday: number; firstHour: number; hours: number; week: string; dayLabel: string };
 
@@ -13,6 +14,7 @@ type Props = { weekday: number; firstHour: number; hours: number; week: string; 
  */
 export function AddSlotOverlay({ weekday, firstHour, hours, week, dayLabel }: Props) {
   const router = useRouter();
+  const t = useT();
   const [hover, setHover] = useState<number | null>(null);
   const hourAt = (e: React.PointerEvent | React.MouseEvent) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -28,14 +30,14 @@ export function AddSlotOverlay({ weekday, firstHour, hours, week, dayLabel }: Pr
         const hour = firstHour + hourAt(e);
         router.push(`/courses/timetable/new?weekday=${weekday}&start=${String(hour).padStart(2, "0")}:00&week=${week}`);
       }}
-      title={`Add a class on ${dayLabel}`}
+      title={t("Add a class on {day}", { day: dayLabel })}
     >
       {hover !== null ? (
         <div
           className="pointer-events-none absolute inset-x-1 flex items-center justify-center gap-1 rounded-lg border border-primary/50 border-dashed text-muted-foreground text-xs"
           style={{ top: `${(hover / hours) * 100}%`, height: `${100 / hours}%` }}
         >
-          <Plus className="size-3.5" /> Add class
+          <Plus className="size-3.5" /> {t("Add class")}
         </div>
       ) : null}
     </div>

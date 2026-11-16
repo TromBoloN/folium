@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { FormSkeleton } from "@/components/skeletons";
 import { NewExtraSessionScreen } from "@/features/schedule/components/schedule-screens";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Extra session" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Extra session") };
+}
 
 /** ?date=YYYY-MM-DD&course=<id> prefill it. */
 export default function NewExtraSessionPage({ searchParams }: PageProps<"/courses/extra/new">) {

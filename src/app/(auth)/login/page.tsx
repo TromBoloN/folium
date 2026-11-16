@@ -2,8 +2,11 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { LoginForm } from "@/features/auth/components/login-form";
 import { safeNextPath } from "@/features/auth/schemas";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Sign in" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Sign in") };
+}
 
 // Known codes only, so the URL can't put arbitrary text on the page.
 const NOTICES: Record<string, string> = {

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChangeChips } from "@/features/schedule/components/change-chips";
 import { isoWeekday } from "@/lib/dates";
+import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import type { Week } from "../week";
 import { AddSlotOverlay } from "./add-slot-overlay";
@@ -14,7 +15,8 @@ function cascadeOffset(lane: number, lanes: number) {
 }
 
 /** Desktop: the whole week as a time grid. Overlapping classes share their column. */
-export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[] }) {
+export async function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[] }) {
+  const { t } = await getI18n();
   const hours = week.lastHour - week.firstHour;
   const toRem = (minute: number) => ((minute - week.firstHour * 60) / 60) * HOUR_REM;
 
@@ -33,11 +35,11 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
           >
             <span className="block text-muted-foreground">{d.shortLabel}</span>
             <span className="font-display font-medium text-lg leading-none">{d.dayNumber}</span>
-            {d.isToday ? <span className="sr-only"> (today)</span> : null}
+            {d.isToday ? <span className="sr-only">{t(" (today)")}</span> : null}
             {d.breakLabel ? (
               <span
                 className="mt-1 block truncate text-[0.6875rem] text-muted-foreground"
-                title={`No classes · ${d.breakLabel}`}
+                title={t("No classes · {name}", { name: d.breakLabel })}
               >
                 {d.breakLabel}
               </span>
@@ -80,7 +82,7 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
               <div
                 key={g.id}
                 aria-hidden
-                title={`${g.title} moved to ${g.movedToLabel}`}
+                title={t("{name} moved to {when}", { name: g.title, when: g.movedToLabel })}
                 style={
                   {
                     "--course": g.color,

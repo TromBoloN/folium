@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
+import { useT } from "@/lib/i18n/client";
 import { saveRule } from "../actions/planning";
 
 export type RuleDefaults = {
@@ -45,6 +46,7 @@ export function RuleForm({
   accounts: Option[];
   categories: (Option & { kind: "expense" | "income" })[];
 }) {
+  const t = useT();
   const [state, action, pending] = useActionState(saveRule, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const v = (name: keyof RuleDefaults) => {
@@ -66,23 +68,29 @@ export function RuleForm({
     <form key={JSON.stringify(state)} action={action} className="flex flex-col gap-5" noValidate>
       {defaults.id ? <input type="hidden" name="id" value={defaults.id} /> : null}
       <Field id="name" label="Name" error={errors.name}>
-        <Input {...field("name")} required maxLength={80} placeholder="e.g. Spotify, Kos, UKT" />
+        <Input {...field("name")} required maxLength={80} placeholder={t("e.g. Spotify, Kos, UKT")} />
       </Field>
       <ChipGroup
         name="kind"
-        legend="Kind"
+        legend={t("Kind")}
         defaultValue={v("kind")}
         onChange={([value]) => setKind(value)}
         options={[
-          { value: "expense", label: "Bill" },
-          { value: "income", label: "Income" },
-          { value: "transfer", label: "Set aside (transfer)" },
+          { value: "expense", label: t("Bill") },
+          { value: "income", label: t("Income") },
+          { value: "transfer", label: t("Set aside (transfer)") },
         ]}
         error={errors.kind}
       />
       <div className="grid gap-4 sm:grid-cols-2">
         <Field id="amount" label="Amount" error={errors.amount}>
-          <Input {...field("amount")} inputMode="decimal" required placeholder="e.g. 54.990" className="tabular-nums" />
+          <Input
+            {...field("amount")}
+            inputMode="decimal"
+            required
+            placeholder={t("e.g. {example}", { example: "54.990" })}
+            className="tabular-nums"
+          />
         </Field>
         <label className="flex items-center gap-2 self-end pb-2 text-sm">
           <input
@@ -91,7 +99,7 @@ export function RuleForm({
             defaultChecked={checked("isEstimate")}
             className="size-4 accent-primary"
           />
-          The amount changes (an estimate)
+          {t("The amount changes (an estimate)")}
         </label>
       </div>
       <div className="grid gap-4 sm:grid-cols-2">
@@ -111,7 +119,7 @@ export function RuleForm({
         {kind === "transfer" ? (
           <Field id="toAccountId" label="To account" error={errors.toAccountId}>
             <NativeSelect {...field("toAccountId")}>
-              <option value="">Choose…</option>
+              <option value="">{t("Choose…")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -122,7 +130,7 @@ export function RuleForm({
         ) : (
           <Field id="categoryId" label="Category" optional error={errors.categoryId}>
             <NativeSelect {...field("categoryId")}>
-              <option value="">No category</option>
+              <option value="">{t("No category")}</option>
               {categories
                 .filter((c) => c.kind === (kind === "income" ? "income" : "expense"))
                 .map((c) => (
@@ -135,13 +143,13 @@ export function RuleForm({
         )}
       </div>
       <fieldset className="flex flex-col gap-4 rounded-xl border border-border-soft p-4">
-        <legend className="px-1 font-medium text-sm">How often</legend>
+        <legend className="px-1 font-medium text-sm">{t("How often")}</legend>
         <div className="grid gap-4 sm:grid-cols-3">
           <Field id="cadence" label="Repeats" error={errors.cadence}>
             <NativeSelect {...field("cadence")} onChange={(e) => setCadence(e.target.value)}>
-              <option value="monthly">Monthly</option>
-              <option value="weekly">Weekly</option>
-              <option value="yearly">Yearly</option>
+              <option value="monthly">{t("Monthly")}</option>
+              <option value="weekly">{t("Weekly")}</option>
+              <option value="yearly">{t("Yearly")}</option>
             </NativeSelect>
           </Field>
           <Field id="intervalCount" label="Every" error={errors.intervalCount} hint="1 = every time; 3 = every third.">
@@ -176,12 +184,12 @@ export function RuleForm({
           <Input {...field("remindDaysBefore")} type="number" min={0} max={60} />
         </Field>
         <Field id="payee" label="Payee" optional error={errors.payee}>
-          <Input {...field("payee")} maxLength={120} placeholder="Shown on the transaction" />
+          <Input {...field("payee")} maxLength={120} placeholder={t("Shown on the transaction")} />
         </Field>
       </div>
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : defaults.id ? "Save changes" : "Add"}
+          {pending ? t("Saving…") : defaults.id ? t("Save changes") : t("Add")}
         </Button>
         <CancelButton href="/money/recurring" />
       </FormFooter>

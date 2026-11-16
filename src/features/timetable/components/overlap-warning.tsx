@@ -1,10 +1,14 @@
+"use client";
+
 import { TriangleAlert } from "lucide-react";
+import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 /** A small warning that a class overlaps others. Overlaps are allowed; this only points them out. */
 export function OverlapWarning({ withNames, compact }: { withNames: string[]; compact?: boolean }) {
+  const t = useT();
   if (withNames.length === 0) return null;
-  const text = `Overlaps with ${withNames.join(", ")}`;
+  const text = t("Overlaps with {names}", { names: withNames.join(", ") });
   if (compact) {
     return (
       <span title={text} className="inline-flex shrink-0 text-warning">

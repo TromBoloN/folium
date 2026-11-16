@@ -1,3 +1,4 @@
+import { plural, type T, tEn } from "@/lib/i18n/core";
 import { compareMonths } from "./compare-months";
 import type { IsoDate } from "./local-date";
 
@@ -138,7 +139,9 @@ export function insights(input: {
   previousLabel: string;
   renewingThisWeek: number;
   threshold?: number;
+  t?: T;
 }): string[] {
+  const tr = input.t ?? tEn;
   const threshold = input.threshold ?? 15;
   const out: string[] = [];
   for (const t of input.trends) {
@@ -146,13 +149,26 @@ export function insights(input: {
     const diff = t.current > t.previous ? t.current - t.previous : t.previous - t.current;
     if (diff < 20_000n) continue;
     out.push(
-      `${t.name} is ${t.change.percent}% ${t.change.direction === "more" ? "higher" : "lower"} than ${input.previousLabel}`,
+      tr(t.change.direction === "more" ? "{name} is {n}% higher than {month}" : "{name} is {n}% lower than {month}", {
+        name: t.name,
+        n: t.change.percent,
+        month: input.previousLabel,
+      }),
     );
     if (out.length === 3) break;
   }
   if (input.renewingThisWeek > 0) {
     out.push(
-      `${input.renewingThisWeek} ${input.renewingThisWeek === 1 ? "bill or subscription is" : "bills or subscriptions are"} due this week`,
+      tr(
+        plural(
+          input.renewingThisWeek,
+          "1 bill or subscription is due this week",
+          "{n} bills or subscriptions are due this week",
+        ),
+        {
+          n: input.renewingThisWeek,
+        },
+      ),
     );
   }
   return out;

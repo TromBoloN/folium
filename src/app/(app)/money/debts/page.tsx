@@ -14,9 +14,12 @@ import { formatIdr } from "@/features/finance/lib/format-idr";
 import { personBalanceLabel } from "@/features/finance/lib/goals-debts";
 import { ensureFinanceDefaults, lastUsedAccountId, listAccounts, listCategories } from "@/features/finance/queries";
 import { listPeople } from "@/features/finance/queries/people";
+import { getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Debts" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Debts") };
+}
 
 export default function DebtsPage() {
   return (
@@ -34,7 +37,7 @@ const input =
 async function Debts() {
   await requireUser();
   await ensureFinanceDefaults();
-  const [people, accounts, categories] = await Promise.all([listPeople(), listAccounts(), listCategories()]);
+  const [people, accounts, categories, t] = await Promise.all([listPeople(), listAccounts(), listCategories(), getT()]);
   const active = accounts.filter((a) => !a.archived);
   const defaultAccount = (await lastUsedAccountId(accounts)) ?? active[0]?.id ?? "";
   const owedToMe = people.reduce((s, p) => s + (p.balance > 0n ? p.balance : 0n), 0n);
@@ -54,11 +57,11 @@ async function Debts() {
     <div className="flex flex-col gap-6">
       <dl className="grid grid-cols-2 gap-3">
         <div className="tile flex flex-col gap-1 p-4">
-          <dt className="text-muted-foreground text-xs">Owed to you</dt>
+          <dt className="text-muted-foreground text-xs">{t("Owed to you")}</dt>
           <dd className="font-display font-medium text-money-in text-xl tabular-nums">{formatIdr(owedToMe)}</dd>
         </div>
         <div className="tile flex flex-col gap-1 p-4">
-          <dt className="text-muted-foreground text-xs">You owe</dt>
+          <dt className="text-muted-foreground text-xs">{t("You owe")}</dt>
           <dd className="font-display font-medium text-money-out text-xl tabular-nums">{formatIdr(iOwe)}</dd>
         </div>
       </dl>
@@ -70,7 +73,7 @@ async function Debts() {
           description="Lend, borrow or split a bill with friends. Lending moves real money out of an account, so balances stay right, and it never counts as spending."
         >
           <Button asChild size="sm">
-            <Link href="/money/new?kind=lend">Record a loan</Link>
+            <Link href="/money/new?kind=lend">{t("Record a loan")}</Link>
           </Button>
         </EmptyState>
       ) : (
@@ -91,7 +94,7 @@ async function Debts() {
                     p.balance > 0n ? "text-money-in" : p.balance < 0n ? "text-money-out" : "text-muted-foreground",
                   )}
                 >
-                  {personBalanceLabel(p.name, p.balance, formatIdr)}
+                  {personBalanceLabel(p.name, p.balance, formatIdr, t)}
                 </span>
               </div>
               {p.balance !== 0n ? (
@@ -101,17 +104,18 @@ async function Debts() {
                   className="flex-row flex-wrap items-center gap-2"
                 >
                   <label htmlFor={`settle-${p.id}`} className="sr-only">
-                    Account for settling with {p.name}
+                    {t("Account for settling with {name}", { name: p.name })}
                   </label>
                   {accountSelect(`settle-${p.id}`)}
                   <SubmitButton size="sm" variant="outline">
                     <Check aria-hidden />
-                    Mark settled<span className="sr-only"> with {p.name}</span>
+                    {t("Mark settled")}
+                    <span className="sr-only">{t(" with {name}", { name: p.name })}</span>
                   </SubmitButton>
                 </ToastForm>
               ) : (
                 <ToastForm action={setPersonArchived} fields={{ id: p.id, archive: "true" }}>
-                  <SubmitButton size="sm" variant="ghost" aria-label={`Hide ${p.name}`}>
+                  <SubmitButton size="sm" variant="ghost" aria-label={t("Hide {name}", { name: p.name })}>
                     <Archive aria-hidden />
                   </SubmitButton>
                 </ToastForm>
@@ -131,7 +135,7 @@ async function Debts() {
           ] as const
         ).map(([kind, label]) => (
           <Button key={kind} asChild size="sm" variant="outline">
-            <Link href={`/money/new?kind=${kind}`}>{label}</Link>
+            <Link href={`/money/new?kind=${kind}`}>{t(label)}</Link>
           </Button>
         ))}
       </div>
@@ -139,44 +143,44 @@ async function Debts() {
       <section aria-labelledby="split-h" className="tile flex flex-col gap-3 p-5">
         <h2 id="split-h" className="flex items-center gap-2 font-medium">
           <HandCoins aria-hidden className="size-4 text-muted-foreground" />
-          Split a bill (patungan)
+          {t("Split a bill (patungan)")}
         </h2>
         <p className="text-muted-foreground text-sm">
-          You paid the whole bill. Your share becomes an expense; each friend's share is a loan to them.
+          {t("You paid the whole bill. Your share becomes an expense; each friend's share is a loan to them.")}
         </p>
         <ToastForm action={splitBillAction} className="gap-3">
           <div className="flex flex-wrap items-end gap-3">
             <div className="grid gap-1.5">
               <label htmlFor="s-amount" className="font-medium text-sm">
-                Total
+                {t("Total")}
               </label>
               <input
                 id="s-amount"
                 name="amount"
                 inputMode="decimal"
                 required
-                placeholder="e.g. 150k"
+                placeholder={t("e.g. {example}", { example: "150k" })}
                 className={`${input} w-32`}
               />
             </div>
             <div className="grid gap-1.5">
               <label htmlFor="s-payee" className="font-medium text-sm">
-                What
+                {t("What")}
               </label>
-              <input id="s-payee" name="payee" maxLength={120} placeholder="e.g. Pizza night" className={input} />
+              <input id="s-payee" name="payee" maxLength={120} placeholder={t("e.g. Pizza night")} className={input} />
             </div>
             <div className="grid gap-1.5">
               <label htmlFor="s-account" className="font-medium text-sm">
-                Paid from
+                {t("Paid from")}
               </label>
               {accountSelect("s-account")}
             </div>
             <div className="grid gap-1.5">
               <label htmlFor="s-category" className="font-medium text-sm">
-                Your share's category
+                {t("Your share's category")}
               </label>
               <select id="s-category" name="categoryId" className={input}>
-                <option value="">No category</option>
+                <option value="">{t("No category")}</option>
                 {categories
                   .filter((c) => c.kind === "expense" && !c.archived)
                   .map((c) => (
@@ -189,14 +193,14 @@ async function Debts() {
           </div>
           <div className="grid gap-1.5">
             <label htmlFor="s-names" className="font-medium text-sm">
-              Split with
+              {t("Split with")}
             </label>
             <input
               id="s-names"
               name="names"
               list="people-list"
               required
-              placeholder="Names, separated by commas: Budi, Sari"
+              placeholder={t("Names, separated by commas: Budi, Sari")}
               aria-describedby="s-names-hint"
               className={input}
             />
@@ -208,30 +212,30 @@ async function Debts() {
                 ))}
             </datalist>
             <p id="s-names-hint" className="text-muted-foreground text-xs">
-              New names are added as people.
+              {t("New names are added as people.")}
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-3">
             <label className="flex items-center gap-2 text-sm">
               <input type="checkbox" name="includeMe" defaultChecked className="size-4 accent-primary" />
-              Include my own share
+              {t("Include my own share")}
             </label>
-            <SubmitButton size="sm">Split it</SubmitButton>
+            <SubmitButton size="sm">{t("Split it")}</SubmitButton>
           </div>
         </ToastForm>
       </section>
 
       <section aria-labelledby="add-person-h" className="tile flex flex-col gap-3 p-5">
         <h2 id="add-person-h" className="font-medium">
-          Add a person
+          {t("Add a person")}
         </h2>
         <ToastForm action={addPerson} className="flex-row flex-wrap items-end gap-2">
           <label htmlFor="p-name" className="sr-only">
-            Name
+            {t("Name")}
           </label>
-          <input id="p-name" name="name" required maxLength={60} placeholder="Name" className={input} />
+          <input id="p-name" name="name" required maxLength={60} placeholder={t("Name")} className={input} />
           <SubmitButton size="sm" variant="outline">
-            Add
+            {t("Add")}
           </SubmitButton>
         </ToastForm>
       </section>

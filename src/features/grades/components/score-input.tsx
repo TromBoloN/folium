@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { setAssessmentScore } from "../actions";
 
@@ -13,6 +14,7 @@ type Props = { id: string; name: string; score: number | null; maxScore: number 
  */
 export function ScoreInput({ id, name, score, maxScore }: Props) {
   const toast = useToast();
+  const { t, tl } = useI18n();
   const [value, setValue] = useState(score === null ? "" : String(score));
   const [prev, setPrev] = useState(score);
   const [error, setError] = useState<string | null>(null);
@@ -28,22 +30,22 @@ export function ScoreInput({ id, name, score, maxScore }: Props) {
     const next = trimmed === "" ? null : Number(trimmed.replace(",", "."));
     if (next === score) return;
     if (next !== null && Number.isNaN(next)) {
-      setError("Enter a number.");
+      setError(t("Enter a number."));
       return;
     }
     setSaving(true);
     const result = await setAssessmentScore(id, next);
     setSaving(false);
     if (!result.ok) {
-      setError(result.error);
+      setError(tl(result.error));
       return;
     }
     setError(null);
     const previous = result.data.previous;
     toast({
-      message: next === null ? `${name}: score cleared` : `${name}: ${next} / ${maxScore}`,
+      message: next === null ? t("{name}: score cleared", { name }) : `${name}: ${next} / ${maxScore}`,
       action: {
-        label: "Undo",
+        label: t("Undo"),
         onClick: async () => {
           await setAssessmentScore(id, previous);
         },
@@ -72,7 +74,7 @@ export function ScoreInput({ id, name, score, maxScore }: Props) {
             }
           }}
           placeholder="–"
-          aria-label={`Score for ${name}, out of ${maxScore}`}
+          aria-label={t("Score for {name}, out of {max}", { name, max: maxScore })}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? errorId : undefined}
           disabled={saving}

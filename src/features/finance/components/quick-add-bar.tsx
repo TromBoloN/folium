@@ -4,6 +4,7 @@ import { CornerDownLeft, Sparkles } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { useI18n } from "@/lib/i18n/client";
 import { motionLevel } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 import { deleteTransaction, type QuickMoneyContext, quickAddForm } from "../actions/transactions";
@@ -39,6 +40,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const handled = useRef(state);
   const toast = useToast();
+  const { t, tl } = useI18n();
   const money = useQuickMoney(text, true, context);
 
   // Success: clear, highlight the new row, toast with Undo.
@@ -55,17 +57,17 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
     setText("");
     setPicking(null);
     toast({
-      message: state.result?.message ?? "Added",
+      message: state.result?.message ?? t("Added"),
       duration: 8000,
       action: {
-        label: "Undo",
+        label: t("Undo"),
         onClick: async () => {
           const undone = await deleteTransaction(id);
           if (!undone.ok) toast({ message: undone.error, tone: "error" });
         },
       },
     });
-  }, [state, toast]);
+  }, [state, toast, t]);
 
   // Example lines elsewhere on the page prefill the bar.
   useEffect(() => {
@@ -114,7 +116,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
 
   return (
     <section
-      aria-label="Quick add"
+      aria-label={t("Quick add")}
       className="tile reveal flex flex-col gap-3 p-3 sm:p-4"
       style={{ "--i": 0 } as React.CSSProperties}
     >
@@ -129,7 +131,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
         className="flex items-center gap-2"
       >
         <label htmlFor={QUICK_ADD_INPUT_ID} className="sr-only">
-          Quick add a transaction
+          {t("Quick add a transaction")}
         </label>
         <Sparkles aria-hidden className="ml-1 size-5 shrink-0 text-primary" />
         <div className="relative min-w-0 flex-1">
@@ -150,7 +152,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
             autoComplete="off"
             spellCheck={false}
             maxLength={300}
-            placeholder={hint === null ? `Try “${QUICK_EXAMPLES[0]}”` : ""}
+            placeholder={hint === null ? t("Try “{example}”", { example: QUICK_EXAMPLES[0] }) : ""}
             aria-describedby="quick-add-help"
             aria-invalid={serverError ? true : undefined}
             className="h-11 w-full rounded-lg border border-transparent bg-transparent px-2 text-base outline-none placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/30"
@@ -163,7 +165,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
               // block with the input's line height, so `truncate` can add the ellipsis.
               className="quick-hint pointer-events-none absolute inset-x-2 top-0 block h-11 truncate text-base text-muted-foreground leading-11"
             >
-              Try “{QUICK_EXAMPLES[hint]}”
+              {t("Try “{example}”", { example: QUICK_EXAMPLES[hint] })}
             </span>
           ) : null}
         </div>
@@ -177,13 +179,14 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
           )}
         >
           <CornerDownLeft aria-hidden className="size-4" />
-          {pending ? "Adding…" : "Add"}
+          {pending ? t("Adding…") : t("Add")}
         </button>
       </form>
 
       <p id="quick-add-help" className="sr-only">
-        An amount, then optional #category, @account, “to” another account for a transfer, and today or yesterday. Press
-        Enter to add.
+        {t(
+          "An amount, then optional #category, @account, “to” another account for a transfer, and today or yesterday. Press Enter to add.",
+        )}
       </p>
 
       {money.draft ? (
@@ -197,13 +200,15 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
         </div>
       ) : (
         <p className="px-1 text-muted-foreground text-xs">
-          An amount, #category, @account. “+” for income, “to dana” for a transfer.
+          {t("An amount, #category, @account. “+” for income, “to dana” for a transfer.")}
         </p>
       )}
 
       {picking ? (
         <fieldset className="flex flex-wrap gap-1.5 border-border-soft border-t pt-3">
-          <legend className="sr-only">{picking === "category" ? "Choose a category" : "Choose an account"}</legend>
+          <legend className="sr-only">
+            {picking === "category" ? t("Choose a category") : t("Choose an account")}
+          </legend>
           {options.map((item) => (
             <button
               key={item.id}
@@ -219,7 +224,7 @@ export function QuickAddBar({ context }: { context: QuickMoneyContext }) {
 
       {serverError ? (
         <p role="alert" className="px-1 text-destructive text-sm">
-          {serverError}
+          {tl(serverError)}
         </p>
       ) : null}
     </section>

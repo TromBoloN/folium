@@ -23,8 +23,13 @@ import {
 import { listPeople } from "@/features/finance/queries/people";
 import { transactionFiltersSchema } from "@/features/finance/schemas";
 import { getSettings } from "@/features/settings/queries";
+import { plural } from "@/lib/i18n/core";
+import { rich } from "@/lib/i18n/rich";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Transactions" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Transactions") };
+}
 
 const PAGE = 50;
 const MAX = 1000;
@@ -62,6 +67,7 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
     hasAnyTransaction(),
     listPeople(),
   ]);
+  const t = await getT();
   await io();
   const today = localDateFor(new Date(), preferences.timeZone);
   const filtered = Object.values(filters).some(Boolean);
@@ -83,9 +89,22 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
       />
       {rows.length > 0 ? (
         <p className="px-1 text-muted-foreground text-sm" aria-live="polite">
-          {summary.count} {summary.count === 1 ? "transaction" : "transactions"} · in{" "}
-          <span className="font-medium text-money-in tabular-nums">{formatIdr(summary.income)}</span> · out{" "}
-          <span className="font-medium text-money-out tabular-nums">{formatIdr(summary.expense)}</span>
+          {rich(
+            t(
+              plural(
+                summary.count,
+                "1 transaction · in {income} · out {expense}",
+                "{n} transactions · in {income} · out {expense}",
+              ),
+              {
+                n: summary.count,
+              },
+            ),
+            {
+              income: <span className="font-medium text-money-in tabular-nums">{formatIdr(summary.income)}</span>,
+              expense: <span className="font-medium text-money-out tabular-nums">{formatIdr(summary.expense)}</span>,
+            },
+          )}
         </p>
       ) : null}
       {!any ? (
@@ -95,13 +114,13 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
           description="Add one from Money with a single line, or the full form."
         >
           <Button asChild size="sm">
-            <Link href="/money">Go to Money</Link>
+            <Link href="/money">{t("Go to Money")}</Link>
           </Button>
         </EmptyState>
       ) : rows.length === 0 ? (
         <EmptyState icon={SearchX} title="No matches" description="Nothing matches these filters.">
           <Button asChild size="sm" variant="outline">
-            <Link href="/money/transactions">Clear all filters</Link>
+            <Link href="/money/transactions">{t("Clear all filters")}</Link>
           </Button>
         </EmptyState>
       ) : (
@@ -117,13 +136,13 @@ async function Transactions({ searchParams }: Pick<PageProps<"/money/transaction
         <div className="flex justify-center">
           <Button asChild variant="outline">
             <Link href={moreHref} scroll={false}>
-              Load more
+              {t("Load more")}
             </Link>
           </Button>
         </div>
       ) : more ? (
         <p className="text-center text-muted-foreground text-sm">
-          Showing the newest {MAX}. Narrow the filters to see older ones.
+          {t("Showing the newest {n}. Narrow the filters to see older ones.", { n: MAX })}
         </p>
       ) : null}
     </div>

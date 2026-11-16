@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "@/lib/dates";
+import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { shiftMonth } from "../lib/compare-months";
 import { filtersHref } from "../lib/filters-href";
@@ -37,6 +38,7 @@ export function TransactionFilters({
   currentMonth: string;
 }) {
   const router = useRouter();
+  const { t, intl } = useI18n();
   const formRef = useRef<HTMLFormElement>(null);
   const [js, setJs] = useState(false);
   const [pending, start] = useTransition();
@@ -62,18 +64,22 @@ export function TransactionFilters({
 
   const accountName = accounts.find((a) => a.id === filters.account)?.name;
   const categoryName =
-    filters.category === "none" ? "Uncategorised" : categories.find((c) => c.id === filters.category)?.name;
+    filters.category === "none" ? t("Uncategorised") : categories.find((c) => c.id === filters.category)?.name;
   const monthName = filters.month
-    ? formatDate(`${filters.month}-01`, {
-        month: "long",
-        ...(filters.month.slice(0, 4) !== currentMonth.slice(0, 4) ? { year: "numeric" } : {}),
-      })
+    ? formatDate(
+        `${filters.month}-01`,
+        {
+          month: "long",
+          ...(filters.month.slice(0, 4) !== currentMonth.slice(0, 4) ? { year: "numeric" } : {}),
+        },
+        intl,
+      )
     : null;
   const chips = [
     filters.q ? { key: "q" as const, label: `“${filters.q}”` } : null,
     accountName ? { key: "account" as const, label: accountName } : null,
     categoryName ? { key: "category" as const, label: categoryName } : null,
-    filters.kind ? { key: "kind" as const, label: KIND_LABELS[filters.kind] } : null,
+    filters.kind ? { key: "kind" as const, label: t(KIND_LABELS[filters.kind]) } : null,
     monthName ? { key: "month" as const, label: monthName } : null,
   ].filter((c) => c !== null);
 
@@ -90,7 +96,7 @@ export function TransactionFilters({
           ref={formRef}
           action={BASE}
           method="get"
-          aria-label="Filter transactions"
+          aria-label={t("Filter transactions")}
           onSubmit={(e) => {
             e.preventDefault();
             apply();
@@ -103,7 +109,7 @@ export function TransactionFilters({
         >
           <div className="relative">
             <label htmlFor="q" className="sr-only">
-              Search payee or note
+              {t("Search payee or note")}
             </label>
             <Search
               aria-hidden
@@ -114,7 +120,7 @@ export function TransactionFilters({
               name="q"
               type="search"
               value={q}
-              placeholder="Search payee or note"
+              placeholder={t("Search payee or note")}
               autoComplete="off"
               onFocus={() => {
                 typing.current = true;
@@ -133,7 +139,7 @@ export function TransactionFilters({
 
           <div className="flex flex-wrap items-center gap-2">
             <label className="sr-only" htmlFor="f-account">
-              Account
+              {t("Account")}
             </label>
             <select
               key={`account-${filters.account ?? ""}`}
@@ -143,7 +149,7 @@ export function TransactionFilters({
               data-active={!!filters.account}
               className={pill}
             >
-              <option value="">All accounts</option>
+              <option value="">{t("All accounts")}</option>
               {accounts.map((a) => (
                 <option key={a.id} value={a.id}>
                   {a.name}
@@ -152,7 +158,7 @@ export function TransactionFilters({
               ))}
             </select>
             <label className="sr-only" htmlFor="f-category">
-              Category
+              {t("Category")}
             </label>
             <select
               key={`category-${filters.category ?? ""}`}
@@ -162,10 +168,10 @@ export function TransactionFilters({
               data-active={!!filters.category}
               className={pill}
             >
-              <option value="">All categories</option>
-              <option value="none">Uncategorised</option>
+              <option value="">{t("All categories")}</option>
+              <option value="none">{t("Uncategorised")}</option>
               {(["expense", "income"] as const).map((kind) => (
-                <optgroup key={kind} label={kind === "expense" ? "Expense" : "Income"}>
+                <optgroup key={kind} label={kind === "expense" ? t("Expense") : t("Income")}>
                   {categories
                     .filter((c) => c.kind === kind && !c.parentId)
                     .flatMap((p) => [p, ...categories.filter((c) => c.parentId === p.id)])
@@ -179,7 +185,7 @@ export function TransactionFilters({
               ))}
             </select>
             <label className="sr-only" htmlFor="f-kind">
-              Kind
+              {t("Kind")}
             </label>
             <select
               key={`kind-${filters.kind ?? ""}`}
@@ -189,33 +195,33 @@ export function TransactionFilters({
               data-active={!!filters.kind}
               className={pill}
             >
-              <option value="">All kinds</option>
+              <option value="">{t("All kinds")}</option>
               {TRANSACTION_KINDS.map((k) => (
                 <option key={k} value={k}>
-                  {KIND_LABELS[k]}
+                  {t(KIND_LABELS[k])}
                 </option>
               ))}
             </select>
 
             <input type="hidden" name="month" value={filters.month ?? ""} />
-            <nav aria-label="Month" className="flex items-center rounded-full border border-border bg-surface-1">
+            <nav aria-label={t("Month")} className="flex items-center rounded-full border border-border bg-surface-1">
               <Link
                 href={filtersHref(filters, { month: prevMonth })}
                 scroll={false}
                 className={arrow}
-                aria-label={month ? "Previous month" : "This month"}
+                aria-label={month ? t("Previous month") : t("This month")}
               >
                 <ChevronLeft aria-hidden className="size-4" />
               </Link>
               <span className={cn("min-w-24 px-1 text-center font-medium text-sm", !month && "text-muted-foreground")}>
-                {monthName ?? "All months"}
+                {monthName ?? t("All months")}
               </span>
               {nextMonth ? (
                 <Link
                   href={filtersHref(filters, { month: nextMonth })}
                   scroll={false}
                   className={arrow}
-                  aria-label="Next month"
+                  aria-label={t("Next month")}
                 >
                   <ChevronRight aria-hidden className="size-4" />
                 </Link>
@@ -228,7 +234,7 @@ export function TransactionFilters({
 
             {js ? null : (
               <Button type="submit" size="sm">
-                Apply
+                {t("Apply")}
               </Button>
             )}
           </div>
@@ -236,13 +242,13 @@ export function TransactionFilters({
       </search>
 
       {chips.length > 0 ? (
-        <ul className="flex flex-wrap items-center gap-1.5" aria-label="Active filters">
+        <ul className="flex flex-wrap items-center gap-1.5" aria-label={t("Active filters")}>
           {chips.map((chip) => (
             <li key={chip.key}>
               <Link
                 href={filtersHref(filters, { [chip.key]: undefined })}
                 scroll={false}
-                aria-label={`Remove filter: ${chip.label}`}
+                aria-label={t("Remove filter: {name}", { name: chip.label })}
                 className="inline-flex h-8 items-center gap-1 rounded-full bg-accent pr-2 pl-3 text-accent-foreground text-sm transition-transform duration-(--dur-fast) hover:bg-accent/80 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 active:scale-95"
               >
                 {chip.label}
@@ -257,7 +263,7 @@ export function TransactionFilters({
                 scroll={false}
                 className="rounded-sm px-2 text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
               >
-                Clear all
+                {t("Clear all")}
               </Link>
             </li>
           ) : null}

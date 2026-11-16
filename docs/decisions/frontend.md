@@ -26,6 +26,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Theme and motion**
 
+- [2026-11-16: Translations are gettext-style, keyed by the English text](#2026-11-16-translations-are-gettext-style-keyed-by-the-english-text)
 - [2026-11-16: A custom accent is adjusted per mode](#2026-11-16-a-custom-accent-is-adjusted-per-mode)
 - [2026-11-15: Visual redesign uses CSS and View Transitions, no animation library](#2026-11-15-visual-redesign-uses-css-and-view-transitions-no-animation-library)
 - [2026-11-15: Motion is a theme setting; the OS reduced-motion setting always wins](#2026-11-15-motion-is-a-theme-setting-the-os-reduced-motion-setting-always-wins)
@@ -39,6 +40,16 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 - [2026-11-16: Forms share primitives and only enhance a real form](#2026-11-16-forms-share-primitives-and-only-enhance-a-real-form)
 - [2026-11-15: Settings apply instantly; the action is called directly](#2026-11-15-settings-apply-instantly-the-action-is-called-directly)
 - [2026-11-15: Forms echo submitted values back on error](#2026-11-15-forms-echo-submitted-values-back-on-error)
+
+## 2026-11-16: Translations are gettext-style, keyed by the English text
+
+**Status.** Accepted. Supersedes "Language preference is saved but `lang` stays `en`".
+
+**Decision.** The Language setting (English or Bahasa Indonesia) now changes the whole app. `src/lib/i18n/` holds one Indonesian dictionary keyed by the English text (`id/*.ts`, merged in `id/index.ts`). Server code calls `getI18n()`/`getT()`, client code `useI18n()`/`useT()`, and `<Tr>`/`<TrL>` cover components that may render on either side. `t("Due {when}", { when })` fills `{placeholders}`; `rich()` puts elements into a translated sentence; `plural()` picks the one/other key. `<html lang>` follows the setting, and dates go through `Intl` with `id-ID` or `en-GB`. Server actions keep returning English; the components that show their messages (`Field`, `FormError`, `FormFooter`, toasts) look them up with `tl()`, which also matches a few patterns for messages that carry a value. Emails and the .ics export use the user's language.
+
+**Why.** English keys keep components readable and need no key naming. `t()` only accepts keys that are in the Indonesian dictionary, so a missing translation fails `tsc`, and a test checks that each entry keeps its key's placeholders. Translating messages where they are shown avoids threading the language through every action and Zod schema.
+
+**Cost.** Text passed as a prop and translated on display (`label="…"`, page titles, `tl()` messages) isn't type-checked: `id/loose.ts` and `id/messages.ts` must be kept up to date by hand. Both dictionaries ship to the client (a few dozen KB). Data the app seeds (default money categories and accounts) stays as created, and the quick-add parsers still read English words ("tomorrow", "#food").
 
 ## 2026-11-16: School is a route group with one tab bar; one paths constant
 
@@ -214,7 +225,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 ## 2026-11-15: Language preference is saved but `lang` stays `en`
 
-**Status.** Accepted until translations ship.
+**Status.** Superseded on 2026-11-16 by "Translations are gettext-style, keyed by the English text".
 
 **Decision.** The language setting is stored, but `<html lang>` stays `en`.
 

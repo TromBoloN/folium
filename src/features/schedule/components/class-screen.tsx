@@ -24,6 +24,7 @@ import { getSettings } from "@/features/settings/queries";
 import { formatDue } from "@/features/tasks/due";
 import { listOpenTasks } from "@/features/tasks/queries";
 import { formatDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { getI18n } from "@/lib/i18n/server";
 import { safeHttpsUrl } from "@/lib/safe-links";
 import { cn } from "@/lib/utils";
 import { formatTime } from "../../timetable/logic";
@@ -39,11 +40,13 @@ import { ClassActions } from "./class-actions";
  */
 export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: string; variant: "page" | "sheet" }) {
   await requireUser();
-  const [occurrence, { preferences }, courses] = await Promise.all([
+  const [occurrence, { preferences }, courses, i18n] = await Promise.all([
     getOccurrence(occurrenceKey),
     getSettings(),
     listCourses(),
+    getI18n(),
   ]);
+  const { t, intl } = i18n;
   if (!occurrence) notFound();
   await io();
   const now = new Date();
@@ -63,7 +66,7 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
   return (
     <div className="flex flex-col gap-6" style={{ "--tint": occurrence.course.color } as React.CSSProperties}>
       {variant === "page" ? (
-        <PageHeader title={occurrence.course.name} back={<BackLink href={back}>Schedule</BackLink>} />
+        <PageHeader title={occurrence.course.name} back={<BackLink href={back}>{t("Schedule")}</BackLink>} />
       ) : null}
 
       <section className="tile tile-tinted relative flex flex-col gap-3 overflow-hidden p-4 pl-5">
@@ -78,7 +81,7 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
           <span className="inline-flex items-center gap-1.5">
             <CalendarClock aria-hidden className="size-4 text-muted-foreground" />
             <span className={cn("font-medium", cancelled && "line-through")}>
-              {formatDate(occurrence.date, { weekday: "long", day: "numeric", month: "long" })},{" "}
+              {formatDate(occurrence.date, { weekday: "long", day: "numeric", month: "long" }, intl)},{" "}
               <span className="tabular-nums">{timeRange(occurrence, fmt)}</span>
             </span>
           </span>
@@ -89,18 +92,20 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
             </span>
           ) : null}
         </p>
-        <ChangeChips chips={occurrenceChips(occurrence, fmt)} />
+        <ChangeChips chips={occurrenceChips(occurrence, fmt, i18n)} />
         {occurrence.note ? <p className="text-muted-foreground text-sm">“{occurrence.note}”</p> : null}
         {occurrence.status === "moved" && occurrence.from ? (
           <p className="text-muted-foreground text-xs">
-            Usually {placementLabel(occurrence.from, fmt)}–{formatTime(occurrence.from.endTime, fmt)}
+            {t("Usually {when}", {
+              when: `${placementLabel(occurrence.from, fmt, undefined, i18n)}–${formatTime(occurrence.from.endTime, fmt)}`,
+            })}
           </p>
         ) : null}
         {meeting && isLive(occurrence) ? (
           <Button asChild size="sm" className="w-fit">
             <a href={meeting} target="_blank" rel="noopener noreferrer">
               <Video aria-hidden />
-              Open meeting link
+              {t("Open meeting link")}
               <ExternalLink aria-hidden className="opacity-70" />
             </a>
           </Button>
@@ -122,25 +127,25 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
         canMark={ended && isLive(occurrence)}
         attendance={marks.get(occurrence.key) ?? null}
         backHref={back}
-        label={`${occurrence.course.code ?? occurrence.course.name}, ${placementLabel(occurrence, fmt)}`}
+        label={`${occurrence.course.code ?? occurrence.course.name}, ${placementLabel(occurrence, fmt, undefined, i18n)}`}
       />
 
       {tasks.length > 0 ? (
         <section aria-labelledby="class-tasks-h" className="flex flex-col gap-2">
           <h3 id="class-tasks-h" className="flex items-center gap-2 font-medium text-sm">
             <ListTodo aria-hidden className="size-4 text-muted-foreground" />
-            Open tasks for {occurrence.course.code ?? occurrence.course.name}
+            {t("Open tasks for {name}", { name: occurrence.course.code ?? occurrence.course.name })}
           </h3>
           <ul className="flex flex-col divide-y divide-border-soft rounded-xl border border-border-soft">
-            {tasks.map((t) => (
-              <li key={t.id}>
+            {tasks.map((task) => (
+              <li key={task.id}>
                 <Link
-                  href={`/tasks/${t.id}`}
+                  href={`/tasks/${task.id}`}
                   className="flex items-center justify-between gap-3 px-4 py-2.5 text-sm hover:bg-accent/50"
                 >
-                  <span className="min-w-0 truncate">{t.title}</span>
+                  <span className="min-w-0 truncate">{task.title}</span>
                   <span className="shrink-0 text-muted-foreground text-xs">
-                    {formatDue(t, now, preferences.timeZone, fmt) ?? "No date"}
+                    {formatDue(task, now, preferences.timeZone, fmt, i18n) ?? t("No date")}
                   </span>
                 </Link>
               </li>
@@ -150,27 +155,27 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
       ) : null}
 
       <nav
-        aria-label="More for this class"
+        aria-label={t("More for this class")}
         className="flex flex-col divide-y divide-border-soft rounded-xl border border-border-soft"
       >
-        <LinkRow href={`/courses/${occurrence.courseId}`} icon={BookOpen} label="Open course" />
+        <LinkRow href={`/courses/${occurrence.courseId}`} icon={BookOpen} label={t("Open course")} />
         {occurrence.slotId ? (
           <LinkRow
             href={`/courses/${occurrence.courseId}/slots/${occurrence.slotId}/edit`}
             icon={Pencil}
-            label="Edit the weekly time"
+            label={t("Edit the weekly time")}
           />
         ) : null}
         {whatsapp && course ? (
           <LinkRow
             href={whatsapp}
             icon={MessageCircle}
-            label={`WhatsApp ${course.lecturer ? course.lecturer.split(",")[0] : "the lecturer"}`}
+            label={t("WhatsApp {name}", { name: course.lecturer ? course.lecturer.split(",")[0] : t("the lecturer") })}
             external
           />
         ) : null}
         {mailto && course?.lecturerEmail ? (
-          <LinkRow href={mailto} icon={Mail} label={`Email ${course.lecturerEmail}`} external />
+          <LinkRow href={mailto} icon={Mail} label={t("Email {address}", { address: course.lecturerEmail })} external />
         ) : null}
       </nav>
     </div>

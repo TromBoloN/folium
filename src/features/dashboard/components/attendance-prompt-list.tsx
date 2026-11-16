@@ -10,6 +10,7 @@ import {
   type RescheduleOutcome,
   type RescheduleTarget,
 } from "@/features/schedule/components/reschedule-dialog";
+import { useT } from "@/lib/i18n/client";
 
 type Item = RescheduleTarget & { color: string };
 
@@ -36,6 +37,7 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
   const [dialog, setDialog] = useState<{ item: Item; waiting: boolean } | null>(null);
   const [pending, start] = useTransition();
   const toast = useToast();
+  const t = useT();
   const left = items.filter((i) => !done.includes(i.key));
   const stillWaiting = waiting.filter((i) => !done.includes(i.key));
 
@@ -44,7 +46,7 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
     toast({
       message,
       action: {
-        label: "Undo",
+        label: t("Undo"),
         onClick: async () => {
           await undo();
           setDone((d) => d.filter((k) => k !== key));
@@ -60,14 +62,16 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
         toast({ message: result.error, tone: "error" });
         return;
       }
-      finished(i.key, `Cancelled: ${i.name}`, () => undoChange({ key: i.key, previous: result.data.previous }));
+      finished(i.key, t("Cancelled: {name}", { name: i.name }), () =>
+        undoChange({ key: i.key, previous: result.data.previous }),
+      );
     });
 
   const onRescheduled = (i: Item, outcome: RescheduleOutcome) => {
     const undo = () => undoChange({ key: i.key, previous: outcome.previous });
     // "Not decided yet": the refreshed page moves it into the waiting list, so don't hide it here.
     if (outcome.kind === "postponed") {
-      toast({ message: outcome.message, action: { label: "Undo", onClick: async () => void (await undo()) } });
+      toast({ message: outcome.message, action: { label: t("Undo"), onClick: async () => void (await undo()) } });
       return;
     }
     finished(i.key, outcome.message, undo);
@@ -76,7 +80,7 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
   return (
     <div className="flex min-w-0 flex-1 flex-col gap-3">
       {left.length === 0 && items.length > 0 ? (
-        <p className="text-muted-foreground text-sm sm:pt-2">All marked. Thanks!</p>
+        <p className="text-muted-foreground text-sm sm:pt-2">{t("All marked. Thanks!")}</p>
       ) : null}
       {left.length > 0 ? (
         <ul className="flex flex-col divide-y divide-border-soft">
@@ -94,8 +98,10 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
                   label={`${i.name}, ${i.when}`}
                   onMarked={(status) => {
                     if (!status) return;
-                    finished(i.key, `${status === "attended" ? "Attended" : "Missed"}: ${i.name}`, () =>
-                      setAttendance({ key: i.key, status: null }),
+                    finished(
+                      i.key,
+                      t(status === "attended" ? "Attended: {name}" : "Missed: {name}", { name: i.name }),
+                      () => setAttendance({ key: i.key, status: null }),
                     );
                   }}
                 />
@@ -104,20 +110,20 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
                   disabled={pending}
                   onClick={() => setDialog({ item: i, waiting: false })}
                   className={chip}
-                  aria-label={`Rescheduled: ${i.name}, ${i.when}`}
+                  aria-label={t("Rescheduled: {name}", { name: `${i.name}, ${i.when}` })}
                 >
                   <CalendarClock aria-hidden className="size-3.5" />
-                  Rescheduled
+                  {t("Rescheduled")}
                 </button>
                 <button
                   type="button"
                   disabled={pending}
                   onClick={() => cancel(i)}
                   className={chip}
-                  aria-label={`Cancelled: ${i.name}, ${i.when}`}
+                  aria-label={t("Cancelled: {name}", { name: `${i.name}, ${i.when}` })}
                 >
                   <CircleSlash aria-hidden className="size-3.5" />
-                  Cancelled
+                  {t("Cancelled")}
                 </button>
               </span>
             </li>
@@ -129,7 +135,7 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
         <section aria-labelledby="waiting-h" className="flex flex-col gap-1">
           <h3 id="waiting-h" className="flex items-center gap-1.5 font-medium text-muted-foreground text-xs">
             <CalendarClock aria-hidden className="size-3.5 text-warning" />
-            Waiting for a new date
+            {t("Waiting for a new date")}
           </h3>
           <ul className="flex flex-col divide-y divide-border-soft">
             {stillWaiting.map((i) => (
@@ -137,7 +143,9 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
                 <span className="flex min-w-0 items-center gap-2 text-sm">
                   <Dot color={i.color} />
                   <span className="truncate font-medium">{i.name}</span>
-                  <span className="shrink-0 text-muted-foreground tabular-nums">was {i.when}</span>
+                  <span className="shrink-0 text-muted-foreground tabular-nums">
+                    {t("was {when}", { when: i.when })}
+                  </span>
                 </span>
                 <span className="flex flex-wrap items-center gap-1">
                   <button
@@ -145,20 +153,20 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
                     disabled={pending}
                     onClick={() => setDialog({ item: i, waiting: true })}
                     className={chip}
-                    aria-label={`Set the new date: ${i.name}`}
+                    aria-label={t("Set the new date: {name}", { name: i.name })}
                   >
                     <CalendarClock aria-hidden className="size-3.5" />
-                    Set date
+                    {t("Set date")}
                   </button>
                   <button
                     type="button"
                     disabled={pending}
                     onClick={() => cancel(i)}
                     className={chip}
-                    aria-label={`It's cancelled: ${i.name}`}
+                    aria-label={t("It's cancelled: {name}", { name: i.name })}
                   >
                     <CircleSlash aria-hidden className="size-3.5" />
-                    Cancelled
+                    {t("Cancelled")}
                   </button>
                 </span>
               </li>

@@ -26,8 +26,11 @@ import { SlotList } from "@/features/timetable/components/slot-list";
 import { findConflicts } from "@/features/timetable/logic";
 import type { TimetableSlot } from "@/features/timetable/types";
 import { addDays, formatDate, minutesNowIn, todayIn } from "@/lib/dates";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Course" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Course") };
+}
 
 export default function CoursePage({ params }: PageProps<"/courses/[id]">) {
   return (
@@ -45,7 +48,12 @@ export default function CoursePage({ params }: PageProps<"/courses/[id]">) {
 async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params">) {
   await requireUser();
   const { id } = await params;
-  const [course, activeSlots, { preferences }] = await Promise.all([getCourse(id), listActiveSlots(), getSettings()]);
+  const [course, activeSlots, { preferences }, t] = await Promise.all([
+    getCourse(id),
+    listActiveSlots(),
+    getSettings(),
+    getT(),
+  ]);
   if (!course) notFound();
 
   // Archived courses aren't in the timetable, so they can't clash with anything.
@@ -54,10 +62,10 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
   const whatsapp = whatsappLink(course.lecturerPhone);
   const mailto = mailtoLink(course.lecturerEmail);
   const details = [
-    ["Lecturer", course.lecturer],
-    ["Room", course.room],
-    ["Semester", course.semester],
-    ["Credits", course.credits > 0 ? `${course.credits} SKS` : null],
+    [t("Lecturer"), course.lecturer],
+    [t("Room"), course.room],
+    [t("Semester"), course.semester],
+    [t("Credits"), course.credits > 0 ? t("{n} SKS", { n: course.credits }) : null],
   ].filter((d): d is [string, string] => Boolean(d[1]));
 
   return (
@@ -78,7 +86,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
           {course.archivedAt ? (
             <p className="flex items-center gap-2 rounded-md bg-muted px-3 py-2 text-muted-foreground text-sm">
               <Archive aria-hidden className="size-4" />
-              Archived. Its class times are hidden from your timetable.
+              {t("Archived. Its class times are hidden from your timetable.")}
             </p>
           ) : null}
           {details.length > 0 ? (
@@ -97,7 +105,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
                 <Button asChild size="sm" variant="outline">
                   <a href={whatsapp} target="_blank" rel="noopener noreferrer">
                     <MessageCircle aria-hidden />
-                    WhatsApp
+                    {t("WhatsApp")}
                   </a>
                 </Button>
               ) : null}
@@ -105,7 +113,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
                 <Button asChild size="sm" variant="outline">
                   <a href={mailto}>
                     <Mail aria-hidden />
-                    Email
+                    {t("Email")}
                   </a>
                 </Button>
               ) : null}
@@ -118,13 +126,13 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
         <section className="flex flex-col gap-3" aria-labelledby="class-times">
           <div className="flex items-center justify-between gap-3">
             <h2 id="class-times" className="font-medium">
-              Class times
+              {t("Class times")}
             </h2>
             {course.slots.length > 0 ? (
               <Button asChild size="sm" variant="outline">
                 <Link href={`/courses/${course.id}/slots/new`}>
                   <CalendarPlus aria-hidden />
-                  Add class time
+                  {t("Add class time")}
                 </Link>
               </Button>
             ) : null}
@@ -132,7 +140,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
           {course.slots.length === 0 ? (
             <EmptyState icon={Clock} title="No class times yet" description="Add when this course meets each week.">
               <Button asChild size="sm">
-                <Link href={`/courses/${course.id}/slots/new`}>Add class time</Link>
+                <Link href={`/courses/${course.id}/slots/new`}>{t("Add class time")}</Link>
               </Button>
             </EmptyState>
           ) : (
@@ -160,6 +168,8 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
 
 /** Coming up (with this course's changes) and attendance over the term. */
 async function CourseSchedule({ course, preferences }: { course: CourseWithSlots; preferences: Preferences }) {
+  const i18n = await getI18n();
+  const { t, intl } = i18n;
   await io();
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
@@ -186,7 +196,7 @@ async function CourseSchedule({ course, preferences }: { course: CourseWithSlots
     .reverse()
     .map((o) => ({
       key: o.key,
-      label: `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" })} · ${placementLabel(o, preferences.timeFormat, o.date)}`,
+      label: `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, intl)} · ${placementLabel(o, preferences.timeFormat, o.date, i18n)}`,
       status: marks.get(o.key) ?? null,
     }));
 
@@ -195,22 +205,22 @@ async function CourseSchedule({ course, preferences }: { course: CourseWithSlots
       <section className="flex flex-col gap-3" aria-labelledby="coming-up">
         <div className="flex items-center justify-between gap-3">
           <h2 id="coming-up" className="font-medium">
-            Coming up
+            {t("Coming up")}
           </h2>
           <Button asChild size="sm" variant="ghost">
             <Link href={`/courses/extra/new?course=${course.id}&date=${today}`}>
               <Sparkles aria-hidden />
-              Extra session
+              {t("Extra session")}
             </Link>
           </Button>
         </div>
         {upcoming.length === 0 ? (
-          <p className="text-muted-foreground text-sm">No classes in the next three weeks.</p>
+          <p className="text-muted-foreground text-sm">{t("No classes in the next three weeks.")}</p>
         ) : (
           <ul className="flex flex-col gap-1.5">
             {upcoming.map((o) => (
               <li key={o.key}>
-                <OccurrenceRow item={toRowItem(o, preferences.timeFormat, clock)} />
+                <OccurrenceRow item={toRowItem(o, preferences.timeFormat, clock, i18n)} />
               </li>
             ))}
           </ul>

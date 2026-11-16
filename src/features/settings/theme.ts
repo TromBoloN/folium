@@ -1,4 +1,5 @@
 import { toOklch } from "@/lib/color";
+import type { MessageKey } from "@/lib/i18n/core";
 import type { Theme } from "./schema";
 
 /**
@@ -47,7 +48,7 @@ export function accentTokens(accent: string) {
   };
 }
 
-export const PRESET_LABELS: Record<Theme["preset"], string> = {
+export const PRESET_LABELS: Record<Theme["preset"], MessageKey> = {
   green: "Green",
   blue: "Blue",
   violet: "Violet",

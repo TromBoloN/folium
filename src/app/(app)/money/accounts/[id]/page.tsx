@@ -16,8 +16,12 @@ import { formatIdr } from "@/features/finance/lib/format-idr";
 import { type Account, ensureFinanceDefaults, listAccounts } from "@/features/finance/queries";
 import { realBalanceSchema } from "@/features/finance/schemas";
 import { adjustmentFor, reconciledOpening } from "@/features/finance/schemas/money-math";
+import { rich } from "@/lib/i18n/rich";
+import { getI18n, getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Account" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Account") };
+}
 
 type Props = PageProps<"/money/accounts/[id]">;
 
@@ -67,7 +71,8 @@ async function AccountDetail({ params, searchParams }: Props) {
  * difference, then either rewrites the opening balance or records an adjustment.
  * A GET form, so the preview works without JavaScript.
  */
-function Reconcile({ account, real, matched }: { account: Account; real: string; matched: boolean }) {
+async function Reconcile({ account, real, matched }: { account: Account; real: string; matched: boolean }) {
+  const { t, tl } = await getI18n();
   const parsed = real ? realBalanceSchema.safeParse({ accountId: account.id, real }) : null;
   const target = parsed?.success ? parsed.data.real : null;
   const adjustment = target !== null ? adjustmentFor(account.balance, target) : null;
@@ -76,50 +81,52 @@ function Reconcile({ account, real, matched }: { account: Account; real: string;
       <div className="flex flex-col gap-1">
         <h2 id="reconcile-h" className="flex items-center gap-2 font-medium">
           <Scale aria-hidden className="size-4 text-muted-foreground" />
-          Match my real balance
+          {t("Match my real balance")}
         </h2>
         <p className="text-muted-foreground text-sm">
-          Folium shows <span className="font-medium text-foreground tabular-nums">{formatIdr(account.balance)}</span>.
-          Type what your bank or e-wallet app shows right now.
+          {rich(t("Folium shows {amount}."), {
+            amount: <span className="font-medium text-foreground tabular-nums">{formatIdr(account.balance)}</span>,
+          })}{" "}
+          {t("Type what your bank or e-wallet app shows right now.")}
         </p>
       </div>
       {matched ? (
         <p className="flex items-center gap-2 text-sm" role="status">
           <CheckCircle2 aria-hidden className="size-4 text-money-in" />
-          Balance matched.
+          {t("Balance matched.")}
         </p>
       ) : null}
       <form method="get" action="#reconcile" className="flex flex-wrap items-end gap-2">
         <div className="grid gap-1.5">
-          <Label htmlFor="real">Real balance</Label>
+          <Label htmlFor="real">{t("Real balance")}</Label>
           <Input
             id="real"
             name="real"
             inputMode="decimal"
             autoComplete="off"
             defaultValue={real}
-            placeholder="e.g. 1.250.000"
+            placeholder={t("e.g. {example}", { example: "1.250.000" })}
             className="w-48"
             aria-invalid={parsed && !parsed.success ? true : undefined}
             aria-describedby={parsed && !parsed.success ? "real-error" : undefined}
           />
         </div>
         <Button type="submit" variant="outline">
-          Preview
+          {t("Preview")}
         </Button>
       </form>
       {parsed && !parsed.success ? (
         <p id="real-error" className="text-destructive text-sm">
-          {parsed.error.issues[0]?.message ?? "Enter an amount."}
+          {tl(parsed.error.issues[0]?.message ?? "Enter an amount.")}
         </p>
       ) : null}
       {target !== null ? (
         adjustment === null ? (
-          <p className="text-sm">It already matches.</p>
+          <p className="text-sm">{t("It already matches.")}</p>
         ) : (
           <div className="flex flex-col gap-3 rounded-xl border border-border-soft p-4">
             <p className="text-sm">
-              Difference:{" "}
+              {t("Difference:")}{" "}
               <span className="font-medium tabular-nums">
                 {adjustment.direction === "in" ? "+" : "−"}
                 {formatIdr(adjustment.amount)}
@@ -127,20 +134,22 @@ function Reconcile({ account, real, matched }: { account: Account; real: string;
             </p>
             <div className="flex flex-wrap gap-2">
               <ActionForm action={matchRealBalance} fields={{ accountId: account.id, real }}>
-                <SubmitButton size="sm">Change the opening balance</SubmitButton>
+                <SubmitButton size="sm">{t("Change the opening balance")}</SubmitButton>
               </ActionForm>
               <ActionForm action={adjustToRealBalance} fields={{ accountId: account.id, real }}>
                 <SubmitButton size="sm" variant="outline">
-                  Add an adjustment of {adjustment.direction === "in" ? "+" : "−"}
-                  {formatIdr(adjustment.amount)}
+                  {t("Add an adjustment of {amount}", {
+                    amount: `${adjustment.direction === "in" ? "+" : "−"}${formatIdr(adjustment.amount)}`,
+                  })}
                 </SubmitButton>
               </ActionForm>
             </div>
             <p className="text-muted-foreground text-xs">
-              Changing the opening balance sets it to{" "}
-              {formatIdr(reconciledOpening(account.balance, account.openingBalance, target))} and keeps every
-              transaction as it is. Opening balance is a snapshot: run this again after you backfill older transactions.
-              An adjustment instead records the difference today.
+              {t(
+                "Changing the opening balance sets it to {amount} and keeps every transaction as it is. Opening balance is a snapshot: run this again after you backfill older transactions.",
+                { amount: formatIdr(reconciledOpening(account.balance, account.openingBalance, target)) },
+              )}{" "}
+              {t("An adjustment instead records the difference today.")}
             </p>
           </div>
         )

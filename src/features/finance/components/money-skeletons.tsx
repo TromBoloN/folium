@@ -1,10 +1,15 @@
+import { Tr, TrL } from "@/lib/i18n/client";
+
 /** Loading placeholders shaped like the final /money blocks, so nothing jumps when they arrive. */
 
 const bar = "animate-pulse rounded bg-muted";
 
 export function QuickAddSkeleton() {
   return (
-    <div role="status" aria-label="Loading quick add" className="tile flex items-center gap-2 p-3 sm:p-4">
+    <div role="status" className="tile flex items-center gap-2 p-3 sm:p-4">
+      <span className="sr-only">
+        <Tr k="Loading quick add" />
+      </span>
       <div className={`${bar} ml-1 size-5 rounded-full`} />
       <div className={`${bar} h-11 flex-1 rounded-lg`} />
       <div className={`${bar} h-10 w-16 rounded-lg`} />
@@ -14,7 +19,10 @@ export function QuickAddSkeleton() {
 
 export function AccountsSkeleton() {
   return (
-    <div role="status" aria-label="Loading accounts" className="flex flex-col gap-4">
+    <div role="status" className="flex flex-col gap-4">
+      <span className="sr-only">
+        <Tr k="Loading accounts" />
+      </span>
       <div className="flex flex-col gap-2">
         <div className={`${bar} h-4 w-40`} />
         <div className={`${bar} h-10 w-56 sm:h-12`} />
@@ -35,7 +43,10 @@ export function AccountsSkeleton() {
 
 export function PanelSkeleton({ label, rows }: { label: string; rows: number }) {
   return (
-    <div role="status" aria-label={label} className="tile flex flex-col gap-4 p-5">
+    <div role="status" className="tile flex flex-col gap-4 p-5">
+      <span className="sr-only">
+        <TrL text={label} />
+      </span>
       <div className={`${bar} h-5 w-36`} />
       <div className={`${bar} h-3 w-full rounded-full`} />
       {Array.from({ length: rows }, (_, i) => (
@@ -48,7 +59,10 @@ export function PanelSkeleton({ label, rows }: { label: string; rows: number }) 
 
 export function ListRowsSkeleton({ rows, label }: { rows: number; label: string }) {
   return (
-    <div role="status" aria-label={label} className="flex flex-col gap-1.5">
+    <div role="status" className="flex flex-col gap-1.5">
+      <span className="sr-only">
+        <TrL text={label} />
+      </span>
       <div className={`${bar} mx-1 h-4 w-20`} />
       <div className="tile flex flex-col divide-y divide-border-soft">
         {Array.from({ length: rows }, (_, i) => (

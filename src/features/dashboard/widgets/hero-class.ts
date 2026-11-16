@@ -1,9 +1,10 @@
 import { occurrenceChips, type TimeFormat } from "@/features/schedule/format";
 import type { Occurrence } from "@/features/schedule/occurrences";
+import { EN, type I18n } from "@/lib/i18n/core";
 import type { HeroClass } from "./next-up-hero";
 
 /** An occurrence as the Today widgets take it. */
-export function toHeroClass(o: Occurrence, format: TimeFormat): HeroClass {
+export function toHeroClass(o: Occurrence, format: TimeFormat, i18n: I18n = EN): HeroClass {
   return {
     key: o.key,
     id: o.key,
@@ -19,7 +20,7 @@ export function toHeroClass(o: Occurrence, format: TimeFormat): HeroClass {
     location: o.location,
     cancelled: o.status === "cancelled",
     // Cancelled classes are shown struck through; their red chip would repeat that.
-    chips: occurrenceChips(o, format).filter((c) => c.kind !== "cancelled"),
+    chips: occurrenceChips(o, format, i18n).filter((c) => c.kind !== "cancelled"),
     note: o.note,
     meetingUrl: o.meetingUrl,
   };

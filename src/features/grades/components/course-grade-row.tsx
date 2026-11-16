@@ -1,9 +1,11 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { getT } from "@/lib/i18n/server";
 import { type CourseResult, formatPercent } from "../logic";
 import type { GradebookCourse } from "../queries";
 
-export function CourseGradeRow({ course, result }: { course: GradebookCourse; result: CourseResult }) {
+export async function CourseGradeRow({ course, result }: { course: GradebookCourse; result: CourseResult }) {
+  const t = await getT();
   const graded = result.totalWeight > 0 ? Math.round((result.gradedWeight / result.totalWeight) * 100) : 0;
   return (
     <li>
@@ -22,8 +24,8 @@ export function CourseGradeRow({ course, result }: { course: GradebookCourse; re
             />
           </span>
           <span className="text-muted-foreground text-xs">
-            {course.credits > 0 ? `${course.credits} SKS` : "Not counted (0 SKS)"}
-            {result.totalWeight > 0 ? ` · ${graded}% graded` : " · No assessments"}
+            {course.credits > 0 ? t("{n} SKS", { n: course.credits }) : t("Not counted (0 SKS)")}
+            {result.totalWeight > 0 ? t(" · {n}% graded", { n: graded }) : t(" · No assessments")}
           </span>
         </span>
         <span className="text-right tabular-nums">

@@ -32,6 +32,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Input } from "@/components/ui/input";
 import { todayIn } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 import { PRIORITIES, PRIORITY_LABELS, type TaskPriority } from "../schema";
 import { useClientData } from "./client-data-store";
 import { useTaskOps } from "./task-ops";
@@ -47,12 +48,13 @@ export type MenuTask = {
 /** The "⋯" menu on a task row: reschedule, priority, course, rename, open, delete. Every change can be undone. */
 export function TaskMenu({ task, onRename }: { task: MenuTask; onRename: () => void }) {
   const ops = useTaskOps();
+  const t = useT();
   const [picking, setPicking] = useState(false);
   const data = useClientData();
   const courses = data?.courses.filter((c) => !c.archived || c.id === task.courseId) ?? [];
   const courseName = (id: string | null) => {
     const c = courses.find((x) => x.id === id);
-    return c ? (c.code ?? c.name) : "no course";
+    return c ? (c.code ?? c.name) : t("no course");
   };
 
   return (
@@ -63,42 +65,53 @@ export function TaskMenu({ task, onRename }: { task: MenuTask; onRename: () => v
             variant="ghost"
             size="icon"
             className="size-9 shrink-0 text-muted-foreground"
-            aria-label={`Actions for “${task.title}”`}
+            aria-label={t("Actions for “{title}”", { title: task.title })}
           >
             <MoreHorizontal aria-hidden />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel className="text-muted-foreground text-xs">Reschedule</DropdownMenuLabel>
+          <DropdownMenuLabel className="text-muted-foreground text-xs">{t("Reschedule")}</DropdownMenuLabel>
           <DropdownMenuItem
-            onSelect={() => ops.patch({ id: task.id, reschedule: "today" }, `Moved to today: ${task.title}`)}
+            onSelect={() =>
+              ops.patch({ id: task.id, reschedule: "today" }, t("Moved to today: {title}", { title: task.title }))
+            }
           >
-            <Sun aria-hidden /> Today
+            <Sun aria-hidden /> {t("Today")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => ops.patch({ id: task.id, reschedule: "tomorrow" }, `Moved to tomorrow: ${task.title}`)}
+            onSelect={() =>
+              ops.patch({ id: task.id, reschedule: "tomorrow" }, t("Moved to tomorrow: {title}", { title: task.title }))
+            }
           >
-            <Sunrise aria-hidden /> Tomorrow
+            <Sunrise aria-hidden /> {t("Tomorrow")}
           </DropdownMenuItem>
           <DropdownMenuItem
-            onSelect={() => ops.patch({ id: task.id, reschedule: "next-week" }, `Moved to next week: ${task.title}`)}
+            onSelect={() =>
+              ops.patch(
+                { id: task.id, reschedule: "next-week" },
+                t("Moved to next week: {title}", { title: task.title }),
+              )
+            }
           >
-            <CalendarArrowUp aria-hidden /> Next week
+            <CalendarArrowUp aria-hidden /> {t("Next week")}
           </DropdownMenuItem>
           <DropdownMenuItem onSelect={() => setPicking(true)}>
-            <CalendarDays aria-hidden /> Pick a date…
+            <CalendarDays aria-hidden /> {t("Pick a date…")}
           </DropdownMenuItem>
           {task.dueAt ? (
             <DropdownMenuItem
-              onSelect={() => ops.patch({ id: task.id, dueDate: null }, `Deadline removed: ${task.title}`)}
+              onSelect={() =>
+                ops.patch({ id: task.id, dueDate: null }, t("Deadline removed: {title}", { title: task.title }))
+              }
             >
-              <CalendarOff aria-hidden /> Remove date
+              <CalendarOff aria-hidden /> {t("Remove date")}
             </DropdownMenuItem>
           ) : null}
           <DropdownMenuSeparator />
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              <Flag aria-hidden /> Priority
+              <Flag aria-hidden /> {t("Priority")}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuRadioGroup
@@ -106,13 +119,16 @@ export function TaskMenu({ task, onRename }: { task: MenuTask; onRename: () => v
                 onValueChange={(value) =>
                   ops.patch(
                     { id: task.id, priority: value as TaskPriority },
-                    `Priority ${PRIORITY_LABELS[value as TaskPriority].toLowerCase()}: ${task.title}`,
+                    t("Priority {level}: {title}", {
+                      level: t(PRIORITY_LABELS[value as TaskPriority]).toLowerCase(),
+                      title: task.title,
+                    }),
                   )
                 }
               >
                 {PRIORITIES.map((p) => (
                   <DropdownMenuRadioItem key={p} value={p}>
-                    {PRIORITY_LABELS[p]}
+                    {t(PRIORITY_LABELS[p])}
                   </DropdownMenuRadioItem>
                 ))}
               </DropdownMenuRadioGroup>
@@ -121,16 +137,19 @@ export function TaskMenu({ task, onRename }: { task: MenuTask; onRename: () => v
           {courses.length > 0 ? (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>
-                <Tag aria-hidden /> Course
+                <Tag aria-hidden /> {t("Course")}
               </DropdownMenuSubTrigger>
               <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
                 <DropdownMenuRadioGroup
                   value={task.courseId ?? ""}
                   onValueChange={(value) =>
-                    ops.patch({ id: task.id, courseId: value || null }, `Course set to ${courseName(value || null)}`)
+                    ops.patch(
+                      { id: task.id, courseId: value || null },
+                      t("Course set to {name}", { name: courseName(value || null) }),
+                    )
                   }
                 >
-                  <DropdownMenuRadioItem value="">No course</DropdownMenuRadioItem>
+                  <DropdownMenuRadioItem value="">{t("No course")}</DropdownMenuRadioItem>
                   {courses.map((c) => (
                     <DropdownMenuRadioItem key={c.id} value={c.id}>
                       <span
@@ -146,16 +165,16 @@ export function TaskMenu({ task, onRename }: { task: MenuTask; onRename: () => v
             </DropdownMenuSub>
           ) : null}
           <DropdownMenuItem onSelect={onRename}>
-            <Pencil aria-hidden /> Rename
+            <Pencil aria-hidden /> {t("Rename")}
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href={`/tasks/${task.id}`}>
-              <ExternalLink aria-hidden /> Open
+              <ExternalLink aria-hidden /> {t("Open")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem className="text-destructive focus:text-destructive" onSelect={() => ops.remove(task)}>
-            <Trash2 aria-hidden /> Delete
+            <Trash2 aria-hidden /> {t("Delete")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -167,6 +186,7 @@ export function TaskMenu({ task, onRename }: { task: MenuTask; onRename: () => v
 /** A small native dialog with a date field. Keeps the time of day when it can (see movedDue). */
 function DatePicker({ task, onClose }: { task: MenuTask; onClose: () => void }) {
   const ops = useTaskOps();
+  const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const zone = useClientData()?.timeZone ?? "UTC";
   const initial = todayIn(zone, task.dueAt ? new Date(task.dueAt) : new Date());
@@ -185,18 +205,19 @@ function DatePicker({ task, onClose }: { task: MenuTask; onClose: () => void }) 
         className="flex flex-col gap-4"
         onSubmit={(event) => {
           const date = new FormData(event.currentTarget).get("date");
-          if (typeof date === "string" && date) ops.patch({ id: task.id, dueDate: date }, `Moved: ${task.title}`);
+          if (typeof date === "string" && date)
+            ops.patch({ id: task.id, dueDate: date }, t("Moved: {title}", { title: task.title }));
         }}
       >
         <h2 id={`pick-${task.id}`} className="flex items-center gap-2 font-medium">
-          <CalendarPlus aria-hidden className="size-4" /> New date for “{task.title}”
+          <CalendarPlus aria-hidden className="size-4" /> {t("New date for “{title}”", { title: task.title })}
         </h2>
-        <Input type="date" name="date" defaultValue={initial} aria-label="Date" required autoFocus />
+        <Input type="date" name="date" defaultValue={initial} aria-label={t("Date")} required autoFocus />
         <div className="flex justify-end gap-2">
           <Button type="button" variant="ghost" onClick={() => ref.current?.close()}>
-            Cancel
+            {t("Cancel")}
           </Button>
-          <Button type="submit">Move</Button>
+          <Button type="submit">{t("Move")}</Button>
         </div>
       </form>
     </dialog>

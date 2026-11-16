@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isCivilDate } from "@/lib/dates";
+import type { MessageKey } from "@/lib/i18n/core";
 import { isMoneyIcon } from "../lib/money-palette";
 import { parseAmount } from "../lib/parse-amount";
 
@@ -26,7 +27,7 @@ export type TransactionKind = (typeof TRANSACTION_KINDS)[number];
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
 export type CategoryKind = (typeof CATEGORY_KINDS)[number];
 
-export const KIND_LABELS: Record<TransactionKind, string> = {
+export const KIND_LABELS: Record<TransactionKind, MessageKey> = {
   expense: "Expense",
   income: "Income",
   transfer: "Transfer",
@@ -36,7 +37,7 @@ export const KIND_LABELS: Record<TransactionKind, string> = {
   borrow: "Borrowed",
   payback: "Paid back",
 };
-export const ACCOUNT_TYPE_LABELS: Record<AccountType, string> = {
+export const ACCOUNT_TYPE_LABELS: Record<AccountType, MessageKey> = {
   bank: "Bank",
   ewallet: "E-wallet",
   cash: "Cash",

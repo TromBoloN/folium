@@ -1,4 +1,5 @@
 import type { LucideIcon } from "lucide-react";
+import { TrL } from "@/lib/i18n/client";
 
 type Props = { icon: LucideIcon; title: string; description: string; children?: React.ReactNode };
 
@@ -13,8 +14,12 @@ export function EmptyState({ icon: Icon, title, description, children }: Props) 
         </span>
       </span>
       <div className="flex flex-col gap-1">
-        <h2 className="font-display font-medium text-xl">{title}</h2>
-        <p className="max-w-sm text-muted-foreground text-sm">{description}</p>
+        <h2 className="font-display font-medium text-xl">
+          <TrL text={title} />
+        </h2>
+        <p className="max-w-sm text-muted-foreground text-sm">
+          <TrL text={description} />
+        </p>
       </div>
       {children}
     </div>

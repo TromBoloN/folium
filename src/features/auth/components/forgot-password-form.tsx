@@ -5,22 +5,26 @@ import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useT } from "@/lib/i18n/client";
+import { rich } from "@/lib/i18n/rich";
 import { requestPasswordReset } from "../actions";
 import { FormError } from "./form-error";
 
 export function ForgotPasswordForm() {
+  const t = useT();
   const [state, action, pending] = useActionState(requestPasswordReset, null);
 
   if (state?.ok) {
     return (
       <div className="flex flex-col gap-3 text-sm" role="status">
-        <p className="font-medium">Check your email</p>
+        <p className="font-medium">{t("Check your email")}</p>
         <p className="text-muted-foreground">
-          If an account exists for <span className="text-foreground">{state.email}</span>, we sent a link to reset its
-          password. The link works once.
+          {rich(t("If an account exists for {email}, we sent a link to reset its password. The link works once."), {
+            email: <span className="text-foreground">{state.email}</span>,
+          })}
         </p>
         <Link href="/login" className="underline underline-offset-4">
-          Back to sign in
+          {t("Back to sign in")}
         </Link>
       </div>
     );
@@ -29,10 +33,10 @@ export function ForgotPasswordForm() {
   return (
     <form action={action} className="flex flex-col gap-4" noValidate>
       <p className="text-muted-foreground text-sm">
-        Enter your email and we&apos;ll send you a link to set a new password.
+        {t("Enter your email and we'll send you a link to set a new password.")}
       </p>
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("Email")}</Label>
         <Input
           id="email"
           name="email"
@@ -45,12 +49,12 @@ export function ForgotPasswordForm() {
       </div>
       <FormError message={state && !state.ok ? state.error : undefined} />
       <Button type="submit" disabled={pending} className="w-full">
-        {pending ? "Sending…" : "Send reset link"}
+        {pending ? t("Sending…") : t("Send reset link")}
       </Button>
       <p className="text-center text-muted-foreground text-sm">
-        Remembered it?{" "}
+        {t("Remembered it?")}{" "}
         <Link href="/login" className="text-foreground underline underline-offset-4">
-          Sign in
+          {t("Sign in")}
         </Link>
       </p>
     </form>

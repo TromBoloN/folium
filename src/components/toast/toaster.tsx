@@ -2,6 +2,7 @@
 
 import { X } from "lucide-react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { useI18n } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 
 export type ToastInput = {
@@ -33,12 +34,13 @@ const MAX = 3;
  * the newest sits at the bottom, above the mobile tab bar.
  */
 export function Toaster({ children }: { children: React.ReactNode }) {
+  const { t } = useI18n();
   const [toasts, setToasts] = useState<Toast[]>([]);
   const next = useRef(1);
-  const dismiss = useCallback((id: number) => setToasts((all) => all.filter((t) => t.id !== id)), []);
+  const dismiss = useCallback((id: number) => setToasts((all) => all.filter((x) => x.id !== id)), []);
   const show = useCallback((input: ToastInput) => {
     const id = next.current++;
-    setToasts((all) => [...all.filter((t) => !input.key || t.key !== input.key), { ...input, id }].slice(-MAX));
+    setToasts((all) => [...all.filter((x) => !input.key || x.key !== input.key), { ...input, id }].slice(-MAX));
   }, []);
   const value = useMemo(() => show, [show]);
 
@@ -46,12 +48,12 @@ export function Toaster({ children }: { children: React.ReactNode }) {
     <ToastContext.Provider value={value}>
       {children}
       <section
-        aria-label="Notifications"
+        aria-label={t("Notifications")}
         className="pointer-events-none fixed inset-x-0 bottom-[calc(9rem+env(safe-area-inset-bottom))] z-50 flex flex-col items-center gap-2 px-4 md:right-6 md:bottom-6 md:left-auto md:items-end"
       >
         <ol role="status" aria-live="polite" className="flex w-full flex-col items-center gap-2 md:w-auto md:items-end">
-          {toasts.map((t) => (
-            <ToastItem key={t.id} toast={t} onDismiss={() => dismiss(t.id)} />
+          {toasts.map((x) => (
+            <ToastItem key={x.id} toast={x} onDismiss={() => dismiss(x.id)} />
           ))}
         </ol>
       </section>
@@ -60,6 +62,8 @@ export function Toaster({ children }: { children: React.ReactNode }) {
 }
 
 function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }) {
+  // Messages often come straight from server actions in English; known ones are translated here.
+  const { t, tl } = useI18n();
   const [paused, setPaused] = useState(false);
   const [busy, setBusy] = useState(false);
   const duration = toast.duration ?? 6000;
@@ -81,7 +85,7 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
       onFocus={() => setPaused(true)}
       onBlur={() => setPaused(false)}
     >
-      <span className={cn("min-w-0 flex-1", toast.tone === "error" && "text-destructive")}>{toast.message}</span>
+      <span className={cn("min-w-0 flex-1", toast.tone === "error" && "text-destructive")}>{tl(toast.message)}</span>
       {toast.action ? (
         <button
           type="button"
@@ -96,13 +100,13 @@ function ToastItem({ toast, onDismiss }: { toast: Toast; onDismiss: () => void }
           }}
           className="shrink-0 rounded-md px-2.5 py-1 font-semibold underline underline-offset-4 hover:bg-accent disabled:opacity-60"
         >
-          {toast.action.label}
+          {tl(toast.action.label)}
         </button>
       ) : null}
       <button
         type="button"
         onClick={onDismiss}
-        aria-label="Dismiss"
+        aria-label={t("Dismiss")}
         className="flex size-8 shrink-0 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
       >
         <X aria-hidden className="size-4" />

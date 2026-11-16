@@ -1,5 +1,6 @@
 import { TZDate } from "@date-fns/tz";
 import { addDays, type CivilDate, formatDate, todayIn } from "@/lib/dates";
+import { EN, type I18n } from "@/lib/i18n/core";
 import { formatTime, type WeekStart, weekDates } from "../timetable/logic";
 
 /**
@@ -91,17 +92,23 @@ export function dueWindowRange(
 }
 
 /** "Today", "Tomorrow 14:00", "Yesterday", "Mon 23 Nov", "3 Jan 2027 09:00". */
-export function formatDue(due: Due, now: Date, timeZone: string, timeFormat: "24h" | "12h"): string | null {
+export function formatDue(
+  due: Due,
+  now: Date,
+  timeZone: string,
+  timeFormat: "24h" | "12h",
+  { t, intl }: I18n = EN,
+): string | null {
   if (!due.dueAt) return null;
   const { date, time } = dueParts(due.dueAt, due.dueHasTime, timeZone);
   const today = todayIn(timeZone, now);
   let day: string;
-  if (date === today) day = "Today";
-  else if (date === addDays(today, 1)) day = "Tomorrow";
-  else if (date === addDays(today, -1)) day = "Yesterday";
+  if (date === today) day = t("Today");
+  else if (date === addDays(today, 1)) day = t("Tomorrow");
+  else if (date === addDays(today, -1)) day = t("Yesterday");
   else if (date.slice(0, 4) === today.slice(0, 4))
-    day = formatDate(date, { weekday: "short", day: "numeric", month: "short" });
-  else day = formatDate(date, { day: "numeric", month: "short", year: "numeric" });
+    day = formatDate(date, { weekday: "short", day: "numeric", month: "short" }, intl);
+  else day = formatDate(date, { day: "numeric", month: "short", year: "numeric" }, intl);
   return time ? `${day} ${formatTime(time, timeFormat)}` : day;
 }
 

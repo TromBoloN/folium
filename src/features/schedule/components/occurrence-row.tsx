@@ -1,6 +1,7 @@
 import { Clock, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import { OverlapWarning } from "@/features/timetable/components/overlap-warning";
+import { Tr } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import type { RowItem } from "../format";
 import { AttendanceQuick } from "./attendance-quick";
@@ -79,7 +80,11 @@ export function OccurrenceRow({ item }: { item: RowItem }) {
             </span>
           ) : null}
         </span>
-        {item.past && !notHeld ? <span className="sr-only">(over)</span> : null}
+        {item.past && !notHeld ? (
+          <span className="sr-only">
+            <Tr k="(over)" />
+          </span>
+        ) : null}
       </Link>
       {item.canMark ? (
         <AttendanceQuick

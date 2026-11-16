@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { NativeSelect } from "@/components/ui/native-select";
 import { Textarea } from "@/components/ui/textarea";
 import { addDays, todayIn } from "@/lib/dates";
+import { useT } from "@/lib/i18n/client";
 import type { CourseOption } from "../../courses/queries";
 import { createTask, updateTask } from "../actions";
 import { PRIORITIES, PRIORITY_LABELS, STATUS_LABELS, STATUSES } from "../schema";
@@ -29,25 +30,26 @@ export type TaskFormDefaults = {
 type Props = { id?: string; defaults: TaskFormDefaults; courses: CourseOption[]; timeZone: string };
 
 export function TaskForm({ id, defaults, courses, timeZone }: Props) {
+  const t = useT();
   const [state, action, pending] = useActionState(id ? updateTask : createTask, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   // After an error, show what was submitted: React resets uncontrolled fields when the action finishes.
   const submitted = state && !state.ok ? state.values : undefined;
   const value = (name: keyof TaskFormDefaults) => submitted?.[name] ?? defaults[name];
-  const dueHint = `No time means "by the end of the day" (${timeZone.replaceAll("_", " ")}).`;
+  const dueHint = t("No time means “by the end of the day” ({zone}).", { zone: timeZone.replaceAll("_", " ") });
   // Archived courses only appear if this task already uses one.
   const options = courses.filter((c) => !c.archived || c.id === defaults.courseId);
   const dateRef = useRef<HTMLInputElement>(null);
   const today = todayIn(timeZone);
   const quickDates = [
-    ["Today", today],
-    ["Tomorrow", addDays(today, 1)],
-    ["In a week", addDays(today, 7)],
+    [t("Today"), today],
+    [t("Tomorrow"), addDays(today, 1)],
+    [t("In a week"), addDays(today, 7)],
   ] as const;
 
   return (
     <form key={JSON.stringify(state)} action={action} className="flex flex-col gap-6" noValidate>
-      <SheetFormBridge state={state} message={id ? "Task saved" : "Task added"} />
+      <SheetFormBridge state={state} message={id ? t("Task saved") : t("Task added")} />
       {id ? <input type="hidden" name="id" value={id} /> : null}
 
       <FormSection title="Task" icon={ListTodo}>
@@ -56,7 +58,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
             id="title"
             name="title"
             defaultValue={value("title")}
-            placeholder="e.g. Problem set 3"
+            placeholder={t("e.g. Problem set 3")}
             autoComplete="off"
             autoFocus={!id}
             required
@@ -66,7 +68,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
         </Field>
         <Field id="courseId" label="Course" optional error={errors.courseId}>
           <NativeSelect id="courseId" name="courseId" defaultValue={value("courseId")}>
-            <option value="">No course</option>
+            <option value="">{t("No course")}</option>
             {options.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.code ? `${c.code} · ${c.name}` : c.name}
@@ -77,9 +79,9 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
         </Field>
         <ChipGroup
           name="priority"
-          legend="Priority"
+          legend={t("Priority")}
           defaultValue={value("priority")}
-          options={PRIORITIES.map((p) => ({ value: p, label: PRIORITY_LABELS[p] }))}
+          options={PRIORITIES.map((p) => ({ value: p, label: t(PRIORITY_LABELS[p]) }))}
         />
       </FormSection>
 
@@ -131,9 +133,9 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
         <FormSection title="Progress and notes" icon={NotebookPen}>
           <ChipGroup
             name="status"
-            legend="Status"
+            legend={t("Status")}
             defaultValue={value("status")}
-            options={STATUSES.map((s) => ({ value: s, label: STATUS_LABELS[s] }))}
+            options={STATUSES.map((s) => ({ value: s, label: t(STATUS_LABELS[s]) }))}
             error={errors.status}
           />
           <Field id="notes" label="Notes" optional error={errors.notes}>
@@ -142,7 +144,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
               name="notes"
               defaultValue={value("notes")}
               rows={5}
-              placeholder="Links, page numbers, who's in your group…"
+              placeholder={t("Links, page numbers, who's in your group…")}
               aria-invalid={errors.notes ? true : undefined}
               aria-describedby={describedBy("notes", errors.notes)}
             />
@@ -152,7 +154,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
 
       <FormFooter error={state && !state.ok && !state.fieldErrors ? state.error : null}>
         <Button type="submit" disabled={pending}>
-          {pending ? "Saving…" : id ? "Save changes" : "Add task"}
+          {pending ? t("Saving…") : id ? t("Save changes") : t("Add task")}
         </Button>
         <CancelButton href={id ? `/tasks/${id}` : "/tasks"} />
       </FormFooter>

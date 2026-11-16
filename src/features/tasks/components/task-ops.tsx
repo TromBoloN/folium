@@ -2,6 +2,7 @@
 
 import { createContext, startTransition, useCallback, useContext, useMemo, useOptimistic } from "react";
 import { useToast } from "@/components/toast/toaster";
+import { useT } from "@/lib/i18n/client";
 import { changeTaskStatus, patchTask, removeTask, restoreTask, type TaskPatch } from "../actions";
 import type { TaskStatus } from "../schema";
 
@@ -31,6 +32,7 @@ export function useTaskOps() {
  */
 export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
   const toast = useToast();
+  const t = useT();
   const [hidden, hide] = useOptimistic(new Set<string>(), (current, id: string) => new Set(current).add(id));
 
   /** Run an action as a transition (so its optimistic hide shows now), resolving with its result. */
@@ -61,9 +63,10 @@ export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
       }
       const previous = result.data.previous;
       toast({
-        message: status === "done" ? `Done: ${task.title}` : `Reopened: ${task.title}`,
+        message:
+          status === "done" ? t("Done: {title}", { title: task.title }) : t("Reopened: {title}", { title: task.title }),
         action: {
-          label: "Undo",
+          label: t("Undo"),
           onClick: async () => {
             const undo = await run(() => changeTaskStatus(task.id, previous));
             if (!undo.ok) toast({ message: undo.error, tone: "error" });
@@ -71,7 +74,7 @@ export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
         },
       });
     },
-    [hide, run, toast],
+    [hide, run, toast, t],
   );
 
   const patch = useCallback<Ops["patch"]>(
@@ -85,7 +88,7 @@ export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
       toast({
         message: label,
         action: {
-          label: "Undo",
+          label: t("Undo"),
           onClick: async () => {
             const undo = await run(() => patchTask({ id: input.id, ...previous }));
             if (!undo.ok) toast({ message: undo.error, tone: "error" });
@@ -94,7 +97,7 @@ export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
       });
       return true;
     },
-    [run, toast],
+    [run, toast, t],
   );
 
   const remove = useCallback<Ops["remove"]>(
@@ -109,9 +112,9 @@ export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
       }
       const { snapshot } = result.data;
       toast({
-        message: `Deleted: ${task.title}`,
+        message: t("Deleted: {title}", { title: task.title }),
         action: {
-          label: "Undo",
+          label: t("Undo"),
           onClick: async () => {
             const undo = await run(() => restoreTask(snapshot));
             if (!undo.ok) toast({ message: undo.error, tone: "error" });
@@ -120,7 +123,7 @@ export function TaskOpsProvider({ children }: { children: React.ReactNode }) {
       });
       return true;
     },
-    [hide, run, toast],
+    [hide, run, toast, t],
   );
 
   const value = useMemo<Ops>(() => ({ isHidden, setStatus, patch, remove }), [isHidden, setStatus, patch, remove]);

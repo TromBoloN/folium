@@ -6,18 +6,20 @@ import { getSettings } from "@/features/settings/queries";
 import { listOpenTasks } from "@/features/tasks/queries";
 import { weekDates } from "@/features/timetable/logic";
 import { formatDate, todayIn } from "@/lib/dates";
+import { type MessageKey, plural, type T } from "@/lib/i18n/core";
+import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import { type DayLoad, weekLoad } from "../now";
 
 const MAX_DOTS = 5;
 
-function plural(n: number, one: string, many: string) {
-  return `${n} ${n === 1 ? one : many}`;
+function count(t: T, n: number, one: MessageKey, many: MessageKey) {
+  return t(plural(n, one, many), { n });
 }
 
 /** This week as seven columns: class dots in course colours, deadline bars, and shading by how full the day is. */
 export async function WeekWidget() {
-  const [tasks, { preferences }] = await Promise.all([listOpenTasks(), getSettings()]);
+  const [tasks, { preferences }, { t, intl }] = await Promise.all([listOpenTasks(), getSettings(), getI18n()]);
   await io();
   const today = todayIn(preferences.timeZone, new Date());
   const dates = weekDates(today, preferences.weekStart);
@@ -37,7 +39,7 @@ export async function WeekWidget() {
           // Past days stay plain: the shading is for what's still ahead.
           const past = d.date < today;
           // Read as e.g. "Mon 16 November (today): 3 classes, 2 deadlines"; the visible day and number are part of it.
-          const details = ` ${formatDate(d.date, { month: "long" })}${d.isToday ? " (today)" : ""}: ${plural(d.classes.length, "class", "classes")}, ${plural(d.deadlines, "deadline", "deadlines")}`;
+          const details = ` ${formatDate(d.date, { month: "long" }, intl)}${d.isToday ? t(" (today)") : ""}: ${count(t, d.classes.length, "{n} class", "{n} classes")}, ${count(t, d.deadlines, "{n} deadline", "{n} deadlines")}`;
           return (
             <li key={d.date} className="reveal" style={{ "--i": i + 2 } as React.CSSProperties}>
               <Link
@@ -51,11 +53,11 @@ export async function WeekWidget() {
                 style={{ background: past || d.intensity === 0 ? "var(--muted)" : `var(--load-${d.intensity})` }}
               >
                 <span className="font-medium text-xs">
-                  {formatDate(d.date, { weekday: "narrow" })}
-                  <span className="hidden @xl:inline">{formatDate(d.date, { weekday: "short" }).slice(1)}</span>
+                  {formatDate(d.date, { weekday: "narrow" }, intl)}
+                  <span className="hidden @xl:inline">{formatDate(d.date, { weekday: "short" }, intl).slice(1)}</span>
                 </span>
                 <span className="font-display font-medium text-xl tabular-nums leading-none">
-                  {formatDate(d.date, { day: "numeric" })}
+                  {formatDate(d.date, { day: "numeric" }, intl)}
                 </span>
                 <span className="sr-only">{details}</span>
                 <span aria-hidden className="flex max-w-full flex-wrap justify-center gap-1">
@@ -88,15 +90,16 @@ export async function WeekWidget() {
       <p className="flex flex-wrap items-center gap-x-4 gap-y-1 text-muted-foreground text-xs">
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden className="size-2 rounded-full bg-primary" />
-          {plural(totalClasses, "class", "classes")}
+          {count(t, totalClasses, "{n} class", "{n} classes")}
         </span>
         <span className="inline-flex items-center gap-1.5">
           <span aria-hidden className="h-2.5 w-1.5 rounded-full bg-foreground" />
-          {plural(totalDeadlines, "deadline", "deadlines")}
+          {count(t, totalDeadlines, "{n} deadline", "{n} deadlines")}
         </span>
         {busiest ? (
           <span>
-            Busiest ahead: <span className="text-foreground">{formatDate(busiest.date, { weekday: "long" })}</span>
+            {t("Busiest ahead:")}{" "}
+            <span className="text-foreground">{formatDate(busiest.date, { weekday: "long" }, intl)}</span>
           </span>
         ) : null}
       </p>

@@ -4,6 +4,8 @@ import { Upload } from "lucide-react";
 import Link from "next/link";
 import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n/client";
+import { plural } from "@/lib/i18n/core";
 import { type ImportState, importCsv } from "../actions/data";
 
 const input =
@@ -22,17 +24,18 @@ function ColumnSelect({
   value: number | undefined;
   optional?: boolean;
 }) {
+  const { t, tl } = useI18n();
   return (
     <div className="grid gap-1.5">
       <label htmlFor={name} className="font-medium text-sm">
-        {label}
+        {tl(label)}
       </label>
       <select id={name} name={name} defaultValue={value === undefined ? "" : String(value)} className={input}>
-        {optional ? <option value="">Not in this file</option> : null}
+        {optional ? <option value="">{t("Not in this file")}</option> : null}
         {header.map((h, i) => (
           // biome-ignore lint/suspicious/noArrayIndexKey: columns are positional
           <option key={i} value={i}>
-            {h || `Column ${i + 1}`}
+            {h || t("Column {n}", { n: i + 1 })}
           </option>
         ))}
       </select>
@@ -52,24 +55,27 @@ export function ImportForm({
   accounts: { id: string; name: string }[];
   defaultAccountId: string;
 }) {
+  const { t, tl } = useI18n();
   const [state, action, pending] = useActionState(importCsv, { step: "upload" } as ImportState);
 
   if (state.step === "done") {
     return (
       <div className="flex flex-col gap-3" role="status">
         <p className="font-medium">
-          Imported {state.inserted} {state.inserted === 1 ? "transaction" : "transactions"}
-          {state.skipped ? `; skipped ${state.skipped} already imported` : ""}.
+          {t(plural(state.inserted ?? 0, "Imported 1 transaction", "Imported {n} transactions"), {
+            n: state.inserted ?? 0,
+          })}
+          {state.skipped ? t("; skipped {n} already imported", { n: state.skipped }) : ""}.
         </p>
         <p className="text-muted-foreground text-sm">
-          Next, match the account to your real balance so the totals line up.
+          {t("Next, match the account to your real balance so the totals line up.")}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button asChild size="sm">
-            <Link href={`/money/accounts/${state.accountId}#reconcile`}>Match my real balance</Link>
+            <Link href={`/money/accounts/${state.accountId}#reconcile`}>{t("Match my real balance")}</Link>
           </Button>
           <Button asChild size="sm" variant="outline">
-            <Link href={`/money/transactions?account=${state.accountId}`}>See them</Link>
+            <Link href={`/money/transactions?account=${state.accountId}`}>{t("See them")}</Link>
           </Button>
         </div>
       </div>
@@ -81,7 +87,7 @@ export function ImportForm({
     <form action={action} className="flex flex-col gap-4" encType="multipart/form-data">
       <div className="grid gap-1.5 sm:max-w-xs">
         <label htmlFor="accountId" className="font-medium text-sm">
-          Account this file is from
+          {t("Account this file is from")}
         </label>
         <select id="accountId" name="accountId" defaultValue={state.accountId ?? defaultAccountId} className={input}>
           {accounts.map((a) => (
@@ -97,17 +103,18 @@ export function ImportForm({
           <input type="hidden" name="step" value="upload" />
           <div className="grid gap-1.5">
             <label htmlFor="file" className="font-medium text-sm">
-              CSV file
+              {t("CSV file")}
             </label>
             <input id="file" name="file" type="file" accept=".csv,text/csv" required className="text-sm" />
             <p className="text-muted-foreground text-xs">
-              From your bank or e-wallet (most can export a statement as CSV). You choose the columns next; nothing is
-              saved yet.
+              {t(
+                "From your bank or e-wallet (most can export a statement as CSV). You choose the columns next; nothing is saved yet.",
+              )}
             </p>
           </div>
           <Button type="submit" disabled={pending} className="self-start">
             <Upload aria-hidden />
-            {pending ? "Reading…" : "Read file"}
+            {pending ? t("Reading…") : t("Read file")}
           </Button>
         </>
       ) : (
@@ -115,18 +122,19 @@ export function ImportForm({
           <input type="hidden" name="csv" value={state.csv ?? ""} />
           <input type="hidden" name="filename" value={state.filename ?? ""} />
           <p className="text-sm">
-            <span className="font-medium">{state.filename}</span>: choose what each column means.
+            <span className="font-medium">{state.filename}</span>
+            {t(": choose what each column means.")}
           </p>
           <div className="grid gap-3 sm:grid-cols-3">
             <ColumnSelect name="colDate" label="Date" header={state.header ?? []} value={m.date} optional={false} />
             <div className="grid gap-1.5">
               <label htmlFor="dateFormat" className="font-medium text-sm">
-                Date order
+                {t("Date order")}
               </label>
               <select id="dateFormat" name="dateFormat" defaultValue={m.dateFormat ?? "dmy"} className={input}>
-                <option value="dmy">Day/month/year (05/11/2026)</option>
-                <option value="ymd">Year-month-day (2026-11-05)</option>
-                <option value="mdy">Month/day/year (11/05/2026)</option>
+                <option value="dmy">{t("Day/month/year (05/11/2026)")}</option>
+                <option value="ymd">{t("Year-month-day (2026-11-05)")}</option>
+                <option value="mdy">{t("Month/day/year (11/05/2026)")}</option>
               </select>
             </div>
             <ColumnSelect name="colPayee" label="Description / payee" header={state.header ?? []} value={m.payee} />
@@ -148,7 +156,7 @@ export function ImportForm({
                 defaultChecked={m.positiveIsExpense}
                 className="size-4 accent-primary"
               />
-              Positive amounts are spending
+              {t("Positive amounts are spending")}
             </label>
             <label className="flex items-center gap-2">
               <input type="hidden" name="hasHeader" value="off" />
@@ -159,35 +167,36 @@ export function ImportForm({
                 defaultChecked={m.hasHeader !== false}
                 className="size-4 accent-primary"
               />
-              The first row is a header
+              {t("The first row is a header")}
             </label>
           </div>
 
           {state.preview ? (
             <div className="flex flex-col gap-2">
               <p className="text-sm">
-                {state.total} {state.total === 1 ? "row" : "rows"} ready
-                {state.problems?.length ? `, ${state.problems.length} with problems (skipped)` : ""}. First ones:
+                {t(plural(state.total ?? 0, "1 row ready", "{n} rows ready"), { n: state.total ?? 0 })}
+                {state.problems?.length ? t(", {n} with problems (skipped)", { n: state.problems.length }) : ""}
+                {t(". First ones:")}
               </p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm tabular-nums">
-                  <caption className="sr-only">Preview</caption>
+                  <caption className="sr-only">{t("Preview")}</caption>
                   <thead>
                     <tr className="text-left text-muted-foreground text-xs">
                       <th scope="col" className="py-1 pr-3 font-normal">
-                        Line
+                        {t("Line")}
                       </th>
                       <th scope="col" className="py-1 pr-3 font-normal">
-                        Date
+                        {t("Date")}
                       </th>
                       <th scope="col" className="py-1 pr-3 font-normal">
-                        Kind
+                        {t("Kind")}
                       </th>
                       <th scope="col" className="py-1 pr-3 text-right font-normal">
-                        Amount
+                        {t("Amount")}
                       </th>
                       <th scope="col" className="py-1 font-normal">
-                        Payee
+                        {t("Payee")}
                       </th>
                     </tr>
                   </thead>
@@ -196,7 +205,7 @@ export function ImportForm({
                       <tr key={r.line} className="border-border-soft border-t">
                         <td className="py-1 pr-3 text-muted-foreground">{r.line}</td>
                         <td className="py-1 pr-3">{r.date}</td>
-                        <td className="py-1 pr-3">{r.kind === "income" ? "In" : "Out"}</td>
+                        <td className="py-1 pr-3">{r.kind === "income" ? t("In") : t("Out")}</td>
                         <td className="py-1 pr-3 text-right">{r.amount}</td>
                         <td className="max-w-48 truncate py-1">{r.payee}</td>
                       </tr>
@@ -207,9 +216,7 @@ export function ImportForm({
               {state.problems?.length ? (
                 <ul className="text-destructive text-xs">
                   {state.problems.map((p) => (
-                    <li key={p.line}>
-                      Line {p.line}: {p.message}
-                    </li>
+                    <li key={p.line}>{t("Line {n}: {message}", { n: p.line, message: tl(p.message) })}</li>
                   ))}
                 </ul>
               ) : null}
@@ -218,11 +225,13 @@ export function ImportForm({
 
           <div className="flex flex-wrap gap-2">
             <Button type="submit" name="step" value="map" variant="outline" disabled={pending}>
-              Preview
+              {t("Preview")}
             </Button>
             {state.preview && (state.total ?? 0) > 0 ? (
               <Button type="submit" name="step" value="import" disabled={pending}>
-                {pending ? "Importing…" : `Import ${state.total} ${state.total === 1 ? "row" : "rows"}`}
+                {pending
+                  ? t("Importing…")
+                  : t(plural(state.total ?? 0, "Import 1 row", "Import {n} rows"), { n: state.total ?? 0 })}
               </Button>
             ) : null}
           </div>
@@ -230,7 +239,7 @@ export function ImportForm({
       )}
       {state.error ? (
         <p role="alert" className="text-destructive text-sm">
-          {state.error}
+          {tl(state.error)}
         </p>
       ) : null}
     </form>

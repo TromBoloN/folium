@@ -7,8 +7,11 @@ import { FormSkeleton } from "@/components/skeletons";
 import { requireUser } from "@/features/auth/queries";
 import { CategoryForm } from "@/features/finance/components/category-form";
 import { listCategories } from "@/features/finance/queries";
+import { getT } from "@/lib/i18n/server";
 
-export const metadata: Metadata = { title: "Edit category" };
+export async function generateMetadata(): Promise<Metadata> {
+  return { title: (await getT())("Edit category") };
+}
 
 export default function EditCategoryPage({ params }: PageProps<"/money/categories/[id]">) {
   return (
