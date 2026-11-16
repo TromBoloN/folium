@@ -31,6 +31,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Data model**
 
+- [2026-11-16: A class can be rescheduled without a date yet (`postponed`)](#2026-11-16-a-class-can-be-rescheduled-without-a-date-yet-postponed)
 - [2026-11-16: Semesters stay free text, normalised on save](#2026-11-16-semesters-stay-free-text-normalised-on-save)
 - [2026-11-15: Attendance is keyed by the original occurrence](#2026-11-15-attendance-is-keyed-by-the-original-occurrence)
 - [2026-11-15: Schedule changes are one-date rows next to the weekly slots, merged by one function](#2026-11-15-schedule-changes-are-one-date-rows-next-to-the-weekly-slots-merged-by-one-function)
@@ -273,6 +274,14 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 **Decision.** New class times default to 50 minutes per credit (`MINUTES_PER_CREDIT`), else 100.
 
 **Why.** Common in Indonesia; it only prefills the end, which the user can change. Make it a preference if another campus needs it.
+
+## 2026-11-16: A class can be rescheduled without a date yet (`postponed`)
+
+**Status.** Accepted.
+
+**Decision.** `class_changes.kind` gains `postponed`: one weekly occurrence (slot + original date) that won't happen on its date, with no new date yet. `buildSchedule` gives it status `postponed`: listed (dimmed, chip "Rescheduled · new date TBD"), not live, so it's never in attendance or the calendar export. It wins over a break. The "Did you go?" prompt on Today answers Attended, Missed, Rescheduled (a dialog: the agreed date and time → `moved`, or "Not decided yet" → `postponed`) or Cancelled; postponed classes wait in a "Waiting for a new date" list there until a date is set (→ `moved`) or they're cancelled. Each step replaces the occurrence's one change, with Undo. Extra sessions can't be postponed (no slot); they're moved or cancelled.
+
+**Why.** Lecturers often say "we'll reschedule" before agreeing a date; marking it missed or cancelled would be wrong, and attendance must not count it.
 
 ## 2026-11-16: Semesters stay free text, normalised on save
 

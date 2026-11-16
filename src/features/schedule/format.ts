@@ -9,7 +9,7 @@ export type TimeFormat = "24h" | "12h";
  * How a change is labelled. The same kinds and words appear on every screen:
  * cancelled (red), moved (amber), extra (dashed outline), room, online.
  */
-export type ChipKind = "cancelled" | "moved" | "extra" | "room" | "online";
+export type ChipKind = "cancelled" | "postponed" | "moved" | "extra" | "room" | "online";
 export type Chip = { kind: ChipKind; text: string };
 
 /** "Wed 07:30", or just "07:30" when it's the same day as `sameDay`. */
@@ -29,14 +29,16 @@ export function occurrenceChips(o: ChipSource, format: TimeFormat): Chip[] {
   if (o.status === "cancelled") {
     chips.push({ kind: "cancelled", text: o.breakLabel ? `Cancelled · ${o.breakLabel}` : "Cancelled" });
   }
+  if (o.status === "postponed") chips.push({ kind: "postponed", text: "Rescheduled · new date TBD" });
   if (o.status === "moved" && o.from)
     chips.push({ kind: "moved", text: `Moved from ${placementLabel(o.from, format, o.date)}` });
   if (o.status === "extra") chips.push({ kind: "extra", text: o.label ? `Extra · ${o.label}` : "Extra" });
   // The new room is already shown as the location; the chip says what changed.
-  if (o.room && o.status !== "cancelled") {
+  const held = o.status !== "cancelled" && o.status !== "postponed";
+  if (o.room && held) {
     chips.push({ kind: "room", text: o.room.from ? `Room changed · was ${o.room.from}` : "Room changed" });
   }
-  if (o.online && o.status !== "cancelled") chips.push({ kind: "online", text: "Online" });
+  if (o.online && held) chips.push({ kind: "online", text: "Online" });
   return chips;
 }
 

@@ -453,3 +453,30 @@ describe("parseOccurrenceKey", () => {
     expect(parseOccurrenceKey(`x.${id}/../etc`)).toBeNull();
   });
 });
+
+describe("buildSchedule: rescheduled without a date yet (postponed)", () => {
+  const postponed = change("ch-post", {
+    kind: "postponed",
+    courseId: CALC.id,
+    slotId: calcMon.id,
+    originalDate: MON,
+  });
+
+  it("keeps the class on its date as postponed: listed, but not live or markable", () => {
+    const week = buildSchedule({ slots: SLOTS, changes: [postponed], breaks: [] }, WEEK);
+    const occ = week.find((o) => o.key === occurrenceKey(calcMon.id, MON));
+    expect(occ?.status).toBe("postponed");
+    expect(occ?.changeId).toBe("ch-post");
+    expect(occ && isLive(occ)).toBe(false);
+    expect(occ && isListed(occ)).toBe(true);
+    expect(liveOn(week, MON).map((o) => o.courseId)).toEqual([PHYS.id]);
+  });
+
+  it("wins over a break (it was explicitly rescheduled) and only touches its own date", () => {
+    const brk: ClassBreak = { id: "b", label: "Holiday", startsOn: MON, endsOn: MON };
+    const week = buildSchedule({ slots: SLOTS, changes: [postponed], breaks: [brk] }, WEEK);
+    expect(week.find((o) => o.key === occurrenceKey(calcMon.id, MON))?.status).toBe("postponed");
+    const next = buildSchedule({ slots: SLOTS, changes: [postponed], breaks: [] }, { from: NEXT_MON, to: NEXT_MON });
+    expect(next.find((o) => o.slotId === calcMon.id)?.status).toBe("scheduled");
+  });
+});

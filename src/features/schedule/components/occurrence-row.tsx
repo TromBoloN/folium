@@ -14,7 +14,9 @@ import { ChangeChips } from "./change-chips";
  */
 export function OccurrenceRow({ item }: { item: RowItem }) {
   const cancelled = item.status === "cancelled";
-  const dim = cancelled || item.past;
+  // Postponed (rescheduled, new date TBD): not held on this date either, but not struck through.
+  const notHeld = cancelled || item.status === "postponed";
+  const dim = notHeld || item.past;
   return (
     <div
       style={{ "--course": item.color } as React.CSSProperties}
@@ -77,7 +79,7 @@ export function OccurrenceRow({ item }: { item: RowItem }) {
             </span>
           ) : null}
         </span>
-        {item.past && !cancelled ? <span className="sr-only">(over)</span> : null}
+        {item.past && !notHeld ? <span className="sr-only">(over)</span> : null}
       </Link>
       {item.canMark ? (
         <AttendanceQuick

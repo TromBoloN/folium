@@ -127,6 +127,12 @@ export function ClassActions(props: Props) {
       <h3 id="changed-h" className="font-medium text-sm">
         {props.canMark ? "Something changed?" : "Changed?"}
       </h3>
+      {props.status === "postponed" ? (
+        <p className="text-sm">
+          Rescheduled; the new date isn't decided yet. Choose <strong>Moved</strong> to set it, or{" "}
+          <strong>Cancelled</strong> if it won't happen.
+        </p>
+      ) : null}
       <div className="grid grid-cols-3 gap-2">
         <ChoiceButton icon={CircleSlash} tone="danger" onClick={cancel} disabled={pending}>
           {extra ? "Delete" : "Cancelled"}

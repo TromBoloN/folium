@@ -1,6 +1,6 @@
 -- Schedule changes, breaks and attendance: shape constraints and cross-user isolation.
 begin;
-select plan(36);
+select plan(39);
 
 insert into auth.users (id, email) values
   ('a3333333-3333-3333-3333-333333333333', 'sched-a@test.local'),
@@ -21,6 +21,26 @@ insert into public.class_changes (id, user_id, course_id, slot_id, kind, origina
   ('a3333333-0000-0000-0000-0000000000c1', 'a3333333-3333-3333-3333-333333333333',
    'a3333333-0000-0000-0000-000000000001', 'a3333333-0000-0000-0000-00000000005a', 'cancelled', '2026-11-16', 'Lecturer ill');
 select pass('a cancelled change with slot and date is accepted');
+
+-- Postponed: rescheduled, new date not decided yet. Same shape as a cancellation.
+select lives_ok(
+  $$ insert into public.class_changes (user_id, course_id, slot_id, kind, original_date)
+     values ('a3333333-3333-3333-3333-333333333333', 'a3333333-0000-0000-0000-000000000001',
+             'a3333333-0000-0000-0000-00000000005a', 'postponed', '2026-11-30') $$,
+  'a postponed change (rescheduled, no new date yet) is accepted'
+);
+select throws_ok(
+  $$ insert into public.class_changes (user_id, course_id, slot_id, kind, original_date, new_date)
+     values ('a3333333-3333-3333-3333-333333333333', 'a3333333-0000-0000-0000-000000000001',
+             'a3333333-0000-0000-0000-00000000005a', 'postponed', '2027-01-04', '2027-01-05') $$,
+  '23514', null, 'a postponed change has no new date (setting one makes it a move)'
+);
+select throws_ok(
+  $$ insert into public.class_changes (user_id, course_id, kind, original_date)
+     values ('a3333333-3333-3333-3333-333333333333', 'a3333333-0000-0000-0000-000000000001',
+             'postponed', '2027-01-11') $$,
+  '23514', null, 'only a weekly class (with a slot) can be postponed'
+);
 
 select throws_ok(
   $$ insert into public.class_changes (user_id, course_id, slot_id, kind, original_date)

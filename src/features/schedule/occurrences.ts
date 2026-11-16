@@ -11,7 +11,8 @@ import { appliesOn, compareSlots, type SlotTiming, toMinutes } from "../timetabl
  * Rules, in order:
  *  1. A slot produces an occurrence on each date it applies (weekday + its own date range).
  *  2. A change for that occurrence (same slot, same original date) wins:
- *     cancelled -> cancelled; moved -> placed at the new date/time/room.
+ *     cancelled -> cancelled; postponed -> postponed (not held, new date to be set);
+ *     moved -> placed at the new date/time/room.
  *  3. Otherwise, if the date is inside a break, it's cancelled with the break's label.
  *     A room-only change inside a break is cancelled too (the class isn't held);
  *     a move to another date or time is explicit and wins over the break.
@@ -41,7 +42,8 @@ export type ScheduleSlot = SlotTiming & {
   meetingUrl?: string | null;
 };
 
-export type ChangeKind = "cancelled" | "moved" | "extra";
+/** postponed: rescheduled, but the new date isn't decided yet (it later becomes moved or cancelled). */
+export type ChangeKind = "cancelled" | "moved" | "extra" | "postponed";
 
 export type ClassChange = {
   id: string;
@@ -72,9 +74,10 @@ export type ScheduleInput = {
  * moved      happens at another date and/or time (`from` is where it was)
  * extra      an extra session, not in the weekly timetable
  * cancelled  doesn't happen (`note`, or `breakLabel` when a break cancelled it)
+ * postponed  won't happen on this date; rescheduled, new date not decided yet
  * ghost      where a moved class used to be (for the week grid; `movedTo` says where it went)
  */
-export type OccurrenceStatus = "scheduled" | "moved" | "extra" | "cancelled" | "ghost";
+export type OccurrenceStatus = "scheduled" | "moved" | "extra" | "cancelled" | "postponed" | "ghost";
 
 export type Placement = { date: CivilDate; startTime: string; endTime: string };
 
@@ -209,6 +212,9 @@ export function buildSchedule(input: ScheduleInput, range: DateRange): Occurrenc
       const brk = breakOn(date);
       if (change?.kind === "cancelled") {
         out.push(cancelled(occ, { changeId: change.id, note: change.note }));
+      } else if (change?.kind === "postponed") {
+        // Explicit, so it wins over a break (the student said it will happen another day).
+        out.push({ ...occ, status: "postponed", changeId: change.id, note: change.note });
       } else if (change?.kind === "moved") {
         const placed = moved(occ, change);
         if (placed.status === "moved") {

@@ -96,7 +96,8 @@ export function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: string[
             ))}
             {d.items.map((item) => {
               const cancelled = item.status === "cancelled";
-              const dim = cancelled || item.past;
+              // Postponed (new date TBD) isn't held here either: dimmed, not struck through.
+              const dim = cancelled || item.status === "postponed" || item.past;
               return (
                 <Link
                   key={item.id}

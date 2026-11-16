@@ -129,6 +129,26 @@ export async function getOccurrence(key: string): Promise<Occurrence | null> {
   return findOccurrence(occurrences, key);
 }
 
+/**
+ * Classes rescheduled without a new date yet (oldest first): what the "Waiting
+ * for a new date" list offers to set or cancel. Built through the schedule,
+ * like every other screen, so a stale change (slot ended) drops out.
+ */
+export async function listPostponed(): Promise<Occurrence[]> {
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("class_changes")
+    .select("original_date")
+    .eq("kind", "postponed")
+    .order("original_date")
+    .limit(50);
+  if (error) throw new Error(`Couldn't load rescheduled classes: ${error.message}`);
+  const dates = data.map((d) => d.original_date).filter((d): d is string => Boolean(d));
+  if (dates.length === 0) return [];
+  const occurrences = await getSchedule({ from: dates[0], to: dates[dates.length - 1] });
+  return occurrences.filter((o) => o.status === "postponed");
+}
+
 /** Breaks that end today or later, soonest first. */
 export async function listUpcomingBreaks(today: CivilDate): Promise<ClassBreak[]> {
   const supabase = await createClient();

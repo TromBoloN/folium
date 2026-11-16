@@ -40,6 +40,7 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Data model**
 
+- [2026-11-16: A class can be rescheduled without a date yet (`postponed`)](backend.md#2026-11-16-a-class-can-be-rescheduled-without-a-date-yet-postponed)
 - [2026-11-16: Semesters stay free text, normalised on save](backend.md#2026-11-16-semesters-stay-free-text-normalised-on-save)
 - [2026-11-15: Attendance is keyed by the original occurrence](backend.md#2026-11-15-attendance-is-keyed-by-the-original-occurrence)
 - [2026-11-15: Schedule changes are one-date rows next to the weekly slots, merged by one function](backend.md#2026-11-15-schedule-changes-are-one-date-rows-next-to-the-weekly-slots-merged-by-one-function)

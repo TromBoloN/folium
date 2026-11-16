@@ -1,10 +1,11 @@
-import { ArrowRightLeft, CircleSlash, MapPin, Plus, Video } from "lucide-react";
+import { ArrowRightLeft, CalendarClock, CircleSlash, MapPin, Plus, Video } from "lucide-react";
 import { Pill } from "@/components/ui/pill";
 import { cn } from "@/lib/utils";
 import type { Chip, ChipKind } from "../format";
 
 const ICONS: Record<ChipKind, typeof Plus> = {
   cancelled: CircleSlash,
+  postponed: CalendarClock,
   moved: ArrowRightLeft,
   extra: Plus,
   room: MapPin,
@@ -17,7 +18,8 @@ const ICONS: Record<ChipKind, typeof Plus> = {
  */
 export function ChangeChip({ chip, compact = false }: { chip: Chip; compact?: boolean }) {
   const Icon = ICONS[chip.kind];
-  const tone = chip.kind === "cancelled" ? "danger" : chip.kind === "moved" ? "warning" : "neutral";
+  const tone =
+    chip.kind === "cancelled" ? "danger" : chip.kind === "moved" || chip.kind === "postponed" ? "warning" : "neutral";
   return (
     <Pill
       tone={tone}

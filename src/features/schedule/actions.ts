@@ -139,6 +139,21 @@ export async function cancelOccurrence(input: {
   return replaceChange(slot, ref.date, { kind: "cancelled", note: parsed.data.note });
 }
 
+/**
+ * "Rescheduled, but no new date yet": the class won't happen on its date and
+ * isn't counted for attendance until the new date is set (updateOccurrence →
+ * moved) or it's dropped (cancelOccurrence → cancelled). Weekly classes only;
+ * an extra session is simply moved or cancelled. Returns what was there, for Undo.
+ */
+export async function postponeOccurrence(key: string): Promise<ActionResult<{ previous: ChangeRow | null }>> {
+  await requireUser();
+  const ref = parseOccurrenceKey(occurrenceKeySchema.safeParse(key).success ? key : "");
+  if (ref?.kind !== "slot") return { ok: false, error: "Only a weekly class can wait for a new date." };
+  const slot = await loadSlot(ref.slotId);
+  if (!slot) return { ok: false, error: GONE };
+  return replaceChange(slot, ref.date, { kind: "postponed" });
+}
+
 /** Back to the weekly timetable for this date (removes its change). */
 export async function restoreOccurrence(key: string): Promise<ActionResult<{ previous: ChangeRow | null }>> {
   await requireUser();
@@ -153,7 +168,7 @@ const changeRowSchema = z.object({
   id: z.uuid(),
   course_id: z.uuid(),
   slot_id: z.uuid().nullable(),
-  kind: z.enum(["cancelled", "moved", "extra"]),
+  kind: z.enum(["cancelled", "moved", "extra", "postponed"]),
   original_date: z.string().nullable(),
   new_date: z.string().nullable(),
   start_time: z.string().nullable(),
