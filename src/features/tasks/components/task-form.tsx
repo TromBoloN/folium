@@ -127,7 +127,7 @@ export function TaskForm({ id, defaults, courses, timeZone }: Props) {
         </p>
       </FormSection>
 
-      <MoreDetails hint="Status and notes" open={Boolean(errors.notes || errors.status || (id && value("notes")))}>
+      <MoreDetails hint="Status and notes" open={Boolean(errors.notes || errors.status || value("notes"))}>
         <FormSection title="Progress and notes" icon={NotebookPen}>
           <ChipGroup
             name="status"

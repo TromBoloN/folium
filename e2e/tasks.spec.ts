@@ -37,11 +37,15 @@ test("a rejected task form keeps what was typed", async ({ page }) => {
   await page.goto("/tasks/new");
   await page.getByLabel("Title").fill("Lab report");
   await page.getByLabel("Time").fill("14:30");
+  // Notes is one of the optional fields under "More details".
+  await page.getByText("More details").click();
   await page.getByLabel("Notes").fill("Include the graphs");
   await page.getByRole("button", { name: "Add task" }).click();
 
   await expect(page.getByText("Add a date for this time.")).toBeVisible();
   await expect(page.getByLabel("Title")).toHaveValue("Lab report");
   await expect(page.getByLabel("Time")).toHaveValue("14:30");
+  // "More details" stays open when it holds something typed, so it isn't hidden after the error.
+  await expect(page.getByLabel("Notes")).toBeVisible();
   await expect(page.getByLabel("Notes")).toHaveValue("Include the graphs");
 });

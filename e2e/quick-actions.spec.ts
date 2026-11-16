@@ -105,6 +105,8 @@ test("search jumps to a task", async ({ page }) => {
   await page.keyboard.press("Enter");
   await expect(toast(page)).toContainText("Added: Find this later");
 
+  // Shortcuts are ignored while a dialog is open: wait until the add box has closed.
+  await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.keyboard.press("Control+k");
   await page.getByRole("combobox", { name: "Search tasks, courses and pages" }).fill("this later");
   await expect(page.getByRole("option", { name: /Find this later/ })).toBeVisible();
