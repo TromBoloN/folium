@@ -6,6 +6,8 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Finance**
 
+- [2026-11-16: Typed amounts: separators depend on the suffix](#2026-11-16-typed-amounts-separators-depend-on-the-suffix)
+- [2026-11-16: Finance logic takes "now" and the time zone as arguments](#2026-11-16-finance-logic-takes-now-and-the-time-zone-as-arguments)
 - [2026-11-16: Money is integer rupiah (bigint), never floats](#2026-11-16-money-is-integer-rupiah-bigint-never-floats)
 - [2026-11-16: Finance views run as the caller (`security_invoker`)](#2026-11-16-finance-views-run-as-the-caller-security_invoker)
 - [2026-11-16: Planned transactions never count toward balances](#2026-11-16-planned-transactions-never-count-toward-balances)
@@ -60,6 +62,22 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-16: Typed amounts: separators depend on the suffix
+
+**Status.** Accepted.
+
+**Decision.** `parseAmount` (`features/finance/lib/parse-amount.ts`): with a suffix (k, rb, ribu, jt, juta) one "." or "," is a decimal separator ("1,5jt" = "1.5jt" = 1 500 000). Without a suffix, "." or "," is a thousands separator followed by exactly three digits, the same one throughout ("25.000", "1,250,000"); anything else ("25.5", "1,5", "1.000.5") is invalid. The result must be whole rupiah ("1.0001k" is rejected). Scaling uses BigInt on the digit strings, never `parseFloat`.
+
+**Why.** Indonesians write both "1,5jt" and "1.5jt", and "25.000" means twenty-five thousand; sub-rupiah amounts don't exist, so a bare "25.5" is a typo, not 25½. Changing these rules changes what people's typed amounts mean: update the table in `parse-amount.test.ts` first.
+
+## 2026-11-16: Finance logic takes "now" and the time zone as arguments
+
+**Status.** Accepted.
+
+**Decision.** Everything in `src/features/finance/lib` is pure: no I/O, no React, no `Date.now()` or `new Date()` for the current time, no server zone. Callers pass `now` and `timeZone` (the user's `preferences.timeZone`); dates are local `"YYYY-MM-DD"` strings from `localDateFor`, with calendar math in `addDays`.
+
+**Why.** "Today" for money is the user's local day (16:00 UTC is already tomorrow in Makassar), and tests must be able to pin the clock and zone. A function that reads the clock or the server zone puts a late-evening expense on the wrong day.
 
 ## 2026-11-16: Money is integer rupiah (bigint), never floats
 

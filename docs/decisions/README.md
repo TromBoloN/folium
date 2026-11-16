@@ -15,6 +15,8 @@ Add a decision at the top of its area's file with a date, **Status**, **Decision
 
 **Finance**
 
+- [2026-11-16: Typed amounts: separators depend on the suffix](backend.md#2026-11-16-typed-amounts-separators-depend-on-the-suffix)
+- [2026-11-16: Finance logic takes "now" and the time zone as arguments](backend.md#2026-11-16-finance-logic-takes-now-and-the-time-zone-as-arguments)
 - [2026-11-16: Money is integer rupiah (bigint), never floats](backend.md#2026-11-16-money-is-integer-rupiah-bigint-never-floats)
 - [2026-11-16: Finance views run as the caller (`security_invoker`)](backend.md#2026-11-16-finance-views-run-as-the-caller-security_invoker)
 - [2026-11-16: Planned transactions never count toward balances](backend.md#2026-11-16-planned-transactions-never-count-toward-balances)
