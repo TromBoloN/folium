@@ -38,6 +38,8 @@ usefulness, fast workflows, customizable theme, preferences and widgets.
   motion setting and `prefers-reduced-motion`. Settings are versioned JSON merged over
   defaults on read. Themes are packs in `src/features/themes/packs/`; follow `docs/themes.md`
   (cards use `.tile`, floating surfaces `.panel`, pills `rounded-pill`, circles `rounded-full`).
+  A visual bug that also shows under the default pack is an app bug: fix it in the
+  component or `globals.css` once, never in pack CSS (packs can't set layout; the linter checks).
 - **Time:** store UTC. Interpret and display in the user's `preferences.timeZone`
   (default Asia/Makassar). Never hardcode a zone.
 - **Protected:** never hand-edit `src/types/database.ts`. Leave the
@@ -51,7 +53,8 @@ usefulness, fast workflows, customizable theme, preferences and widgets.
 - Before finishing: `bun run typecheck`, `bunx biome check .`, `bun run test` and
   `bunx supabase test db` pass. Also `bun run build` if you added or changed routes.
 - When a task is done, end with one suggested Conventional Commits line.
-- Update docs if you add something worth noting, especially `docs/MAP.md` for new features
+- Update docs if you add something worth noting, especially `docs/MAP.md` for new features and `docs/theme.md` for any components and ui update that should be noted for a theme change
+- make a list of report too before the commit message reccomendation on all the files you made and change
 
 ## Testing and cost rules
 - Logic, parsers and route handlers: Vitest. RLS: pgTAP.

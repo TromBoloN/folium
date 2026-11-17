@@ -4,7 +4,7 @@ import { type ComponentType, useEffect, useState } from "react";
 import type { ThemeEffectProps } from "./manifest";
 import { getManifest } from "./registry";
 
-type Env = { pack: string; motion: string; reduced: boolean; saveData: boolean; mobile: boolean };
+type Env = { pack: string; motion: string; effects: string; reduced: boolean; saveData: boolean; mobile: boolean };
 
 function readEnv(): Env {
   const root = document.documentElement;
@@ -12,6 +12,7 @@ function readEnv(): Env {
   return {
     pack: root.dataset.theme ?? "default",
     motion: root.dataset.motion ?? "full",
+    effects: root.dataset.effects ?? "balanced",
     reduced: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     saveData: Boolean(connection?.saveData) || window.matchMedia("(prefers-reduced-data: reduce)").matches,
     mobile: window.matchMedia("(max-width: 47.99rem)").matches,
@@ -34,7 +35,10 @@ export function ThemeEffects() {
     const update = () => setEnv(readEnv());
     update();
     const observer = new MutationObserver(update);
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme", "data-motion"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme", "data-motion", "data-effects"],
+    });
     const queries = ["(prefers-reduced-motion: reduce)", "(prefers-reduced-data: reduce)", "(max-width: 47.99rem)"].map(
       (q) => window.matchMedia(q),
     );
@@ -45,7 +49,7 @@ export function ThemeEffects() {
     };
   }, []);
 
-  const enabled = env !== null && env.motion !== "off" && !env.reduced && !env.saveData;
+  const enabled = env !== null && env.motion !== "off" && env.effects !== "minimal" && !env.reduced && !env.saveData;
   const load = enabled ? getManifest(env.pack).effects : undefined;
   const pack = env?.pack;
 
@@ -66,7 +70,11 @@ export function ThemeEffects() {
   const Component = Effect.component;
   return (
     <div data-slot="theme-effects" className="absolute inset-0">
-      <Component mobile={env.mobile} subtle={env.motion === "subtle"} />
+      <Component
+        mobile={env.mobile}
+        subtle={env.motion === "subtle"}
+        intensity={env.effects === "immersive" ? "immersive" : "balanced"}
+      />
     </div>
   );
 }

@@ -14,7 +14,17 @@ import { useI18n } from "@/lib/i18n/client";
 import { GradeScaleEditor } from "../../grades/components/grade-scale-editor";
 import { getManifest } from "../../themes/registry";
 import { updateSettings } from "../actions";
-import { DEFAULT_THEME, DENSITIES, FONTS, MODES, MOTIONS, PRESETS, type Settings, type Theme } from "../schema";
+import {
+  DEFAULT_THEME,
+  DENSITIES,
+  EFFECTS,
+  FONTS,
+  MODES,
+  MOTIONS,
+  PRESETS,
+  type Settings,
+  type Theme,
+} from "../schema";
 import { PRESET_LABELS, themeAttributes } from "../theme";
 import { ClassTypesEditor } from "./class-types-editor";
 import { PresetCard } from "./preset-card";
@@ -40,6 +50,7 @@ function themeFrom(data: FormData, pack: Theme["pack"]): Theme {
     font: pick("font", FONTS, DEFAULT_THEME.font),
     density: pick("density", DENSITIES, DEFAULT_THEME.density),
     motion: pick("motion", MOTIONS, DEFAULT_THEME.motion),
+    effects: pick("effects", EFFECTS, DEFAULT_THEME.effects),
   };
 }
 
@@ -147,7 +158,7 @@ function SettingsFields({
 
   return (
     <form ref={form} action={action} onChange={onChange} className="flex flex-col gap-6">
-      <div className="grid gap-6 xl:grid-cols-2 xl:items-start">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-2 xl:items-start">
         <Card>
           <CardHeader>
             <CardTitle>{t("Appearance")}</CardTitle>
@@ -260,6 +271,28 @@ function SettingsFields({
                 )}
               </p>
             </div>
+            {pack.effects ? (
+              <div className="flex flex-col gap-1">
+                <ChoiceGroup
+                  name="effects"
+                  legend={t("Theme effects")}
+                  defaultValue={value("effects", theme.effects)}
+                  options={[
+                    { value: "immersive", label: t("Immersive") },
+                    { value: "balanced", label: t("Balanced") },
+                    { value: "minimal", label: t("Minimal") },
+                  ]}
+                />
+                <p className="text-muted-foreground text-xs">
+                  {t(
+                    "How much of the {name} theme's background scene you see. Feedback such as a completed task still animates; Motion decides that.",
+                    { name: t(pack.label) },
+                  )}
+                </p>
+              </div>
+            ) : (
+              <input type="hidden" name="effects" value={theme.effects} />
+            )}
           </CardContent>
         </Card>
 

@@ -27,6 +27,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Theme and motion**
 
+- [2026-11-17: Packs style shared hooks, never layout; a separate "theme effects" setting scales atmosphere](#2026-11-17-packs-style-shared-hooks-never-layout-a-separate-theme-effects-setting-scales-atmosphere)
 - [2026-11-17: Themes are packs: a manifest plus scoped CSS on `data-theme`, effects lazy-loaded](#2026-11-17-themes-are-packs-a-manifest-plus-scoped-css-on-data-theme-effects-lazy-loaded)
 - [2026-11-16: Translations are gettext-style, keyed by the English text](#2026-11-16-translations-are-gettext-style-keyed-by-the-english-text)
 - [2026-11-16: A custom accent is adjusted per mode](#2026-11-16-a-custom-accent-is-adjusted-per-mode)
@@ -52,6 +53,36 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 **Why.** A new user saw nine cards of zeros and "nothing yet". Deciding visibility up front, rather than letting each widget return null, keeps the layout from jumping as cards resolve: each card's skeleton holds its place until its data arrives.
 
 **Cost.** The facts query runs before any widget streams, so the dashboard's first paint waits for it (cached data, shared with the widgets). A widget's own empty state now shows only if the data changes between the count and the render.
+
+## 2026-11-17: Packs style shared hooks, never layout; a separate "theme effects" setting scales atmosphere
+
+**Status.** Accepted, with the first full pack, Night City (`cyberpunk`, still `draft`).
+
+**Decision.**
+- **No pack-specific layouts.** A pack that wants a different interface language (HUD headers, technical labels, per-area treatments) gets it from theme-agnostic hooks added once to shared components:
+  - `main[data-area]`;
+  - `data-widget` and the `tile-header`/`tile-title`/`tile-icon`/`tile-link` slots;
+  - an empty `aria-hidden` `tile-label` span that packs fill with CSS-generated text;
+  - `data-emphasis`;
+  - a `title-fx` layer over page titles;
+  - `.panel::before`;
+  - progress, skeleton, task-row, week-grid, course and money slots.
+- **No per-pack text or layout from components.** Components carry no flavour text or per-pack branches. Decorative labels live in pack CSS, inside `aria-hidden` hosts, so screen readers never meet them without relying on CSS alt-text syntax.
+- **The linter refuses layout from packs.** Packs may not set layout properties on the app's elements: `display`, `position`, sizes, spacing, flex/grid, `font-size`. Pseudo-elements and the pack's own `<id>-…` elements are exempt. A visual bug that also shows under Folium is fixed in the component, once, for every pack ("Theme bug or app bug?" in `docs/themes.md`).
+- **Theme effects is a setting of its own.** `theme.effects` is Immersive / Balanced (default) / Minimal, rendered as `<html data-effects>`. It scales only ambient decoration (the effects layer, background animation, decorative flourishes). Functional feedback follows Motion only, and Motion "off" or OS reduced motion still removes everything.
+- **Effect CSS loads lazily.** Heavy effect CSS lives in an `effects.css` imported by the pack's lazy `effects.tsx`. `theme.css` is capped at 6 KB gzipped by a test.
+- **Completed tasks reuse the existing exit.** Task-completion feedback reuses the existing `task-out` view transition (`::view-transition-image-pair`) rather than a new feedback API.
+
+**Why.**
+- The user wants app bugs fixed once for every theme. Pack CSS that moves or resizes app parts is how themes turn into collections of per-theme fixes.
+- Hooks keep Folium pixel-identical (they are attributes or empty layers), and the next pack can reuse every one of them.
+- Some users like an aesthetic but not rain moving behind their coursework. Motion couldn't express that without also killing feedback.
+
+**Cost.**
+- A few more `data-slot` attributes to keep stable.
+- The layout rule needs a `/* layout-ok: */` escape hatch for rare real cases.
+- Building Night City exposed app bugs that were fixed in shared code: page grids now use `grid-cols-1` below their breakpoint, selects use `contain: inline-size`, the Money In/Out/Net row wraps, change chips wrap, and attendance buttons can shrink.
+- The effects setting only shows in Settings when the pack has effects.
 
 ## 2026-11-17: Themes are packs: a manifest plus scoped CSS on `data-theme`, effects lazy-loaded
 

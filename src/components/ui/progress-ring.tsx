@@ -23,6 +23,7 @@ export function ProgressRing({ value, label, size = 72, stroke = 7, color, class
     <div
       role="img"
       aria-label={label}
+      data-slot="progress-ring"
       className={cn("relative inline-flex shrink-0 items-center justify-center", className)}
       style={{ width: size, height: size, ...(color ? { "--tint": color } : null) } as React.CSSProperties}
     >

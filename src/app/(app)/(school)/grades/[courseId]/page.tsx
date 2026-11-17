@@ -53,7 +53,7 @@ async function CourseGrades({
 
   return (
     <div
-      className="grid gap-6 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] xl:items-start xl:gap-10"
+      className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,28rem)_minmax(0,1fr)] xl:items-start xl:gap-10"
       style={{ "--course": course.color, "--tint": course.color } as React.CSSProperties}
     >
       <div className="flex flex-col gap-6 xl:sticky xl:top-8">

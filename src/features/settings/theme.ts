@@ -26,6 +26,7 @@ export function themeAttributes(theme: Theme, pack: ThemeManifest = getManifest(
     "data-font": theme.font,
     "data-density": theme.density,
     "data-motion": theme.motion,
+    "data-effects": theme.effects,
     style: style as React.CSSProperties,
   };
 }

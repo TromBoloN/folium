@@ -154,7 +154,7 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
         weekStart={week.days[0].date}
       />
       {view === "day" ? (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
+        <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
           <ByDayView week={week} />
           <WeekRail week={week} breaks={await listUpcomingBreaks(today)} />
         </div>

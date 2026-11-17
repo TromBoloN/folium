@@ -1,0 +1,826 @@
+/*
+ * Night City (cyberpunk). Three levels of light: yellow = what matters now,
+ * cyan = secondary readouts, dim blue-grey = everything else. Decoration only on
+ * hooks (docs/themes.md); animation lives in effects.css and one-shot feedback here.
+ */
+
+[data-theme="cyberpunk"] {
+  --surface-0: oklch(0.135 0.022 258);
+  --surface-1: oklch(0.175 0.026 258);
+  --surface-2: oklch(0.215 0.03 258);
+  --foreground: oklch(0.95 0.02 210);
+  --muted-foreground: oklch(0.74 0.035 240);
+  --primary: oklch(0.93 0.2 106);
+  --primary-foreground: oklch(0.16 0.03 258);
+  --border: oklch(0.38 0.06 235);
+  --ring: oklch(0.82 0.14 205);
+
+  --cp-yellow: var(--primary);
+  --cp-cyan: oklch(0.82 0.14 205);
+  --cp-red: oklch(0.66 0.24 22);
+  --cp-yellow-a: oklch(0.93 0.2 106 / 0.16);
+  --cp-cyan-a: oklch(0.82 0.14 205 / 0.14);
+  --cp-red-a: oklch(0.66 0.24 22 / 0.2);
+  --cp-line: oklch(0.82 0.14 205 / 0.3);
+  --cp-solid: oklch(0 0 0);
+  --cp-coral: oklch(0.68 0.19 28);
+  --cp-ink: oklch(0.12 0.03 240);
+  --cp-logo: url("/themes/cyberpunk/logo.svg") center / contain no-repeat;
+  --boot-hold: 900ms;
+  /* The navigation curtain: held longer than Folium's, so the logo build reads. */
+  --nav-min: 650;
+  --cp-scan: oklch(0 0 0 / 0.22);
+  --cp-vignette: oklch(0.05 0.02 260 / 0.75);
+  --cp-input: oklch(0.12 0.02 258 / 0.7);
+  --cp-btn-hover: oklch(0.97 0.15 106);
+
+  --secondary: oklch(0.25 0.04 240);
+  --secondary-foreground: var(--cp-cyan);
+  --muted: oklch(0.24 0.03 255);
+  --accent: oklch(0.26 0.05 230);
+  --accent-foreground: var(--cp-cyan);
+  --destructive: var(--cp-red);
+  --destructive-foreground: var(--primary-foreground);
+  --warning: oklch(0.8 0.16 65);
+  --money-in: oklch(0.84 0.16 170);
+  --border-soft: oklch(0.3 0.045 240);
+  --input: var(--border);
+  --sidebar: oklch(0.11 0.02 258 / 0.94);
+  --sidebar-border: var(--cp-line);
+  --sidebar-active: var(--cp-yellow-a);
+  --sidebar-active-foreground: var(--cp-yellow);
+  --shadow-color: oklch(0 0 0 / 0.6);
+  --highlight: oklch(0.82 0.14 205 / 0.06);
+  --load-1: color-mix(in oklab, var(--cp-cyan) 10%, var(--surface-1));
+  --load-2: color-mix(in oklab, var(--cp-cyan) 20%, var(--surface-1));
+  --load-3: color-mix(in oklab, var(--cp-yellow) 26%, var(--surface-1));
+  --load-4: color-mix(in oklab, var(--cp-yellow) 40%, var(--surface-1));
+  --tint-surface: 7%;
+  --tint-border: 50%;
+
+  --app-bg:
+    radial-gradient(70% 40% at 30% 100%, oklch(0.4 0.2 350 / 0.28), transparent 70%),
+    radial-gradient(60% 35% at 85% 95%, oklch(0.5 0.15 210 / 0.16), transparent 70%),
+    linear-gradient(oklch(0.1 0.025 265), oklch(0.135 0.022 258) 60%, oklch(0.16 0.05 320));
+
+  --radius: 2px;
+  --tile-radius: 0;
+  --pill-radius: 0;
+  --tile-clip: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 8px 100%, 0 calc(100% - 8px));
+  --tile-bg: linear-gradient(165deg, oklch(0.19 0.03 250 / 0.95), oklch(0.15 0.026 262 / 0.95));
+  --tile-shadow: none;
+  --panel-bg: oklch(0.17 0.028 258 / 0.98);
+  --panel-border: var(--cp-line);
+  --panel-shadow: 0 24px 60px -20px var(--shadow-color);
+
+  --font-display-stack: var(--font-rajdhani), "Arial Narrow", ui-sans-serif, system-ui, sans-serif;
+  --font-mono-stack: var(--font-share-tech-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --dur-fast: 110ms;
+  --dur-base: 200ms;
+  --dur-enter: 380ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --stagger: 30ms;
+  --cp-mono: 400 0.5625rem / 1 var(--font-mono-stack);
+}
+
+/* ---- Environment: sky (body), skyline (::before), scanlines + vignette (::after) ---- */
+[data-theme="cyberpunk"] .ambient::before {
+  inset: auto -4% 0;
+  height: 58svh;
+  background: url("/themes/cyberpunk/skyline.svg") center bottom / auto 100% repeat-x;
+  opacity: 0.85;
+  animation: cyberpunk-drift 140s linear infinite alternate;
+}
+[data-theme="cyberpunk"] .ambient::after {
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 35%, transparent 50%, var(--cp-vignette)),
+    repeating-linear-gradient(var(--cp-scan) 0 1px, transparent 1px 3px);
+  animation: cyberpunk-flicker 9s steps(1) infinite;
+}
+[data-theme="cyberpunk"][data-effects="minimal"] .ambient::before,
+[data-theme="cyberpunk"][data-effects="minimal"] .ambient::after {
+  animation: none;
+}
+
+/* ---- Cards: cut corners, cyan brackets that light up on hover, an inner focus frame ---- */
+[data-theme="cyberpunk"] .tile::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  --c: var(--cp-cyan);
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) left top / 2px 14px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 14px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 2px 14px no-repeat,
+    linear-gradient(to bottom left, transparent 9px, var(--c) 9px 10.5px, transparent 10.5px) right top / 14px 14px
+    no-repeat;
+  opacity: 0.4;
+  transition: opacity var(--dur-base) var(--ease-out);
+}
+[data-theme="cyberpunk"] .tile-tinted::before {
+  --c: var(--tint);
+}
+[data-theme="cyberpunk"] .tile:hover::before {
+  opacity: 1;
+}
+[data-theme="cyberpunk"] .tile:is(:focus-visible, :has(> a:focus-visible))::before {
+  opacity: 1;
+  --c: var(--ring);
+  box-shadow: inset 0 0 0 2px var(--ring);
+}
+
+/* Emphasis (the hero): yellow rail, yellow brackets, deeper notch. */
+[data-theme="cyberpunk"] [data-emphasis="primary"] {
+  --tile-clip: polygon(0 0, calc(100% - 28px) 0, 100% 28px, 100% 100%, 12px 100%, 0 calc(100% - 12px));
+  border-color: color-mix(in oklab, var(--cp-yellow) 55%, transparent);
+}
+[data-theme="cyberpunk"] [data-emphasis="primary"]::before {
+  --c: var(--cp-yellow);
+  opacity: 0.9;
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 4px 100% no-repeat,
+    linear-gradient(var(--c), var(--c)) left top / 64px 2px no-repeat,
+    linear-gradient(var(--c), var(--c)) right bottom / 40px 2px no-repeat,
+    linear-gradient(to bottom left, transparent 19px, var(--c) 19px 21px, transparent 21px) right top / 28px 28px
+    no-repeat;
+}
+[data-theme="cyberpunk"] [data-slot="hero-art"] {
+  background: var(--tint, var(--cp-yellow));
+  mask: url("/themes/cyberpunk/reticle.svg") center / contain no-repeat;
+}
+
+/* ---- Today: widget header strips with an index and a technical label ---- */
+[data-theme="cyberpunk"] [data-widget] {
+  counter-increment: cp-widget;
+}
+[data-theme="cyberpunk"] [data-slot="tile-label"]::before {
+  position: absolute;
+  bottom: calc(100% + 4px);
+  left: 0;
+  max-width: calc(100% - 1.5rem);
+  overflow: hidden;
+  white-space: nowrap;
+  font: var(--cp-mono);
+  letter-spacing: 0.14em;
+  color: var(--muted-foreground);
+  content: counter(cp-widget, decimal-leading-zero) " // " var(--cp-label, "SYS");
+}
+[data-theme="cyberpunk"] [data-slot="tile-label"]::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 -7px;
+  height: 1px;
+  background: linear-gradient(90deg, var(--cp-yellow) 0 2.5rem, var(--border-soft) 2.5rem);
+}
+[data-theme="cyberpunk"] [data-widget="next-up"] {
+  --cp-label: "NEURAL LINK / NOW";
+}
+[data-theme="cyberpunk"] [data-widget="stats"] {
+  --cp-label: "BIOMONITOR";
+}
+[data-theme="cyberpunk"] [data-widget="classes"] {
+  --cp-label: "SCHEDULE / TODAY";
+}
+[data-theme="cyberpunk"] [data-widget="week"] {
+  --cp-label: "SECTOR SCAN / WEEK";
+}
+[data-theme="cyberpunk"] [data-widget="due-soon"] {
+  --cp-label: "GIGS / INCOMING";
+}
+[data-theme="cyberpunk"] [data-widget="overdue"] {
+  --cp-label: "GIGS / OVERDUE";
+}
+[data-theme="cyberpunk"] [data-widget="grades"] {
+  --cp-label: "BIOMETRICS / ACADEMIC";
+}
+[data-theme="cyberpunk"] [data-widget="money"] {
+  --cp-label: "EDDIES / LEDGER";
+}
+[data-theme="cyberpunk"] [data-widget="quick-add"] {
+  --cp-label: "INPUT / QUICKHACK";
+}
+[data-theme="cyberpunk"] [data-slot="tile-title"] {
+  font-family: var(--font-display-stack);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+[data-theme="cyberpunk"] [data-slot="tile-icon"] {
+  background: transparent;
+  color: var(--cp-cyan);
+  box-shadow: inset 0 0 0 1px var(--cp-line);
+}
+[data-theme="cyberpunk"] [data-slot="tile-link"] {
+  color: var(--cp-cyan);
+  font-family: var(--font-mono-stack);
+  text-transform: uppercase;
+}
+[data-theme="cyberpunk"] [data-slot="stat-value"] {
+  font-weight: 700;
+  color: var(--cp-yellow);
+  text-shadow: 0 0 18px var(--cp-yellow-a);
+}
+[data-theme="cyberpunk"] [data-slot="stat"][data-tone="danger"] [data-slot="stat-value"] {
+  color: var(--cp-red);
+  text-shadow: 0 0 18px var(--cp-red-a);
+}
+[data-theme="cyberpunk"] [data-slot="stat-label"],
+[data-theme="cyberpunk"] [data-slot="stat-hint"] {
+  font-family: var(--font-mono-stack);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* ---- Page title: yellow bar with ticks; RGB-split glitch on hover only ---- */
+[data-theme="cyberpunk"] [data-slot="page-header"] h1 {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+[data-theme="cyberpunk"] [data-slot="page-header"] h1::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: -9px;
+  width: 7rem;
+  height: 3px;
+  background:
+    linear-gradient(var(--cp-yellow), var(--cp-yellow)) left / 2.5rem 100% no-repeat,
+    repeating-linear-gradient(90deg, var(--cp-line) 0 2px, transparent 2px 7px) right / 4rem 100% no-repeat;
+}
+[data-theme="cyberpunk"] [data-slot="title-fx"]::before,
+[data-theme="cyberpunk"] [data-slot="title-fx"]::after {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+[data-theme="cyberpunk"] [data-slot="title-fx"]::before {
+  color: var(--cp-cyan);
+  clip-path: inset(0 0 55% 0);
+}
+[data-theme="cyberpunk"] [data-slot="title-fx"]::after {
+  color: var(--cp-red);
+  clip-path: inset(50% 0 0 0);
+}
+@media (hover: hover) {
+  [data-theme="cyberpunk"] h1:hover > [data-slot="title-fx"]::before {
+    animation: cyberpunk-glitch 380ms steps(4) both;
+  }
+  [data-theme="cyberpunk"] h1:hover > [data-slot="title-fx"]::after {
+    animation: cyberpunk-glitch 380ms steps(4) reverse both;
+  }
+}
+[data-theme="cyberpunk"][data-effects="immersive"] [data-slot="title-fx"]::before {
+  animation: cyberpunk-glitch 420ms steps(4) 250ms both;
+}
+
+/* ---- Controls ---- */
+[data-theme="cyberpunk"] [data-slot="button"][data-variant="default"] {
+  --cp-btn: var(--cp-yellow);
+  background: linear-gradient(225deg, transparent 7px, var(--cp-btn) 7px);
+  font-family: var(--font-display-stack);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+[data-theme="cyberpunk"] [data-slot="button"][data-variant="default"]:hover {
+  --cp-btn: var(--cp-btn-hover);
+  animation: cyberpunk-jolt 160ms steps(2) 1;
+}
+[data-theme="cyberpunk"] [data-slot="button"]:is([data-variant="outline"], [data-variant="secondary"]) {
+  border-color: var(--cp-line);
+  color: var(--cp-cyan);
+}
+[data-theme="cyberpunk"] [data-slot="button"][data-variant="destructive"] {
+  background: linear-gradient(225deg, transparent 7px, var(--cp-red) 7px);
+}
+[data-theme="cyberpunk"] [data-slot="control"],
+[data-theme="cyberpunk"] select[data-slot="select"] {
+  background: var(--cp-input);
+  border-color: var(--border-soft);
+  border-bottom-color: var(--cp-line);
+}
+[data-theme="cyberpunk"] [data-slot="pill"] {
+  font-family: var(--font-mono-stack);
+  letter-spacing: 0.03em;
+}
+
+/* ---- Navigation ---- */
+[data-theme="cyberpunk"] [data-slot="sidebar"] {
+  background:
+    repeating-linear-gradient(transparent 0 23px, var(--cp-line) 23px 24px) right top / 4px 100% no-repeat,
+    var(--sidebar);
+}
+[data-theme="cyberpunk"] .nav-pill {
+  border-color: transparent;
+  background:
+    linear-gradient(var(--cp-yellow), var(--cp-yellow)) left / 3px 100% no-repeat,
+    linear-gradient(225deg, transparent 8px, var(--cp-yellow-a) 8px);
+  box-shadow: none;
+}
+[data-theme="cyberpunk"] [data-slot="nav-item"] {
+  font-family: var(--font-display-stack);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+[data-theme="cyberpunk"] [data-slot="bottom-nav"] {
+  border-top-color: var(--cp-yellow);
+  background: var(--surface-0);
+}
+[data-theme="cyberpunk"] [data-slot="section-tabs"] [aria-current="page"] {
+  color: var(--cp-yellow);
+}
+
+/* ---- Floating surfaces: a HUD frame that boots up when the panel opens ---- */
+[data-theme="cyberpunk"] .panel::before {
+  content: "";
+  --c: var(--cp-yellow);
+  background:
+    linear-gradient(var(--c), var(--c)) left top / 4rem 2px no-repeat,
+    repeating-linear-gradient(90deg, var(--cp-line) 0 2px, transparent 2px 6px) 4.5rem 0 / 3rem 2px no-repeat,
+    linear-gradient(var(--cp-cyan), var(--cp-cyan)) right bottom / 18px 2px no-repeat,
+    linear-gradient(var(--cp-cyan), var(--cp-cyan)) right bottom / 2px 18px no-repeat,
+    linear-gradient(var(--cp-cyan-a), transparent 3rem);
+  animation: cyberpunk-boot 360ms var(--ease-out) both;
+}
+[data-theme="cyberpunk"] [data-slot="toast"] {
+  animation: cyberpunk-toast 280ms var(--ease-out) both;
+}
+[data-theme="cyberpunk"] [data-slot="toast"][data-tone="error"] {
+  border-color: var(--cp-red);
+  animation:
+    cyberpunk-toast 280ms var(--ease-out) both,
+    cyberpunk-jolt 200ms steps(3) 280ms;
+}
+[data-theme="cyberpunk"] [data-slot="toast"][data-tone="error"]::before {
+  --c: var(--cp-red);
+}
+
+/* ---- Loading: segmented bars that step instead of pulse ---- */
+[data-theme="cyberpunk"] [data-slot="skeleton"] {
+  background: repeating-linear-gradient(90deg, var(--muted) 0 14px, transparent 14px 18px);
+  animation: cyberpunk-load 1.2s steps(4) infinite;
+}
+
+/* ---- School / week: a sector scan, no brackets ---- */
+[data-theme="cyberpunk"] [data-slot="week-grid"] {
+  --border-soft: oklch(0.82 0.14 205 / 0.13);
+}
+[data-theme="cyberpunk"] [data-slot="week-grid"]::before,
+[data-theme="cyberpunk"] [data-area="settings"] .tile::before {
+  content: none;
+}
+[data-theme="cyberpunk"] [data-slot="week-day"][data-today] {
+  background:
+    linear-gradient(var(--cp-yellow), var(--cp-yellow)) top / 100% 2px no-repeat,
+    var(--cp-yellow-a);
+  color: var(--cp-yellow);
+}
+[data-theme="cyberpunk"] [data-slot="week-column"][data-today] {
+  background-color: var(--cp-yellow-a);
+}
+[data-theme="cyberpunk"] [data-slot="class-block"] {
+  border-radius: 0;
+  box-shadow: none;
+}
+[data-theme="cyberpunk"] [data-slot="class-block"]:is([data-status="cancelled"], [data-status="postponed"]) {
+  background-image: repeating-linear-gradient(-45deg, var(--cp-red-a) 0 4px, transparent 4px 9px);
+}
+
+/* ---- Courses: programs on a deck, with a segmented course rail ---- */
+[data-theme="cyberpunk"] [data-slot="course-rail"] {
+  background: repeating-linear-gradient(var(--tint) 0 10px, transparent 10px 14px);
+}
+[data-theme="cyberpunk"] [data-slot="course-name"] {
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* ---- Grades and progress: segmented bars and gauge rings ---- */
+[data-theme="cyberpunk"] [data-slot="progress"] {
+  mask: repeating-linear-gradient(90deg, var(--cp-solid) 0 6px, transparent 6px 8px);
+}
+[data-theme="cyberpunk"] [data-slot="progress-fill"] {
+  border-radius: 0;
+  animation-timing-function: steps(8, end);
+}
+[data-theme="cyberpunk"] [data-slot="progress-ring"] svg {
+  mask: repeating-conic-gradient(var(--cp-solid) 0 9deg, transparent 9deg 12deg);
+}
+
+/* ---- Tasks: gigs with a threat-level edge ---- */
+[data-theme="cyberpunk"] [data-slot="task-row"]::after {
+  content: "";
+  position: absolute;
+  inset: 0 0 0 auto;
+  z-index: 1;
+  width: 3px;
+  pointer-events: none;
+}
+[data-theme="cyberpunk"] [data-slot="task-row"][data-priority="high"]::after {
+  background: var(--cp-yellow);
+}
+[data-theme="cyberpunk"] [data-slot="task-row"][data-priority="urgent"]::after {
+  width: 5px;
+  background: repeating-linear-gradient(-45deg, var(--cp-red) 0 4px, transparent 4px 7px);
+}
+[data-theme="cyberpunk"] [data-slot="task-row"][data-overdue]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, var(--cp-red), transparent 70%);
+}
+
+/* ---- Money: an eddies ledger ---- */
+[data-theme="cyberpunk"] [data-slot="amount"] {
+  font-family: var(--font-mono-stack);
+}
+[data-theme="cyberpunk"] [data-slot="amount-total"] {
+  font-weight: 700;
+  color: var(--cp-yellow);
+  text-shadow: 0 0 22px var(--cp-yellow-a);
+}
+[data-theme="cyberpunk"] [data-slot="amount-summary"] dd {
+  font-weight: 700;
+}
+
+/* ---- Feedback (Motion decides; reduced motion and "off" remove all of it) ---- */
+[data-theme="cyberpunk"]::view-transition-old(*.page-out) {
+  animation: cyberpunk-slice-out 140ms steps(3) both;
+}
+[data-theme="cyberpunk"]::view-transition-new(*.page-in) {
+  animation: cyberpunk-scan-in 260ms var(--ease-out) both;
+}
+[data-theme="cyberpunk"]::view-transition-group(nav-pill),
+[data-theme="cyberpunk"]::view-transition-group(nav-pill-mobile) {
+  animation-timing-function: steps(5, end);
+}
+/* A completed task: the row flashes yellow and wipes out to the right. */
+[data-theme="cyberpunk"]::view-transition-image-pair(*.task-out) {
+  background: var(--cp-yellow-a);
+  box-shadow: inset 3px 0 0 var(--cp-yellow);
+  transform-origin: right center;
+  animation: cyberpunk-done 460ms var(--ease-out) both;
+}
+[data-theme="cyberpunk"]::view-transition-old(*.task-out) {
+  animation: cyberpunk-slice-out 180ms steps(2) both;
+}
+[data-theme="cyberpunk"][data-motion="subtle"] {
+  &::view-transition-old(*.page-out),
+  &::view-transition-old(*.task-out) {
+    animation: vt-fade-out var(--dur-fast) both;
+  }
+  &::view-transition-new(*.page-in) {
+    animation: vt-fade-in var(--dur-base) both;
+  }
+  &::view-transition-image-pair(*.task-out) {
+    animation: cyberpunk-fade 460ms both;
+  }
+  & [data-slot="button"]:hover,
+  & [data-slot="toast"][data-tone="error"],
+  & [data-slot="title-fx"]::before,
+  & [data-slot="title-fx"]::after {
+    animation: none;
+  }
+}
+
+@keyframes cyberpunk-drift {
+  to {
+    transform: translate3d(-3%, 0, 0);
+  }
+}
+@keyframes cyberpunk-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  91% {
+    opacity: 0.86;
+  }
+  93% {
+    opacity: 1;
+  }
+}
+@keyframes cyberpunk-glitch {
+  0% {
+    opacity: 0.9;
+    transform: translateX(-3px);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateX(3px);
+  }
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+}
+@keyframes cyberpunk-jolt {
+  50% {
+    transform: translateX(-2px);
+  }
+}
+@keyframes cyberpunk-boot {
+  0% {
+    opacity: 0;
+    transform: scaleX(0.92);
+  }
+  40% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cyberpunk-toast {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+}
+@keyframes cyberpunk-load {
+  50% {
+    opacity: 0.45;
+  }
+}
+@keyframes cyberpunk-slice-out {
+  50% {
+    opacity: 0.6;
+    transform: translateX(-6px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(8px);
+  }
+}
+@keyframes cyberpunk-scan-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scaleY(0.985);
+  }
+}
+@keyframes cyberpunk-done {
+  0%,
+  40% {
+    opacity: 1;
+    transform: none;
+  }
+  100% {
+    opacity: 0;
+    transform: scaleX(0);
+  }
+}
+@keyframes cyberpunk-fade {
+  to {
+    opacity: 0;
+  }
+}
+
+/* ---- Logo: the brush-stroke leaf (public/themes/cyberpunk/logo.svg) replaces the default mark ---- */
+[data-theme="cyberpunk"] [data-slot="logo"] > svg {
+  opacity: 0;
+}
+[data-theme="cyberpunk"] [data-slot="logo"]::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  /* Drawn as an image, not a mask: the mark has its own colours and chromatic split. */
+  background: var(--cp-logo);
+}
+
+/* ---- Loader: the logo is built from five slices, then an RGB split; a HUD bar below ---- */
+[data-theme="cyberpunk"] [data-slot="loader-mark"] [data-slot="logo"] {
+  opacity: 0;
+}
+[data-theme="cyberpunk"] [data-slot="loader-shard"] {
+  --dx: calc(var(--i) * 14px - 28px);
+  background: var(--cp-logo);
+  clip-path: inset(calc(var(--i) * 20%) 0 calc(80% - var(--i) * 20%));
+}
+[data-theme="cyberpunk"] [data-slot="loader-mark"] {
+  animation: none;
+}
+[data-theme="cyberpunk"] [data-slot="loader-mark"]::before,
+[data-theme="cyberpunk"] [data-slot="loader-mark"]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  mask: var(--cp-logo);
+  background: var(--cp-cyan);
+  opacity: 0;
+}
+[data-theme="cyberpunk"] [data-slot="loader-mark"]::after {
+  background: var(--cp-red);
+}
+/* Boot: built once. */
+[data-theme="cyberpunk"] [data-variant="boot"] [data-slot="loader-shard"] {
+  animation: cyberpunk-build 700ms steps(5) calc(var(--i) * 70ms) both;
+}
+[data-theme="cyberpunk"] [data-variant="boot"] [data-slot="loader-mark"]::before {
+  animation: cyberpunk-split 1.4s steps(2) 380ms both;
+}
+[data-theme="cyberpunk"] [data-variant="boot"] [data-slot="loader-mark"]::after {
+  animation: cyberpunk-split 1.4s steps(2) 380ms reverse both;
+}
+/* Navigation: built, glitched and broken apart in a loop until the page is ready. */
+[data-theme="cyberpunk"][data-navigating] [data-variant="nav"] [data-slot="loader-shard"] {
+  animation: cyberpunk-shard 1.6s steps(6) calc(var(--i) * 60ms) infinite both;
+}
+[data-theme="cyberpunk"][data-navigating] [data-variant="nav"] [data-slot="loader-mark"]::before {
+  animation: cyberpunk-split 1.6s steps(2) 260ms infinite both;
+}
+[data-theme="cyberpunk"][data-navigating] [data-variant="nav"] [data-slot="loader-mark"]::after {
+  animation: cyberpunk-split 1.6s steps(2) 260ms infinite reverse both;
+}
+/* Boot: a scan line sweeps the screen once while the logo builds. */
+[data-theme="cyberpunk"] [data-variant="boot"]::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cp-cyan), transparent);
+  opacity: 0;
+  animation: cyberpunk-sweep 1.1s var(--ease-out) 150ms both;
+}
+/* The bar, after the game's HUD: a coral frame line with raised ends, a short fill, a cyan eye in brackets. */
+[data-theme="cyberpunk"] [data-slot="loader-track"] {
+  background: transparent;
+  border-radius: 0;
+}
+[data-theme="cyberpunk"] [data-slot="loader-fill"] {
+  background: var(--cp-coral);
+  border-radius: 0;
+}
+[data-theme="cyberpunk"] [data-slot="loader-bar"]::before {
+  content: "LOADING // DATA";
+  position: absolute;
+  inset: -1.1rem -0.75rem -0.4rem;
+  padding-left: 0.75rem;
+  font: var(--cp-mono);
+  letter-spacing: 0.18em;
+  color: var(--cp-coral);
+  white-space: nowrap;
+  background:
+    linear-gradient(var(--cp-coral), var(--cp-coral)) bottom / 100% 1px no-repeat,
+    linear-gradient(var(--cp-coral), var(--cp-coral)) left bottom / 1px 7px no-repeat,
+    linear-gradient(var(--cp-coral), var(--cp-coral)) right bottom / 1px 7px no-repeat;
+}
+[data-theme="cyberpunk"] [data-variant="boot"] [data-slot="loader-bar"]::before {
+  content: "BOOT // FOLIUM.OS";
+}
+[data-theme="cyberpunk"] [data-slot="loader-bar"]::after {
+  content: "";
+  position: absolute;
+  top: 50%;
+  right: -3.4rem;
+  width: 2rem;
+  height: 2rem;
+  margin-top: -1rem;
+  background:
+    radial-gradient(
+      circle,
+      var(--cp-ink) 0 17%,
+      var(--cp-cyan) 18% 46%,
+      transparent 48% 58%,
+      var(--cp-cyan-a) 60% 66%,
+      transparent 68%
+    ),
+    linear-gradient(var(--cp-coral), var(--cp-coral)) right top / 6px 1px no-repeat,
+    linear-gradient(var(--cp-coral), var(--cp-coral)) right top / 1px 6px no-repeat,
+    linear-gradient(var(--cp-coral), var(--cp-coral)) left bottom / 6px 1px no-repeat,
+    linear-gradient(var(--cp-coral), var(--cp-coral)) left bottom / 1px 6px no-repeat;
+}
+[data-theme="cyberpunk"] [data-variant="boot"] [data-slot="loader-bar"]::after,
+[data-theme="cyberpunk"][data-navigating] [data-variant="nav"] [data-slot="loader-bar"]::after {
+  animation: cyberpunk-blink 1.2s steps(2) infinite;
+}
+
+/* Subtle motion: the finished logo, still (a paused build could freeze it half-assembled). */
+/* (Specificity matches the navigation rules above, so this wins by order.) */
+[data-theme="cyberpunk"][data-motion="subtle"][data-motion] [data-slot="loader"] [data-slot="loader-shard"],
+[data-theme="cyberpunk"][data-motion="subtle"][data-motion] [data-slot="loader"] [data-slot="loader-mark"]::before,
+[data-theme="cyberpunk"][data-motion="subtle"][data-motion] [data-slot="loader"] [data-slot="loader-mark"]::after,
+[data-theme="cyberpunk"][data-motion="subtle"] [data-variant="boot"]::before {
+  animation: none;
+}
+
+/* ---- Scrollbars: a dark rail with a cyan hairline and a yellow, cut-cornered thumb ---- */
+[data-theme="cyberpunk"] {
+  --scrollbar-thumb: var(--cp-yellow);
+  --scrollbar-track: var(--surface-0);
+}
+@supports selector(::-webkit-scrollbar) {
+  [data-theme="cyberpunk"] {
+    /* Chromium only uses the ::-webkit-scrollbar styles below while scrollbar-color is auto. */
+    scrollbar-color: auto;
+  }
+  [data-theme="cyberpunk"] ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+    background: linear-gradient(90deg, transparent 4px, var(--cp-line) 4px 5px, transparent 5px), var(--surface-0);
+  }
+  [data-theme="cyberpunk"] ::-webkit-scrollbar:horizontal {
+    background: linear-gradient(transparent 4px, var(--cp-line) 4px 5px, transparent 5px), var(--surface-0);
+  }
+  [data-theme="cyberpunk"] ::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, transparent 4px, var(--cp-yellow) 4px) padding-box;
+    border: 2px solid transparent;
+  }
+  [data-theme="cyberpunk"] ::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(135deg, transparent 4px, var(--cp-btn-hover) 4px) padding-box;
+    border-width: 1px;
+  }
+  [data-theme="cyberpunk"] ::-webkit-scrollbar-corner {
+    background: var(--surface-0);
+  }
+}
+
+@keyframes cyberpunk-build {
+  0% {
+    opacity: 0;
+    transform: translate(var(--dx), 0) scaleX(1.4);
+  }
+  40% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * -0.3), 0);
+  }
+  100% {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes cyberpunk-shard {
+  0% {
+    opacity: 0;
+    transform: translate(var(--dx), 0) scaleX(1.4);
+  }
+  12% {
+    opacity: 1;
+    transform: translate(calc(var(--dx) * -0.3), 0);
+  }
+  20%,
+  80% {
+    opacity: 1;
+    transform: none;
+  }
+  86% {
+    opacity: 0.5;
+    transform: translateX(3px);
+  }
+  92%,
+  100% {
+    opacity: 0;
+    transform: translate(calc(var(--dx) * 0.6), 0);
+  }
+}
+@keyframes cyberpunk-split {
+  0%,
+  100% {
+    opacity: 0;
+    transform: none;
+  }
+  6% {
+    opacity: 0.8;
+    transform: translateX(-4px);
+  }
+  12% {
+    opacity: 0.5;
+    transform: translateX(3px);
+  }
+  18% {
+    opacity: 0;
+  }
+}
+@keyframes cyberpunk-sweep {
+  0% {
+    opacity: 0;
+    transform: none;
+  }
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(100svh);
+  }
+}
+@keyframes cyberpunk-blink {
+  50% {
+    opacity: 0.55;
+  }
+}

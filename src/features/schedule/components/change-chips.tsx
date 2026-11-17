@@ -26,7 +26,8 @@ export function ChangeChip({ chip, compact = false }: { chip: Chip; compact?: bo
       className={cn(
         chip.kind === "extra" && "border border-current border-dashed bg-transparent text-foreground",
         chip.kind === "online" && "bg-accent text-accent-foreground",
-        compact && "min-w-0 max-w-full px-1.5 py-0 text-[0.6875rem]",
+        // Full size wraps rather than being cut off in a narrow row ("Ruangan diganti · semula B1.12").
+        compact ? "min-w-0 max-w-full px-1.5 py-0 text-[0.6875rem]" : "max-w-full whitespace-normal",
       )}
       title={compact ? chip.text : undefined}
     >

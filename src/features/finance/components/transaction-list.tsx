@@ -169,6 +169,7 @@ export function TransactionRow({
       </Link>
       <span className="flex shrink-0 flex-col items-end">
         <span
+          data-slot="amount"
           className={cn(
             "font-medium text-sm tabular-nums",
             planned

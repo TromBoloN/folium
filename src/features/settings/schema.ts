@@ -20,6 +20,12 @@ export const FONTS = ["geist", "inter", "system"] as const;
 export const DENSITIES = ["comfortable", "compact"] as const;
 /** "off" (or the OS reduced-motion setting) turns every animation off; "subtle" keeps fades, drops movement and loops. */
 export const MOTIONS = ["full", "subtle", "off"] as const;
+/**
+ * How much ambient decoration a theme pack draws (its background scene and effects
+ * layer). Separate from motion: motion decides whether anything animates at all,
+ * feedback included; this only scales the atmosphere. Packs without effects ignore it.
+ */
+export const EFFECTS = ["immersive", "balanced", "minimal"] as const;
 export const WEEK_STARTS = ["monday", "sunday", "saturday"] as const;
 export const TIME_FORMATS = ["24h", "12h"] as const;
 export const LANGUAGES = ["en", "id"] as const;
@@ -90,6 +96,7 @@ export const themeSchema = z.object({
   font: z.enum(FONTS),
   density: z.enum(DENSITIES),
   motion: z.enum(MOTIONS),
+  effects: z.enum(EFFECTS),
 });
 
 export const preferencesSchema = z.object({
@@ -124,6 +131,7 @@ export const DEFAULT_THEME: Theme = {
   font: "geist",
   density: "comfortable",
   motion: "full",
+  effects: "balanced",
 };
 
 export const DEFAULT_PREFERENCES: Preferences = {

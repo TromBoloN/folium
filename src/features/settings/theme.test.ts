@@ -14,6 +14,7 @@ describe("themeAttributes", () => {
       "data-font": "geist",
       "data-density": "comfortable",
       "data-motion": "full",
+      "data-effects": "balanced",
       style: {},
     });
   });

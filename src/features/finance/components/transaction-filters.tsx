@@ -18,8 +18,9 @@ type CategoryOption = Option & { kind: "expense" | "income"; parentId: string | 
 
 const BASE = "/money/transactions";
 
+// max-w-full: an option as long as an account name must not widen the page.
 const pill =
-  "h-9 rounded-pill border border-border bg-surface-1 pl-3 pr-8 text-sm font-medium transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 data-[active=true]:border-primary data-[active=true]:bg-accent data-[active=true]:text-accent-foreground";
+  "h-9 max-w-full rounded-pill border border-border bg-surface-1 pl-3 pr-8 text-sm font-medium transition-colors duration-(--dur-fast) hover:border-foreground/25 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30 data-[active=true]:border-primary data-[active=true]:bg-accent data-[active=true]:text-accent-foreground";
 
 /**
  * Filters are a plain GET form first: the URL holds them (shareable, back

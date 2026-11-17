@@ -84,9 +84,15 @@ export function NextUpHero({
     <Tile
       tint={slot.color}
       reveal={0}
+      data-emphasis="primary"
+      data-state={up.kind}
       className="flex min-h-56 flex-col justify-between gap-6 overflow-hidden p-5 sm:p-6"
     >
-      <span aria-hidden className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-20" />
+      <span
+        aria-hidden
+        data-slot="hero-art"
+        className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-20"
+      />
       <div className="relative flex flex-col gap-2">
         <span className="flex items-center gap-2 font-medium text-sm">
           <span
@@ -211,9 +217,15 @@ function DeadlineHero({ deadline }: { deadline: NonNullable<Props["deadline"]> }
     <Tile
       tint={deadline.color ?? "var(--primary)"}
       reveal={0}
+      data-emphasis="primary"
+      data-state="deadline"
       className="flex min-h-56 flex-col justify-between gap-6 overflow-hidden p-5 sm:p-6"
     >
-      <span aria-hidden className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-20" />
+      <span
+        aria-hidden
+        data-slot="hero-art"
+        className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-20"
+      />
       <div className="relative flex flex-col gap-2">
         <span className="flex items-center gap-2 font-medium text-sm">
           <CalendarClock aria-hidden className="size-4" />
@@ -238,7 +250,11 @@ function QuietHero() {
   const t = useT();
   return (
     <Tile reveal={0} className="flex min-h-56 flex-col justify-end gap-2 overflow-hidden p-5 sm:p-6">
-      <span aria-hidden className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-15" />
+      <span
+        aria-hidden
+        data-slot="hero-art"
+        className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-15"
+      />
       <Sprout aria-hidden className="relative size-6 text-primary" />
       <p className="relative font-display text-3xl">{t("Nothing scheduled.")}</p>
       <p className="relative text-muted-foreground text-sm">

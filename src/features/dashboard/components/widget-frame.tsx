@@ -47,7 +47,12 @@ export function WidgetFrame({
   const heading = `widget-${id}`;
   if (frame === "bare") {
     return (
-      <section aria-labelledby={heading} className={cn("min-w-0", SIZE_CLASSES[size])}>
+      <section
+        aria-labelledby={heading}
+        data-widget={id}
+        data-size={size}
+        className={cn("min-w-0", SIZE_CLASSES[size])}
+      >
         <h2 id={heading} className="sr-only">
           <TrL text={title} />
         </h2>
@@ -61,11 +66,18 @@ export function WidgetFrame({
       aria-labelledby={heading}
       spotlight
       reveal={index}
+      data-widget={id}
+      data-size={size}
       className={cn("flex min-w-0 flex-col gap-3 p-4 sm:p-5", SIZE_CLASSES[size], stretch && "self-stretch")}
     >
-      <header className="flex items-center justify-between gap-2">
-        <h2 id={heading} className="flex items-center gap-2.5 font-medium">
-          <span className="flex size-7 items-center justify-center rounded-lg bg-accent text-accent-foreground">
+      <header data-slot="tile-header" className="relative flex items-center justify-between gap-2">
+        {/* Theme packs may print a decorative label here (::before). aria-hidden keeps it out of the accessibility tree. */}
+        <span aria-hidden data-slot="tile-label" className="pointer-events-none absolute inset-0" />
+        <h2 id={heading} data-slot="tile-title" className="flex items-center gap-2.5 font-medium">
+          <span
+            data-slot="tile-icon"
+            className="flex size-7 items-center justify-center rounded-lg bg-accent text-accent-foreground"
+          >
             <Icon aria-hidden className="size-4" />
           </span>
           <TrL text={title} />
@@ -73,6 +85,7 @@ export function WidgetFrame({
         {href ? (
           <Link
             href={href}
+            data-slot="tile-link"
             className="group/more inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground text-sm transition-colors hover:text-foreground"
           >
             <TrL text={hrefLabel} />
@@ -96,7 +109,7 @@ export function WidgetSkeleton({ rows = 2, label }: { rows?: number; label: stri
       </span>
       {Array.from({ length: rows }, (_, i) => (
         // biome-ignore lint/suspicious/noArrayIndexKey: static placeholders
-        <div key={i} className="h-12 animate-pulse rounded-lg bg-muted" />
+        <div key={i} data-slot="skeleton" className="h-12 animate-pulse rounded-lg bg-muted" />
       ))}
     </div>
   );

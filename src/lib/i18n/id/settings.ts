@@ -28,6 +28,12 @@ export const settings = {
   Off: "Mati",
   "Subtle keeps fades but nothing moves. If your device is set to reduce motion, animations stay off.":
     "Halus tetap memudar tapi tidak ada yang bergerak. Jika perangkatmu diatur untuk mengurangi gerakan, animasi tetap mati.",
+  "Theme effects": "Efek tema",
+  Immersive: "Imersif",
+  Balanced: "Seimbang",
+  Minimal: "Minimal",
+  "How much of the {name} theme's background scene you see. Feedback such as a completed task still animates; Motion decides that.":
+    "Seberapa banyak latar tema {name} yang kamu lihat. Umpan balik seperti tugas selesai tetap beranimasi; itu diatur oleh Animasi.",
   Preferences: "Preferensi",
   "Calendar, time and language defaults.": "Kalender, waktu, dan bahasa.",
   "Time zone": "Zona waktu",

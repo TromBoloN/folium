@@ -191,7 +191,7 @@ async function Reports() {
         </details>
       </section>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section aria-labelledby="worth-h" className="tile flex flex-col gap-3 p-5">
           <h2 id="worth-h" className="font-medium">
             {t("Net worth")}
@@ -251,7 +251,7 @@ async function Reports() {
         </section>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <section aria-labelledby="trends-h" className="tile flex flex-col gap-3 p-5">
           <h2 id="trends-h" className="font-medium">
             {t("Categories vs {month}", { month: formatDate(`${previous}-01`, { month: "long" }, intl) })}

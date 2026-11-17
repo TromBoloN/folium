@@ -5,7 +5,8 @@ import { useEffect } from "react";
 /**
  * Page-wide motion plumbing, mounted once in the shell. Renders nothing.
  * - Marks <html data-tab-hidden> while the tab is hidden, so the ambient drift pauses.
- * - Marks <html data-hydrated> once client code runs (e2e tests wait for it before clicking).
+ * - Marks <html data-hydrated> once client code runs (e2e tests wait for it before clicking;
+ *   it also dismisses the boot screen, which is then skipped for the rest of the session).
  * - One delegated pointermove handler feeds --mx/--my to the [data-spotlight]
  *   tile under the pointer (hover devices only), batched to one write per frame.
  */
@@ -13,6 +14,12 @@ export function MotionRuntime() {
   useEffect(() => {
     const root = document.documentElement;
     root.dataset.hydrated = "";
+    // The boot screen has now been seen; later loads this session skip it (root layout script).
+    try {
+      sessionStorage.setItem("folium-booted", "1");
+    } catch {
+      // Storage blocked: the boot screen just shows on each load.
+    }
     const onVisibility = () => root.toggleAttribute("data-tab-hidden", document.hidden);
     onVisibility();
     document.addEventListener("visibilitychange", onVisibility);

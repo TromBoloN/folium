@@ -58,7 +58,8 @@ export function AttendanceQuick({
     });
   };
   return (
-    <fieldset className="flex shrink-0 flex-wrap justify-end gap-1">
+    // May shrink (its buttons wrap): a shrink-0 row of long labels ("Dijadwal ulang") widened the whole page on phones.
+    <fieldset className="flex min-w-0 flex-wrap justify-end gap-1">
       <legend className="sr-only">{t("Attendance: {label}", { label })}</legend>
       {(
         [

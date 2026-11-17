@@ -75,7 +75,13 @@ export function TaskRowFrame({ task, overdue, checkbox, content, stripe }: Props
 
   return (
     <ViewTransition exit="task-out" update="task-row" default="none">
-      <li className="relative overflow-hidden">
+      <li
+        data-slot="task-row"
+        data-priority={task.priority}
+        data-status={task.status}
+        data-overdue={overdue || undefined}
+        className="relative overflow-hidden"
+      >
         {/* What a swipe will do, revealed under the row. */}
         {dx !== 0 ? (
           <div

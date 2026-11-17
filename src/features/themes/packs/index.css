@@ -4,3 +4,4 @@
  * pack, in the same order as THEMES in ../registry.ts. Guide: docs/themes.md.
  */
 @import "./default/theme.css";
+@import "./cyberpunk/theme.css";

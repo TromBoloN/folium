@@ -6,11 +6,14 @@ import { PaletteProvider } from "@/features/search/components/palette-provider";
 import { ClientData } from "@/features/tasks/components/client-data";
 import { TaskOpsProvider } from "@/features/tasks/components/task-ops";
 import { LeafMark } from "../leaf-mark";
+import { Loader } from "../loader";
 import { Ambient } from "../motion/ambient";
 import { MotionRuntime } from "../motion/motion-runtime";
 import { PwaRuntime } from "../pwa/pwa-runtime";
 import { Toaster } from "../toast/toaster";
 import { BottomNav, SidebarNav } from "./app-nav";
+import { AreaMain } from "./area-main";
+import { NavCurtain } from "./nav-curtain";
 import { PageTransition } from "./page-transition";
 
 export function AppShell({ children, modal }: { children: React.ReactNode; modal?: React.ReactNode }) {
@@ -19,6 +22,8 @@ export function AppShell({ children, modal }: { children: React.ReactNode; modal
       <TaskOpsProvider>
         <PaletteProvider>
           <div className="min-h-svh">
+            {/* First load of a session: covers the app until it hydrates (globals.css, "Loading"). */}
+            <Loader variant="boot" />
             <Ambient />
             <Suspense fallback={null}>
               <ClientData />
@@ -43,11 +48,12 @@ export function AppShell({ children, modal }: { children: React.ReactNode; modal
             </aside>
             <div className="pb-[calc(8rem+env(safe-area-inset-bottom))] md:pb-0 md:pl-60">
               {/* Uses the width beside the sidebar; pages lay out their own columns, and forms keep a reading width. */}
-              <main className="mx-auto w-full max-w-[90rem] px-4 py-6 md:px-8 md:py-10 xl:px-10">
+              <AreaMain className="mx-auto w-full max-w-[90rem] px-4 py-6 md:px-8 md:py-10 xl:px-10">
                 <PageTransition>{children}</PageTransition>
-              </main>
+              </AreaMain>
             </div>
             {modal}
+            <NavCurtain />
             <AddFab />
             <BottomNav />
           </div>

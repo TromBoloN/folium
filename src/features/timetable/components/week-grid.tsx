@@ -21,13 +21,15 @@ export async function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: s
   const toRem = (minute: number) => ((minute - week.firstHour * 60) / 60) * HOUR_REM;
 
   return (
-    <div className="tile overflow-x-auto">
+    <div data-slot="week-grid" className="tile overflow-x-auto">
       {/* pb-3 leaves room for the last hour label, which is centred on the bottom line. */}
       <div className="grid min-w-[44rem] grid-cols-[3.5rem_repeat(7,minmax(0,1fr))] pb-3">
         <div className="border-border-soft border-b" />
         {week.days.map((d) => (
           <div
             key={d.date}
+            data-slot="week-day"
+            data-today={d.isToday || undefined}
             className={cn(
               "border-border-soft border-b border-l px-2 py-2.5 text-center text-xs",
               d.isToday && "bg-accent text-accent-foreground",
@@ -63,6 +65,8 @@ export async function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: s
           <section
             key={d.date}
             aria-label={d.fullLabel}
+            data-slot="week-column"
+            data-today={d.isToday || undefined}
             className={cn("relative border-border-soft border-l", d.isToday && "bg-accent/40")}
             style={{
               height: `${hours * HOUR_REM}rem`,
@@ -104,7 +108,9 @@ export async function WeekGrid({ week, timeLabels }: { week: Week; timeLabels: s
                 <Link
                   key={item.id}
                   href={`/courses/class/${item.id}`}
+                  data-slot="class-block"
                   data-status={item.status}
+                  data-past={item.past || undefined}
                   title={`${item.courseName}, ${item.timeLabel}${item.location ? `, ${item.location}` : ""}${item.chips.length ? ` · ${item.chips.map((c) => c.text).join(" · ")}` : ""}${item.note ? ` · “${item.note}”` : ""}`}
                   style={
                     {

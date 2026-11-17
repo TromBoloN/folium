@@ -41,6 +41,12 @@ describe("mergeOverDefaults", () => {
     expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { motion: "wild" }).motion).toBe("full");
   });
 
+  it("defaults theme effects to balanced for older rows, and keeps a stored choice", () => {
+    expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { pack: "cyberpunk" }).effects).toBe("balanced");
+    expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { effects: "immersive" }).effects).toBe("immersive");
+    expect(mergeOverDefaults(themeSchema, DEFAULT_THEME, { effects: "max" }).effects).toBe("balanced");
+  });
+
   it("falls back to the default pack when a stored pack no longer exists, keeping the rest", () => {
     const merged = mergeOverDefaults(themeSchema, DEFAULT_THEME, { pack: "removed-pack", mode: "dark" });
     expect(merged).toEqual({ ...DEFAULT_THEME, mode: "dark" });

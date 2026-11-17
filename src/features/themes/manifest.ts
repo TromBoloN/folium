@@ -33,10 +33,15 @@ export type ThemeManifest = {
   status: "ready" | "draft";
 };
 
-/** What an effects component receives. It is already off when motion is off, reduced, hidden or saving data. */
+/**
+ * What an effects component receives. It is already off when motion is off, reduced,
+ * hidden or saving data, and when the user's theme effects setting is "minimal".
+ */
 export type ThemeEffectProps = {
   /** Phone-sized viewport: draw fewer particles, skip expensive layers. */
   mobile: boolean;
   /** Motion is "subtle": keep things still or near-still (fades only, no travel). */
   subtle: boolean;
+  /** The user's theme effects setting: "immersive" draws everything, "balanced" a calmer subset. */
+  intensity: "immersive" | "balanced";
 };

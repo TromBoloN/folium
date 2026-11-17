@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { ProgressRing } from "@/components/ui/progress-ring";
 import { courseResult, formatGpa, formatPercent, gpaBySemester } from "@/features/grades/logic";
 import { listGradebook } from "@/features/grades/queries";
@@ -69,12 +70,7 @@ export async function GradesWidget() {
                 </span>
                 <span className="w-6 text-right font-semibold">{result.band?.letter}</span>
               </span>
-              <span aria-hidden className="h-1.5 overflow-hidden rounded-pill bg-muted">
-                <span
-                  className="grow-x block h-full w-full rounded-pill bg-(--tint)"
-                  style={{ transform: `scaleX(${Math.min(100, result.percent ?? 0) / 100})` }}
-                />
-              </span>
+              <ProgressBar value={(result.percent ?? 0) / 100} />
             </Link>
           </li>
         ))}

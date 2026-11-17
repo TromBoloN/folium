@@ -36,16 +36,27 @@ const inter = Inter({ variable: "--font-inter", subsets: ["latin"], display: "sw
 // Display serif for page titles, the greeting and big numerals. Variable, with the optical-size axis.
 const fraunces = Fraunces({ variable: "--font-fraunces", subsets: ["latin"], display: "swap", axes: ["opsz"] });
 
+/**
+ * Marks <html data-booted> when the app has already started once this session (MotionRuntime
+ * records that), which hides the boot screen.
+ */
+const BOOT_ONCE = `try{if(sessionStorage.getItem("folium-booted"))document.documentElement.setAttribute("data-booted","")}catch(e){}`;
+
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const { theme, preferences } = await getSettings();
 
   return (
     <html
+      // The inline script below adds data-booted before hydration.
+      suppressHydrationWarning
       lang={preferences.language}
       className={[geist.variable, inter.variable, fraunces.variable, ...THEME_FONT_VARIABLES].join(" ")}
       {...themeAttributes(theme)}
     >
       <head>
+        {/* The first-load screen shows once per browser session; this runs before first paint. */}
+        {/* biome-ignore lint/security/noDangerouslySetInnerHtml: a fixed string, no user input */}
+        <script dangerouslySetInnerHTML={{ __html: BOOT_ONCE }} />
         {chromeColors(theme).map(({ media, color }) => (
           <meta key={media ?? "all"} name="theme-color" media={media} content={color} />
         ))}

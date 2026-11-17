@@ -31,6 +31,7 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
       font: formData.get("font"),
       density: formData.get("density"),
       motion: formData.get("motion"),
+      effects: formData.get("effects"),
     },
     preferences: {
       weekStart: formData.get("weekStart"),

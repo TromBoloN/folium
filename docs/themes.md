@@ -58,7 +58,7 @@ user_settings.theme  ──►  themeAttributes()  ──►  <html data-theme="
 - **The server renders the attributes** in the root layout (`app/layout.tsx`), so the first paint already has the user's pack. There is no flash of the default look.
 - **Live changes** (Settings, the Themes page) set the same attributes on `<html>` from the browser (`applyTheme` in `settings-form.tsx`). Anything a pack does must work when `data-theme` changes without a reload; CSS does this for free, and `<ThemeEffects>` watches the attribute.
 - **Load order:** `globals.css` first, then `packs/index.css` (both imported in `app/layout.tsx`). A pack rule `[data-theme="x"] { --surface-1: … }` has the same specificity as the base `:root` rule and comes later, so it wins.
-- **Pack CSS ships to everyone** in the main stylesheet. Keep it small (aim under 6 KB per pack); images in `url()` only download when their rule matches.
+- **Pack CSS ships to everyone** in the main stylesheet. Keep it small (at most 6 KB gzipped per pack, enforced by a test); images in `url()` only download when their rule matches.
 - **Effects JavaScript** is a separate chunk per pack, loaded only when that pack is active and motion is allowed.
 
 ## 3. Make a pack, step by step
@@ -294,9 +294,26 @@ Tokens cover most of a look. When a pack needs more (a decoration, a different h
 | Cards | `.tile` (also `<Tile>`, `<Card>`, empty states, stat tiles, every bento widget) | `::before` is **yours** (decoration layer; its animations pause with subtle motion and hidden tabs). `::after` belongs to the spotlight. `position: relative` is already set. |
 | Course-tinted cards | `.tile-tinted` | Uses `--tint` (the course colour). |
 | Spotlight | `[data-spotlight]::after` | Glow that follows the pointer on hover devices. Uses `--primary`. |
-| Floating surfaces | `.panel` | Sheets, menus, toasts, command palette, dialogs. |
+| Floating surfaces | `.panel` | Sheets, menus, toasts, command palette, dialogs. `::before` is **yours**: base CSS makes it `absolute; inset: 0; z-index: -1; pointer-events: none` inside an isolated panel, so it paints over the panel background and under its content. It's `content: none` until you set `content`. |
 | Sheets | `[data-slot="sheet"]` | Bottom sheet on phones, side sheet from `md`. Also has `.panel`. |
-| Toasts | `[data-slot="toast"]` | |
+| Toasts | `[data-slot="toast"]`, `[data-tone="default\|error"]` | Has `toast-in` as its entrance; a pack may replace the animation. |
+| App area | `main[data-area="today\|courses\|tasks\|grades\|money\|settings\|other"]` | Give each area its own treatment instead of one decoration everywhere. |
+| Dashboard widget | `[data-widget="<id>"][data-size="hero\|wide\|tall\|small"]` (ids in `features/dashboard/widget-ids.ts`) | Its header: `[data-slot="tile-header"]` (position: relative), `[data-slot="tile-title"]`, `[data-slot="tile-icon"]`, `[data-slot="tile-link"]` ("See all"). |
+| Widget label | `[data-slot="tile-label"]` | An empty, `aria-hidden`, absolutely placed span over the widget header. Fill its `::before`/`::after` with decorative text (`content: "SYSTEM / TASKS"`); `aria-hidden` on the host keeps generated text out of screen readers, so don't rely on `content` alt-text syntax. |
+| Emphasis | `[data-emphasis="primary"]`, with `data-state` | The one tile that matters most right now (the Today hero: `now`, `next`, `tomorrow`, `deadline`). |
+| Logo | `[data-slot="logo"]` (wraps the leaf SVG; `position: relative`, colour = `currentColor`) | To use your own mark: `[data-slot="logo"] > svg { opacity: 0 }` and draw it on `::before` (`background: currentColor; mask: url("/themes/<id>/logo.svg") center / contain no-repeat`). Keep it recognisable at 28px (the sidebar). |
+| Loaders | `[data-slot="loader"][data-variant="boot\|nav"]`, `loader-mark` (holds the logo plus five empty `loader-shard` layers with `--i` 0–4, made for building the logo from slices), `loader-bar` (its `::before`/`::after` are free), `loader-track`, `loader-fill` | "boot" is the first screen of a session, shown until the app hydrates; `--boot-hold` (default 200ms) lets it linger after that. "nav" is the curtain over the content area while a new page loads: it exists all the time but shows only under `[data-navigating]` (on `<html>`), raised the moment a half-loaded page commits (never for sheets) and kept for at least `--nav-min` (a plain millisecond number, default 350). Start curtain animations only under `[data-theme="x"][data-navigating] [data-variant="nav"]`, so they play from the start each time. It must appear in the same frame (no fade-in, or the half-loaded page shows through); a fade-out is fine. Folium's versions are in `globals.css` ("Loading"). Motion "off" and reduced motion skip the boot screen; the curtain then stands still, so its still frame must show the logo. |
+| Scrollbars | `--scrollbar-thumb`, `--scrollbar-track` tokens | For a custom shape, set `scrollbar-color: auto` on your root inside `@supports selector(::-webkit-scrollbar)` and style `[data-theme="x"] ::-webkit-scrollbar*` (Chromium ignores those while `scrollbar-color` is set; Firefox keeps the tokens). |
+| Hero art | `[data-slot="hero-art"]` | The decorative leaf on hero and welcome tiles. Replace its `mask` and `background`. |
+| Stat tiles | `[data-slot="stat"][data-tone]`, `[data-slot="stat-value\|stat-label\|stat-hint"]` | Big numbers. Change colour, weight, family; never `font-size` (layout). |
+| Title effects | `[data-slot="page-header"] h1 > [data-slot="title-fx"]` | Empty, `aria-hidden` layer over the page title with the translated title in `data-text`. Use `content: attr(data-text)` on its `::before`/`::after` for glitch or echo effects; the h1 is `position: relative`. The h1's own `::before`/`::after` are free too. |
+| Progress | `[data-slot="progress"]` (track, has `--value` 0–1), `[data-slot="progress-fill"]`; `[data-slot="progress-ring"]` | `<ProgressBar>` and `<ProgressRing>`. |
+| Loading | `[data-slot="skeleton"]` | Skeleton blocks. |
+| Tasks | `[data-slot="task-row"][data-priority][data-status][data-overdue]` | The row `li`; its `::before`/`::after` are free (give them `z-index: 1`, the row's content is positioned). |
+| Week grid | `[data-slot="week-grid"]`, `[data-slot="week-day\|week-column"][data-today]`, `[data-slot="class-block"][data-status][data-past]` | The grid lines read `--border-soft`; re-declare it on `[data-slot="week-grid"]` to recolour them. |
+| Courses | `[data-slot="course-card\|course-rail\|course-name"]` | |
+| Money | `[data-slot="amount"]` (a transaction amount), `[data-slot="amount-total"]`, `[data-slot="amount-summary"]` (the In/Out/Net list) | Wider fonts make amounts wider: check long amounts on a phone. |
+| View transitions | `::view-transition-old(*.page-out)`, `::view-transition-new(*.page-in)`, `::view-transition-group(nav-pill\|nav-pill-mobile)`, `::view-transition-old(*.task-out)` / `::view-transition-image-pair(*.task-out)` | Page changes, the nav highlight, and a task row leaving after it's completed. Write them as `[data-theme="x"]::view-transition-…`. They fire on every navigation where the browser supports the API; elsewhere pages just swap. |
 | Buttons | `[data-slot="button"][data-variant="default\|destructive\|outline\|secondary\|ghost\|link"]` | |
 | Text controls | `[data-slot="control"]` (inputs, textareas), `select[data-slot="select"]` | Keep the focus ring visible. |
 | Pills | `[data-slot="pill"]` | Metadata labels (due dates, course codes). |
@@ -363,7 +380,7 @@ export default function Bubbles({ mobile, subtle }: ThemeEffectProps) {
 
 and in the manifest: `effects: () => import("./effects"),`.
 
-Style the particles in `theme.css`, scoped as usual:
+Style the particles in an **`effects.css` next to it, imported by `effects.tsx`** (`import "./effects.css";`). It then ships in the effects chunk, so only users of your pack with motion on download it, while `theme.css` (which everyone downloads) stays small. The linter applies the same rules to it. Name particle classes `<id>-…`: those are your own elements, so they may use `position`, `width` and friends (section 13). Anything that must be visible in the still frame (motion off, "minimal") belongs in `theme.css`, not here.
 
 ```css
 [data-theme="underwater"] .underwater-bubble {
@@ -382,10 +399,12 @@ Style the particles in `theme.css`, scoped as usual:
 ```
 
 **What `<ThemeEffects>` (`features/themes/effects.tsx`) guarantees:**
-- It renders your component only when the pack is active, motion isn't "off", the device doesn't ask for reduced motion, and data saving isn't on (`Save-Data` / `prefers-reduced-data`).
+- It renders your component only when the pack is active, motion isn't "off", the device doesn't ask for reduced motion, data saving isn't on (`Save-Data` / `prefers-reduced-data`), and the user's **Theme effects** setting isn't "minimal".
 - It loads your module on demand; users of other packs never download it.
-- It re-renders on a live pack or motion change (it observes `<html>`).
-- It passes `mobile` (viewport under 48rem) and `subtle` ("subtle" motion: show nothing that travels; a still layer or nothing).
+- It re-renders on a live pack, motion or theme-effects change (it observes `<html>`).
+- It passes `mobile` (viewport under 48rem), `subtle` ("subtle" motion: show nothing that travels; a still layer or nothing) and `intensity` (`"immersive"`: everything; `"balanced"`, the default: a calmer subset).
+
+**Theme effects vs motion.** Settings shows "Theme effects" (Immersive / Balanced / Minimal, `<html data-effects>`) only for packs with effects. It scales **atmosphere only**: the effects layer, ambient animation (`[data-theme="x"][data-effects="minimal"] .ambient::before { animation: none }`) and decorative flourishes such as a title glitch on page entry. Functional feedback (a sheet opening, a task completing, a toast) follows **Motion** alone, and Motion "off" or the OS reduce-motion setting removes everything regardless.
 - The wrapper is `absolute inset-0` inside the fixed, `aria-hidden`, non-interactive `.ambient`.
 
 **Your effect must:**
@@ -450,16 +469,19 @@ Most use is on phones, often mid-range Android. The budget:
 |---|---|
 | No `backdrop-filter` on `.tile` (many on screen) or on the bottom nav. One on `.panel` (a single sheet) is acceptable. | Blur on dozens of scrolling cards drops frames. |
 | No `background-attachment: fixed`. | Broken on iOS; `.ambient` is already fixed. |
-| Particles: at most **8 on phones** (`mobile`), **24 on desktop**. | |
-| At most **two** infinitely looping layers besides particles. | |
+| Particles: at most **8 on phones** (`mobile`), **24 on desktop** (with "immersive" theme effects; "balanced", the default, should draw far fewer). | |
+| At most **two** infinitely looping layers besides particles; up to **four** on desktop under "immersive". | |
+| No static `filter: blur()` on anything that sits near an animated element. | Night City's neon glow was a blurred SVG next to a flickering one; profiling showed it as the main scroll cost. A wide, faint stroke looks close and costs nothing. |
 | No animated `filter`, `box-shadow`, `clip-path` or `mask`. | These repaint every frame. |
 | `will-change: transform` only on the one or two big moving layers. | Each one costs GPU memory. |
 | Background images: AVIF or WebP, ≤ 150 KB, ≤ 2 per pack. | Mobile data. |
 | Use `svh`/`dvh`, not `vh`, for anything sized to the screen. | Mobile browser bars. |
 | Keep content clear of `env(safe-area-inset-*)`. | The shell already does this; don't add fixed decorations over notches. |
-| Total `theme.css` under ~6 KB. | It ships to every user. |
+| `theme.css` at most **6 KB gzipped** (the test enforces it). Effect styling goes in `effects.css`. | It ships to every user. |
 
-Things the app already handles for you: pausing loops when the tab is hidden, skipping effects with Save-Data or reduced data, and loading effects code only for the active pack.
+Things the app already handles for you: pausing loops when the tab is hidden, skipping effects with Save-Data, reduced data or "minimal" theme effects, and loading effects code only for the active pack.
+
+**Profile before shipping.** Particle counts aren't a measurement. With 4× CPU throttling, compare your pack with Folium on Today and the week grid at phone and desktop sizes, while scrolling and while idle: frame times, main-thread time, layer count. Night City's numbers when it was added (headless Chromium, 4× throttle): no dropped frames in any mode; scroll jank 0% (balanced) and under 1% (immersive) vs 0% for Folium; idle main-thread time about 1.9× Folium's on immersive desktop. If your pack adds more than ~5% janky frames, cut effects until it doesn't.
 
 ## 12. Readability and accessibility
 
@@ -482,11 +504,21 @@ Things the app already handles for you: pausing loops when the tab is hidden, sk
 - Animate anything but `transform` and `opacity`.
 - Edit components for one pack. Add a token or hook for everyone instead, and document it here.
 
+The linter enforces the first rule: on the app's elements, a pack may not set `display`, `position`, `float`, sizes (`width`, `height`, `min-*`, `max-*`, `inline-size`, `block-size`), `margin*`, `padding*`, `gap`, `inset`/`top`/`right`/`bottom`/`left`, `flex*`, `grid*`, `order`, alignment (`align-*`, `justify-*`, `place-*`) or `font-size`. Pseudo-elements and the pack's own elements (classes named `<id>-…`) are exempt; they're decoration. A genuine exception needs `/* layout-ok: <reason> */` on the declaration, and a reviewer.
+
+### Theme bug or app bug?
+
+When something looks wrong under a pack, switch to Folium and look again.
+
+- **Also wrong under Folium:** it's an app bug. Fix it once, in the component, `globals.css` or a token default, and every pack gets the fix. Examples found while building Night City: page grids without `grid-cols-1` grew wider than a phone when a long name or amount sat inside them, and a `<select>` stretched to its longest option.
+- **Only wrong under the pack, because of something the pack legitimately changed** (a wider font makes an amount overflow): it's still usually the app's layout being fragile. Make the component cope with wider content (truncate, wrap, `min-w-0`) rather than shrinking the pack's font.
+- **Only wrong under the pack, because the pack needs something the app doesn't expose:** add a token or hook for everyone (section 5). Never patch layout from pack CSS; the linter refuses it.
+
 ## 14. Checking a pack
 
 **Automatic** (`bunx vitest run src/features/themes`, also part of `bun run test`):
 - ids are unique; there's one folder per registered pack; `index.css` imports each pack once, in registry order; the setting's enum matches the registry;
-- every selector is scoped to `[data-theme="<id>"]`; keyframes are named `<id>-…` and animate only transform/opacity; real properties contain no colour literals;
+- every selector is scoped to `[data-theme="<id>"]`; keyframes are named `<id>-…` and animate only transform/opacity; real properties contain no colour literals; no layout properties on the app's elements (section 13); the same rules for `effects.css`; `theme.css` is at most 6 KB gzipped;
 - `palette: "custom"` packs: required tokens are literal oklch, and the contrast pairs pass in each supported scheme;
 - the manifest's `effects` entry exists exactly when `effects.tsx` does; chrome and preview colours are `#rrggbb`.
 
@@ -560,13 +592,18 @@ Animations on `.tile::before` pause automatically under "subtle" motion and in a
 | Base tokens, utilities (`.tile`, `.panel`, `.ambient`, `.loop`), motion rules | `src/app/globals.css` |
 | Pack stylesheets index | `src/features/themes/packs/index.css` |
 | Reference pack (today's look: glows and grain) | `src/features/themes/packs/default/` |
+| A full pack: per-area styling, feedback, lazy `effects.css`, SVG assets | `src/features/themes/packs/cyberpunk/` (Night City), `public/themes/cyberpunk/` |
+| `<main data-area>` | `src/components/app-shell/area-main.tsx`, `page-area.ts` |
+| Title effect layer | `src/components/title-fx.tsx` |
+| Logo, loaders | `src/components/leaf-mark.tsx`, `loader.tsx`, `app-shell/nav-curtain.tsx`; boot-once script in `app/layout.tsx` |
+| Progress bar | `src/components/ui/progress-bar.tsx` |
 | Manifest type, effect props | `src/features/themes/manifest.ts` |
 | Registry, `getManifest`, `visibleThemes` | `src/features/themes/registry.ts` |
 | Effects host | `src/features/themes/effects.tsx` (rendered by `src/components/motion/ambient.tsx`) |
 | Theme fonts | `src/features/themes/fonts.ts` |
 | Pack linter and its tests | `src/features/themes/lint.ts`, `packs.test.ts` |
 | `<html>` attributes, accent handling, browser chrome colour | `src/features/settings/theme.ts` (`themeAttributes`, `chromeColors`) |
-| The `theme.pack` setting, defaults | `src/features/settings/schema.ts` |
+| The `theme.pack` and `theme.effects` settings, defaults | `src/features/settings/schema.ts` |
 | Saving a pack | `setThemePack` in `src/features/settings/actions.ts` |
 | Live re-theming in Settings | `applyTheme` in `src/features/settings/components/settings-form.tsx` |
 | Root layout (attributes, fonts, theme-color, CSS order) | `src/app/layout.tsx` |

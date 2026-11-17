@@ -1,6 +1,7 @@
 import { Archive, ArrowRightLeft, BookCheck, ChevronRight, ListTodo, MapPin, User } from "lucide-react";
 import Link from "next/link";
 import { Pill } from "@/components/ui/pill";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { type I18n, plural } from "@/lib/i18n/core";
 import { getI18n } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
@@ -101,13 +102,14 @@ function CourseCard({
       <Link
         href={`/courses/${course.id}`}
         data-spotlight
+        data-slot="course-card"
         style={{ "--tint": course.color } as React.CSSProperties}
         className={cn(
           "tile group/course flex h-full flex-col gap-3 overflow-hidden p-4 pl-5 transition-transform duration-(--dur-fast) hover:-translate-y-0.5",
           !muted && "tile-tinted",
         )}
       >
-        <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
+        <span aria-hidden data-slot="course-rail" className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
         <span className="flex items-start justify-between gap-2">
           <span className="flex min-w-0 flex-col gap-1">
             <span className="flex flex-wrap items-center gap-1.5">
@@ -123,7 +125,9 @@ function CourseCard({
                 </Pill>
               ) : null}
             </span>
-            <span className="font-display font-medium text-xl leading-tight">{course.name}</span>
+            <span data-slot="course-name" className="font-display font-medium text-xl leading-tight">
+              {course.name}
+            </span>
           </span>
           <ChevronRight
             aria-hidden
@@ -256,15 +260,7 @@ function MeetingProgressLine({
         ) : null}
       </span>
       {total !== null ? (
-        <span
-          aria-hidden
-          className="h-1.5 overflow-hidden rounded-pill bg-[color-mix(in_oklab,var(--tint)_18%,transparent)]"
-        >
-          <span
-            className="grow-x block h-full w-full origin-left rounded-pill bg-(--tint)"
-            style={{ transform: `scaleX(${Math.min(1, (next - 1) / total)})` }}
-          />
-        </span>
+        <ProgressBar value={(next - 1) / total} className="bg-[color-mix(in_oklab,var(--tint)_18%,transparent)]" />
       ) : null}
     </span>
   );

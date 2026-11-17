@@ -91,6 +91,7 @@ export async function AccountCards({
             {t("Total across accounts")}
           </h2>
           <p
+            data-slot="amount-total"
             className={cn(
               "reveal font-display font-medium text-4xl leading-none tracking-tight sm:text-5xl",
               total < 0n && "text-money-out",
@@ -193,8 +194,9 @@ export async function MonthOverview({ summary }: { summary: MonthSummary }) {
         </h2>
         <MonthNav prevHref={summary.prevHref} nextHref={summary.nextHref} label={summary.label} />
       </div>
-      <dl className="grid grid-cols-3 gap-3">
-        <div className="flex flex-col gap-1">
+      {/* Three equal columns while the amounts fit; big amounts wrap to the next line instead of widening the page. */}
+      <dl data-slot="amount-summary" className="flex flex-wrap gap-3">
+        <div className="flex flex-1 flex-col gap-1">
           <dt className="flex items-center gap-1.5 text-muted-foreground text-sm">
             <ArrowDownLeft aria-hidden className="size-4 text-money-in" />
             {t("In")}
@@ -203,7 +205,7 @@ export async function MonthOverview({ summary }: { summary: MonthSummary }) {
             <MoneyCountUp amount={income.toString()} />
           </dd>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-1 flex-col gap-1">
           <dt className="flex items-center gap-1.5 text-muted-foreground text-sm">
             <ArrowUpRight aria-hidden className="size-4 text-money-out" />
             {t("Out")}
@@ -212,7 +214,7 @@ export async function MonthOverview({ summary }: { summary: MonthSummary }) {
             <MoneyCountUp amount={expense.toString()} />
           </dd>
         </div>
-        <div className="flex flex-col gap-1">
+        <div className="flex flex-1 flex-col gap-1">
           <dt className="text-muted-foreground text-sm">{t("Net")}</dt>
           <dd
             className={cn(

@@ -61,7 +61,7 @@ async function Grades() {
 
   return (
     // Wide screens: semesters on the left, the GPA summary in a rail on the right.
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
+    <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
       <aside aria-label={t("GPA")} className="flex flex-col gap-3 xl:sticky xl:top-8 xl:col-start-2 xl:row-start-1">
         <div className="grid grid-cols-2 gap-3 xl:grid-cols-1">
           <GpaStat

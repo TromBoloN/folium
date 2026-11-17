@@ -1,4 +1,5 @@
 import type { ThemeManifest } from "./manifest";
+import { cyberpunkTheme } from "./packs/cyberpunk/manifest";
 import { defaultTheme } from "./packs/default/manifest";
 
 /**
@@ -7,7 +8,7 @@ import { defaultTheme } from "./packs/default/manifest";
  * The ids also define the `theme.pack` setting (src/features/settings/schema.ts).
  * Full guide: docs/themes.md.
  */
-export const THEMES = [defaultTheme] as const satisfies readonly ThemeManifest[];
+export const THEMES = [defaultTheme, cyberpunkTheme] as const satisfies readonly ThemeManifest[];
 
 export type ThemePackId = (typeof THEMES)[number]["id"];
 

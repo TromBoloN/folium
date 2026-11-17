@@ -1,5 +1,6 @@
 import { ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { ProgressBar } from "@/components/ui/progress-bar";
 import { getT } from "@/lib/i18n/server";
 import { type CourseResult, formatPercent } from "../logic";
 import type { GradebookCourse } from "../queries";
@@ -17,12 +18,7 @@ export async function CourseGradeRow({ course, result }: { course: GradebookCour
         <span aria-hidden className="absolute inset-y-0 left-0 w-1 bg-(--tint)" />
         <span className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="truncate font-medium">{course.name}</span>
-          <span aria-hidden className="h-1.5 max-w-sm overflow-hidden rounded-pill bg-muted">
-            <span
-              className="grow-x block h-full w-full rounded-pill bg-(--tint)"
-              style={{ transform: `scaleX(${Math.min(100, result.percent ?? 0) / 100})` }}
-            />
-          </span>
+          <ProgressBar value={(result.percent ?? 0) / 100} className="max-w-sm" />
           <span className="text-muted-foreground text-xs">
             {course.credits > 0 ? t("{n} SKS", { n: course.credits }) : t("Not counted (0 SKS)")}
             {result.totalWeight > 0 ? t(" · {n}% graded", { n: graded }) : t(" · No assessments")}

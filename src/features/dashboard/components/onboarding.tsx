@@ -56,7 +56,11 @@ export async function Onboarding() {
 
   return (
     <Tile as="section" aria-labelledby="onboarding" reveal={0} className="overflow-hidden p-5 sm:p-6">
-      <span aria-hidden className="leaf-veins pointer-events-none absolute -top-10 -right-8 size-56 opacity-15" />
+      <span
+        aria-hidden
+        data-slot="hero-art"
+        className="leaf-veins pointer-events-none absolute -top-10 -right-8 size-56 opacity-15"
+      />
       <div className="relative flex flex-col gap-5 md:flex-row md:items-start md:gap-8">
         <div className="flex items-center gap-4 md:w-64 md:shrink-0 md:flex-col md:items-start">
           <ProgressRing

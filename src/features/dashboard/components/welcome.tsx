@@ -13,7 +13,11 @@ export async function Welcome() {
   const t = await getT();
   return (
     <Tile as="section" aria-labelledby="welcome-h" reveal={0} className="overflow-hidden p-6 sm:p-8">
-      <span aria-hidden className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-15" />
+      <span
+        aria-hidden
+        data-slot="hero-art"
+        className="leaf-veins pointer-events-none absolute -right-10 -bottom-14 size-72 opacity-15"
+      />
       <div className="relative flex max-w-xl flex-col gap-4">
         <Sprout aria-hidden className="size-7 text-primary" />
         <h2 id="welcome-h" className="font-display font-medium text-3xl leading-tight">

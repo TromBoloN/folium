@@ -26,4 +26,7 @@ export const themes = {
   Folium: "Folium",
   "Warm paper by day, tinted night after dark, soft rounded cards.":
     "Kertas hangat di siang hari, malam berwarna saat gelap, kartu lembut membulat.",
+  "Night City": "Night City",
+  "A Cyberpunk 2077 HUD: signature yellow, cyan readouts, sharp cut corners and a neon skyline in the rain.":
+    "HUD ala Cyberpunk 2077: kuning khas, tampilan data sian, sudut terpotong tajam, dan kota neon di bawah hujan.",
 };

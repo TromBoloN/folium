@@ -71,7 +71,7 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
 
   return (
     <div
-      className="grid gap-8 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] xl:items-start xl:gap-10"
+      className="grid grid-cols-1 gap-8 xl:grid-cols-[minmax(0,26rem)_minmax(0,1fr)] xl:items-start xl:gap-10"
       style={{ "--course": course.color, "--tint": course.color } as React.CSSProperties}
     >
       <div className="flex flex-col gap-6">

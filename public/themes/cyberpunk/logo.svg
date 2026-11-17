@@ -1,0 +1,71 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" viewBox="0 0 256 256" width="256" height="256">
+  <defs>
+    <!-- Neon Yellow Glow -->
+    <filter id="cyber-glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="3.5" result="blur" />
+      <feMerge>
+        <feMergeNode in="blur" />
+        <feMergeNode in="SourceGraphic" />
+      </feMerge>
+    </filter>
+
+    <!-- Diagonal Glitch Slice Mask -->
+    <mask id="glitch-cut">
+      <rect width="256" height="256" fill="white" />
+      <!-- Clean cybernetic slice across the upper-right blade -->
+      <polygon points="115,35 235,95 235,103 115,43" fill="black" />
+    </mask>
+
+    <!-- Reusable Leaf + Circuitry Geometry -->
+    <g id="cyber-leaf">
+      <!-- Dark Translucent Core -->
+      <polygon points="68,184 56,145 64,104 94,64 146,36 226,18 202,96 174,148 134,182 88,196" fill="#fcee09" fill-opacity="0.14" />
+
+      <!-- Outer Aggressive Blade Frame -->
+      <path d="M 68,184 
+           L 52,150 L 58,124 L 36,116 L 60,112 
+           L 68,84 L 98,52 L 86,32 L 112,44 
+           L 148,28 L 232,14 
+           L 204,98 L 174,152 L 194,174 L 164,162 
+           L 134,186 L 84,202 L 106,184 
+           L 132,172 L 164,142 L 190,94 L 214,28 
+           L 150,42 L 104,66 L 78,96 L 72,144 L 82,174 Z" />
+
+      <!-- Main Stem -->
+      <polygon points="24,226 68,180 78,190 34,236 22,234" />
+
+      <!-- Central Spine & 45-Degree Circuit Veins -->
+      <g stroke="currentColor" stroke-width="6" stroke-linecap="square" fill="none">
+        <!-- Main Spine -->
+        <line x1="72" y1="184" x2="178" y2="78" />
+        
+        <!-- Left Circuit Branches -->
+        <polyline points="96,160 82,146 82,114" />
+        <polyline points="122,134 106,118 106,86" />
+        <polyline points="148,108 134,94 134,68" />
+
+        <!-- Right Circuit Branches -->
+        <polyline points="84,172 104,172 128,172" />
+        <polyline points="110,146 132,146 156,146" />
+        <polyline points="136,120 158,120 178,120" />
+      </g>
+
+      <!-- Circuit Solder Nodes -->
+      <circle cx="82" cy="110" r="4.5" />
+      <circle cx="106" cy="82" r="4.5" />
+      <circle cx="134" cy="64" r="4.5" />
+      <circle cx="132" cy="172" r="4.5" />
+      <circle cx="160" cy="146" r="4.5" />
+      <circle cx="182" cy="120" r="4.5" />
+    </g>
+  </defs>
+
+  <!-- Chromatic Aberration Layer 1: Cyan Shift -->
+  <use href="#cyber-leaf" transform="translate(-4, -2)" fill="#00f0ff" color="#00f0ff" opacity="0.75" mask="url(#glitch-cut)" />
+
+  <!-- Chromatic Aberration Layer 2: Magenta Shift -->
+  <use href="#cyber-leaf" transform="translate(4, 2)" fill="#ff003c" color="#ff003c" opacity="0.75" mask="url(#glitch-cut)" />
+
+  <!-- Main Cyber Yellow Layer with Glow -->
+  <use href="#cyber-leaf" fill="#fcee09" color="#fcee09" filter="url(#cyber-glow)" mask="url(#glitch-cut)" />
+</svg>

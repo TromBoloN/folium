@@ -67,7 +67,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
 
   return (
     // Wide screens: the list on the left, summary and filters in a rail on the right.
-    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
+    <div className="grid grid-cols-1 gap-5 xl:grid-cols-[minmax(0,1fr)_20rem] xl:items-start xl:gap-8">
       <aside
         aria-label={t("Summary and filters")}
         className="flex flex-col gap-5 xl:sticky xl:top-8 xl:col-start-2 xl:row-span-2 xl:row-start-1"

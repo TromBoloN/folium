@@ -1,0 +1,175 @@
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" viewBox="0 0 1600 640" preserveAspectRatio="xMidYMax slice">
+  <defs>
+    <!-- Neon bloom: the blurred copy twice under the sharp one, so signs bleed light into the smog. -->
+    <filter id="bloom" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="haze" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="14"/></filter>
+
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff2a6d" stop-opacity="0"/>
+      <stop offset=".55" stop-color="#7a1240" stop-opacity=".22"/>
+      <stop offset="1" stop-color="#ff2a6d" stop-opacity=".3"/>
+    </linearGradient>
+    <linearGradient id="smogCyan" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#02d7f2" stop-opacity="0"/>
+      <stop offset=".6" stop-color="#0a6c78" stop-opacity=".2"/>
+      <stop offset="1" stop-color="#090a0f" stop-opacity=".75"/>
+    </linearGradient>
+    <linearGradient id="smogCrimson" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff003c" stop-opacity="0"/>
+      <stop offset=".5" stop-color="#8a0a2c" stop-opacity=".24"/>
+      <stop offset="1" stop-color="#090a0f" stop-opacity=".85"/>
+    </linearGradient>
+    <linearGradient id="beam" x1="0" y1="1" x2="0" y2="0">
+      <stop offset="0" stop-color="#02d7f2" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#02d7f2" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Broken horizontal light strips instead of window grids. -->
+    <pattern id="stripsFar" width="131" height="61" patternUnits="userSpaceOnUse">
+      <rect x="4" y="6" width="38" height="1.4" fill="#02d7f2" opacity=".26"/>
+      <rect x="70" y="14" width="12" height="1.4" fill="#fcee0a" opacity=".2"/>
+      <rect x="20" y="31" width="9" height="1.4" fill="#02d7f2" opacity=".18"/>
+      <rect x="88" y="40" width="34" height="1.4" fill="#02d7f2" opacity=".22"/>
+      <rect x="44" y="52" width="16" height="1.4" fill="#fcee0a" opacity=".14"/>
+    </pattern>
+    <pattern id="stripsMid" width="173" height="97" patternUnits="userSpaceOnUse">
+      <rect x="6" y="8" width="52" height="2" fill="#fcee0a" opacity=".36"/>
+      <rect x="64" y="8" width="8" height="2" fill="#fcee0a" opacity=".12"/>
+      <rect x="118" y="17" width="30" height="2" fill="#02d7f2" opacity=".24"/>
+      <rect x="30" y="34" width="14" height="1" fill="#ff2a6d" opacity=".24"/>
+      <rect x="90" y="46" width="64" height="2" fill="#fcee0a" opacity=".22"/>
+      <rect x="10" y="61" width="24" height="2" fill="#02d7f2" opacity=".2"/>
+      <rect x="140" y="72" width="10" height="2" fill="#fcee0a" opacity=".3"/>
+      <rect x="54" y="84" width="40" height="1" fill="#ff2a6d" opacity=".18"/>
+    </pattern>
+    <pattern id="stripsNear" width="70" height="27" patternUnits="userSpaceOnUse">
+      <rect x="6" y="8" width="20" height="2" fill="#fcee0a" opacity=".16"/>
+      <rect x="40" y="19" width="12" height="2" fill="#ff2a6d" opacity=".14"/>
+    </pattern>
+    <pattern id="truss" width="20" height="20" patternUnits="userSpaceOnUse">
+      <path d="M0 0l20 20M20 0 0 20M0 0h20" stroke="#1d2748" stroke-width="1.2"/>
+    </pattern>
+
+    <!-- Megastructures far away. -->
+    <g id="far">
+      <path d="M20 640V470l60-70v-40l60-60h60l60 60v40l60 70v170z"/>
+      <path d="M410 640V265l90-45v420z"/>
+      <path d="M520 640V340h120l20 22v278z"/>
+      <path d="M880 640V290l34-40 34 40v350z"/>
+      <path d="M975 640V300h60l26 32v308z"/>
+      <path d="M1240 640V420l60-58v-62l50-42h44l50 42v62l60 58v220z"/>
+      <path d="M0 640V520h1600v120z"/>
+    </g>
+    <!-- Brutalist mid layer: the corporate tower, the wedge, cantilevers, slabs. -->
+    <g id="mid">
+      <path d="M690 640l10-440 25-82 45-28 20 30 10 80 12 440z"/>
+      <path d="M672 640l9-262 19-10v272z"/>
+      <path d="M1080 640V332l100-64v372z"/>
+      <path d="M198 640V402h-20v-22h146v22h-20v238z"/>
+      <path d="M880 640V420l20-20h120v240z"/>
+      <path d="M1350 640V360h15v-30h15v-30h40v30h15v30h15v280z"/>
+      <path d="M470 640V452h130l20 20v168z"/>
+      <path d="M1500 640V432l60-22h40v230z"/>
+      <path d="M0 640V442h60l20 20v178z"/>
+      <path d="M1200 640V470l50-24v194z"/>
+    </g>
+    <!-- Low near buildings with slanted roofs. -->
+    <g id="near">
+      <path d="M0 640V540l60-20h50v120z"/>
+      <path d="M130 640V505h100l20 20v115z"/>
+      <path d="M300 640V530l80-30v140z"/>
+      <path d="M420 640V520h100v120z"/>
+      <path d="M560 640V545l80-20 20 20v95z"/>
+      <path d="M860 640V515h100v125z"/>
+      <path d="M990 640V540l90-20v120z"/>
+      <path d="M1110 640V500h60l20 20v120z"/>
+      <path d="M1230 640V535h100v105z"/>
+      <path d="M1460 640V510l80-10h60v140z"/>
+    </g>
+  </defs>
+
+  <!-- light pollution over the whole horizon -->
+  <rect y="180" width="1600" height="460" fill="url(#sky)"/>
+  <!-- searchlights -->
+  <path d="M760 420 690 0h22zM1180 460 1310 0h18zM300 470 210 30h16z" fill="url(#beam)" opacity=".55"/>
+
+  <!-- far megastructures -->
+  <use href="#far" fill="#10172f"/>
+  <use href="#far" fill="url(#stripsFar)"/>
+
+  <!-- cyan smog between far and mid -->
+  <rect y="300" width="1600" height="340" fill="url(#smogCyan)"/>
+  <ellipse cx="760" cy="430" rx="420" ry="60" fill="#02d7f2" opacity=".07" filter="url(#haze)"/>
+
+  <!-- mid layer -->
+  <use href="#mid" fill="#0a0e1d"/>
+  <use href="#mid" fill="url(#stripsMid)"/>
+  <rect x="882" y="430" width="40" height="210" fill="url(#truss)"/>
+  <rect x="520" y="480" width="60" height="160" fill="url(#truss)"/>
+
+  <!-- rooftop clutter: AC units, dishes, the crane on the wedge, antennas -->
+  <g fill="#0a0e1d" stroke="#0a0e1d">
+    <path d="M904 392h14v8h-14zM924 394h10v6h-10zM1360 323h12v7h-12zM486 444h18v8h-18zM1512 424h10v8h-10z"/>
+    <path d="M226 378a15 7 -28 0 1 28-12l-14 14zM239 372v8M1384 296a12 6 -24 0 1 22-9l-11 11zM1395 291v9" stroke-width="2"/>
+    <path d="M770 90V36M1170 274V150M1110 160h130M1220 160v44M1170 160l-50 0M1415 300v-34M58 442v-26" stroke-width="2.4" fill="none"/>
+    <path d="M1114 160l10 8 10-8 10 8 10-8 10 8 10-8 10 8 10-8 10 8 10-8 10 8" stroke-width="1" fill="none"/>
+    <path d="M1166 274l8-8 0 0M1166 250l8-8M1166 226l8-8M1166 202l8-8M1166 178l8-8" stroke-width="1"/>
+  </g>
+  <rect x="1213" y="204" width="14" height="8" fill="#0a0e1d"/>
+
+  <!-- neon: beacons, the tower's light strip, holo glyph columns, barcodes, billboards -->
+  <g filter="url(#bloom)">
+    <rect x="749" y="128" width="3" height="512" fill="#fcee0a" opacity=".75"/>
+    <path d="M725 118l45-28 20 30" stroke="#fcee0a" stroke-width="2" fill="none"/>
+    <circle cx="770" cy="36" r="3" fill="#ff003c"/>
+    <circle cx="1170" cy="150" r="2.6" fill="#ff003c"/>
+    <circle cx="1240" cy="160" r="2.2" fill="#ff003c"/>
+    <circle cx="1415" cy="266" r="2.4" fill="#ff003c"/>
+    <circle cx="58" cy="416" r="2" fill="#fcee0a"/>
+
+    <!-- vertical holographic glyphs down the stepped tower -->
+    <rect x="1336" y="378" width="12" height="160" fill="none" stroke="#02d7f2" stroke-width="1.2" opacity=".85"/>
+    <path d="M1338 388h8M1342 385v9M1338 398h8l-4 6M1339 410h6v6h-6zM1342 424v10M1338 427h8M1339 442l7 5M1346 442l-7 5M1338 456h8M1342 453v12M1339 470h6M1338 476l4 4 4-4M1339 490h6v8h-6zM1338 508h8M1342 505v10M1338 522l8 4" stroke="#02d7f2" stroke-width="1.3" fill="none"/>
+
+    <!-- barcode running down the corporate tower's fin -->
+    <path fill="#ff2a6d" opacity=".9" d="M684 300h9v2h-9zM684 305h9v1h-9zM684 309h9v3h-9zM684 315h9v1h-9zM684 319h9v2h-9zM684 325h9v1h-9zM684 329h9v4h-9zM684 336h9v1h-9zM684 340h9v2h-9zM684 346h9v1h-9zM684 350h9v3h-9zM684 357h9v1h-9z"/>
+
+    <!-- billboards and signs -->
+    <rect x="204" y="412" width="74" height="22" fill="#ff2a6d" opacity=".85"/>
+    <path d="M210 418h22M210 423h14M210 428h26M246 417l8 6-8 6M258 417l8 6-8 6" stroke="#2a0614" stroke-width="2" fill="none"/>
+    <path d="M900 410l12 8-12 8M916 410l12 8-12 8M932 410l12 8-12 8" stroke="#02d7f2" stroke-width="2.4" fill="none"/>
+    <rect x="1090" y="360" width="6" height="90" fill="#fcee0a" opacity=".7"/>
+    <rect x="1516" y="446" width="44" height="14" fill="#02d7f2" opacity=".7"/>
+    <rect x="482" y="470" width="30" height="8" fill="#fcee0a" opacity=".6"/>
+    <path d="M14 470h36M14 476h22" stroke="#ff2a6d" stroke-width="2"/>
+  </g>
+
+  <!-- crimson smog between mid and near -->
+  <rect y="430" width="1600" height="210" fill="url(#smogCrimson)"/>
+
+  <!-- near layer -->
+  <use href="#near" fill="#05060b"/>
+  <use href="#near" fill="url(#stripsNear)"/>
+
+  <!-- foreground: power lines, monorail with a train, highway overpass -->
+  <g fill="#020308">
+    <path d="M58 492h3v76h-3zM558 492h3v76h-3zM1058 492h3v76h-3zM1558 492h3v76h-3z"/>
+    <path d="M0 536h1600v6H0z"/>
+    <path d="M200 542h6v26h-6zM460 542h6v26h-6zM980 542h6v26h-6zM1240 542h6v26h-6z"/>
+    <path d="M0 566h1600v16H0z"/>
+    <path d="M100 582h26l-6 10v48h-14v-48zM420 582h26l-6 10v48h-14v-48zM740 582h26l-6 10v48h-14v-48zM1060 582h26l-6 10v48h-14v-48zM1380 582h26l-6 10v48h-14v-48z"/>
+    <path d="M940 524h190l12 6v6H932v-6z"/>
+  </g>
+  <path d="M60 496q250 30 500 0t500 0 500 0M60 503q250 26 500 0t500 0 500 0" stroke="#020308" stroke-width="1.2" fill="none"/>
+  <path d="M0 563h1600" stroke="#1a2240" stroke-width="1"/>
+  <g filter="url(#bloom)">
+    <path d="M950 529h176" stroke="#02d7f2" stroke-width="2" stroke-dasharray="14 4"/>
+    <path d="M80 556v-8M240 556v-8M400 556v-8M560 556v-8M720 556v-8M880 556v-8M1040 556v-8M1200 556v-8M1360 556v-8M1520 556v-8" stroke="#020308" stroke-width="2"/>
+    <path d="M78 547h4M238 547h4M398 547h4M558 547h4M718 547h4M878 547h4M1038 547h4M1198 547h4M1358 547h4M1518 547h4" stroke="#ffb347" stroke-width="3"/>
+    <path d="M120 574h26M380 574h14M610 574h30M890 574h18M1180 574h24M1420 574h16" stroke="#ff003c" stroke-width="2"/>
+    <path d="M250 577h20M720 577h26M1010 577h12M1300 577h22" stroke="#fff3c4" stroke-width="2" opacity=".8"/>
+  </g>
+</svg>

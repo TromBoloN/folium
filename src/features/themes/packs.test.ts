@@ -1,5 +1,6 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
+import { gzipSync } from "node:zlib";
 import { describe, expect, it } from "vitest";
 import { DEFAULT_THEME, themeSchema } from "../settings/schema";
 import { lintPackCss, lintPalette, resolveLiteral } from "./lint";
@@ -12,6 +13,8 @@ const folders = readdirSync(PACKS_DIR, { withFileTypes: true })
   .filter((d) => d.isDirectory() && !d.name.startsWith("_"))
   .map((d) => d.name);
 const css = (id: string) => readFileSync(join(PACKS_DIR, id, "theme.css"), "utf8");
+/** Cap on a pack's always-loaded stylesheet, gzipped, as users download it (docs/themes.md, section 11). */
+const MAX_THEME_CSS_GZIP_BYTES = 6 * 1024;
 
 describe("theme registry", () => {
   it("has unique ids, a default pack, and one folder per registered pack", () => {
@@ -50,6 +53,15 @@ describe.each(THEMES.map((t) => [t.id, t as ThemeManifest] as const))("pack %s",
     expect(lintPackCss(id, css(id))).toEqual([]);
   });
 
+  it("follows the same rules in its lazy effects stylesheet, if it has one", () => {
+    const file = join(PACKS_DIR, id, "effects.css");
+    if (existsSync(file)) expect(lintPackCss(id, readFileSync(file, "utf8"))).toEqual([]);
+  });
+
+  it("keeps theme.css small, since it ships to every user (heavy CSS goes in effects.css)", () => {
+    expect(gzipSync(css(id)).byteLength).toBeLessThanOrEqual(MAX_THEME_CSS_GZIP_BYTES);
+  });
+
   it("has a readable palette", () => {
     expect(lintPalette(manifest, css(id))).toEqual([]);
   });
@@ -83,6 +95,31 @@ describe("the pack linter", () => {
       @keyframes neon-pulse { 0%, 100% { opacity: 0.4; } 50% { opacity: 1; transform: scale(1.02); } }
     `;
     expect(lintPackCss("neon", sample)).toEqual([]);
+  });
+
+  it("keeps layout out of packs: real elements can't be resized or moved, pseudo-elements can", () => {
+    const rules = (sample: string) => lintPackCss("neon", sample).map((i) => i.rule);
+    expect(rules(`[data-theme="neon"] .tile { padding: 2rem; }`)).toEqual(["layout"]);
+    expect(rules(`[data-theme="neon"] [data-slot="page-header"] h1 { font-size: 3rem; display: none; }`)).toEqual([
+      "layout",
+      "layout",
+    ]);
+    // One real element in a selector list is enough to count.
+    expect(rules(`[data-theme="neon"] .tile::before, [data-theme="neon"] .panel { inset: 0; }`)).toEqual(["layout"]);
+    expect(rules(`[data-theme="neon"] .tile { &:hover { width: 10px; } }`)).toEqual(["layout"]);
+    // Another pack's prefix isn't this pack's own element.
+    expect(rules(`[data-theme="neon"] .other-spark { left: 0; }`)).toEqual(["layout"]);
+    // Decoration layers are the pack's own.
+    expect(
+      rules(`
+        [data-theme="neon"] .tile::before { position: absolute; inset: 0; width: 2rem; font-size: 10px; }
+        [data-theme="neon"] .tile { &::after { top: 0; } }
+        [data-theme="neon"]::view-transition-new(*.page-in) { height: 100%; }
+        [data-theme="neon"] .neon-spark { position: absolute; left: 10%; width: 2px; }
+      `),
+    ).toEqual([]);
+    // A reviewed exception.
+    expect(rules(`[data-theme="neon"] .tile { order: 1 /* layout-ok: test */; }`)).toEqual([]);
   });
 
   it("resolves literal oklch and light-dark values, and nothing else", () => {

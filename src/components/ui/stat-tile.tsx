@@ -34,15 +34,18 @@ export function StatTile({
 }: Props) {
   const body = (
     <>
-      <span className={cn("font-display font-medium text-4xl leading-none", NUMBER_TONE[value ? tone : "default"])}>
+      <span
+        data-slot="stat-value"
+        className={cn("font-display font-medium text-4xl leading-none", NUMBER_TONE[value ? tone : "default"])}
+      >
         {value === null ? placeholder : <CountUp value={value} decimals={decimals} />}
       </span>
       <span className="flex flex-col">
-        <span className="font-medium text-sm leading-tight">
+        <span data-slot="stat-label" className="font-medium text-sm leading-tight">
           <TrL text={label} />
         </span>
         {hint ? (
-          <span className="text-muted-foreground text-xs">
+          <span data-slot="stat-hint" className="text-muted-foreground text-xs">
             <TrL text={hint} />
           </span>
         ) : null}
@@ -52,7 +55,13 @@ export function StatTile({
   const layout =
     "flex min-h-28 flex-col justify-between gap-3 p-4 @4xl:min-h-0 @4xl:flex-row @4xl:items-center @4xl:justify-start @4xl:gap-4";
   return (
-    <Tile spotlight={Boolean(href)} reveal={reveal} className={cn("overflow-hidden", className)}>
+    <Tile
+      spotlight={Boolean(href)}
+      reveal={reveal}
+      data-slot="stat"
+      data-tone={value ? tone : "default"}
+      className={cn("overflow-hidden", className)}
+    >
       {href ? (
         <Link
           href={href}

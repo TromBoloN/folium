@@ -45,8 +45,32 @@ export const CONTRAST_PAIRS = [
   ["--primary-foreground", "--primary"],
 ] as const;
 
+/**
+ * Layout properties a pack may not set on the app's elements. Exempt: pseudo-elements
+ * and the pack's own elements (classes named `<id>-…`, e.g. effect particles), which are
+ * decoration. A layout problem under one pack is an app bug: fix it in the component or
+ * globals.css, for every pack. A real exception carries a `/* layout-ok: reason *\/`
+ * comment on the declaration.
+ */
+const LAYOUT_PROPERTY =
+  /^(?:display|position|float|(?:min-|max-)?(?:width|height)|(?:min-|max-)?(?:inline|block)-size|margin(?:-.+)?|padding(?:-.+)?|gap|row-gap|column-gap|inset(?:-.+)?|top|right|bottom|left|flex(?:-.+)?|grid(?:-.+)?|order|font-size|align-(?:items|self|content)|justify-(?:items|self|content)|place-(?:items|self|content))$/;
+const LAYOUT_OK = "__layout_ok__";
+
 function stripComments(css: string) {
-  return css.replace(/\/\*[\s\S]*?\*\//g, "");
+  return css.replace(/\/\*\s*layout-ok:[\s\S]*?\*\//g, ` ${LAYOUT_OK}`).replace(/\/\*[\s\S]*?\*\//g, "");
+}
+
+/**
+ * Does the selector style decoration the pack owns: a pseudo-element (`::before`,
+ * `::view-transition-new(…)`) or one of its own elements (`.<id>-rain`)?
+ */
+function targetsPackDecoration(id: string, selector: string) {
+  const last =
+    selector
+      .split(/\s+|>|\+|~/)
+      .filter(Boolean)
+      .at(-1) ?? "";
+  return last.includes("::") || new RegExp(`\\.${id}-[\\w-]`).test(last);
 }
 
 function parseDeclarations(body: string): Declaration[] {
@@ -186,9 +210,16 @@ export function lintPackCss(id: string, css: string): LintIssue[] {
         }
       }
     }
+    const appElement = splitSelectors(rule.selector).some((s) => !targetsPackDecoration(id, s));
     for (const { property, value } of rule.declarations) {
       if (property.startsWith("--")) continue;
-      const checkable = colourCheckable(value);
+      if (appElement && LAYOUT_PROPERTY.test(property) && !value.includes(LAYOUT_OK)) {
+        issues.push({
+          rule: "layout",
+          message: `"${rule.selector} { ${property} }" changes layout. Packs only restyle: fix layout in the component or globals.css for every pack (docs/themes.md, "Theme bug or app bug?").`,
+        });
+      }
+      const checkable = colourCheckable(value).replace(LAYOUT_OK, "");
       if (COLOR_LITERAL.test(checkable) || NAMED_COLOR.test(checkable)) {
         issues.push({
           rule: "colour",

@@ -335,6 +335,17 @@
   border: 1px solid var(--panel-border);
   background: var(--panel-bg);
   box-shadow: var(--panel-shadow);
+  /* ::before belongs to the theme pack (a frame or header bar drawn over the background,
+     under the content). Every .panel element is positioned: fixed dialog, absolute menu, or `relative`. */
+  isolation: isolate;
+  &::before {
+    content: none;
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    pointer-events: none;
+  }
 }
 
 /*
@@ -423,6 +434,7 @@
 [data-tab-hidden] .ambient::before,
 [data-tab-hidden] .ambient::after,
 [data-tab-hidden] .tile::before,
+[data-tab-hidden] .panel::before,
 [data-tab-hidden] .loop,
 [data-motion="subtle"] .ambient::before,
 [data-motion="subtle"] .ambient::after,
@@ -538,8 +550,142 @@
 }
 
 /* ---------------------------------------------------------------------------
- * Page navigation: a short crossfade where the View Transitions API exists.
+ * Loading (components/loader.tsx). "boot": the first screen of a session, over the
+ * app until it hydrates (MotionRuntime sets data-hydrated), with a timeout so it
+ * never sticks without JavaScript; an inline script in the root layout sets
+ * data-booted on later loads of the session. "nav": the curtain over the content
+ * area while a new page loads (NavCurtain sets data-navigating the moment a
+ * half-loaded page commits, so it appears at once, with no fade-in); it stays at
+ * least --nav-min ms (a plain number NavCurtain reads). Neither ever blocks input.
+ * Packs restyle the hooks and may set --boot-hold and --nav-min.
  * ------------------------------------------------------------------------- */
+
+:root {
+  --nav-min: 350;
+}
+
+[data-slot="loader"][data-variant="boot"] {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--app-bg);
+  transition:
+    opacity var(--dur-base) var(--ease-out) var(--boot-hold, 200ms),
+    visibility 0s linear calc(var(--boot-hold, 200ms) + var(--dur-base));
+  animation: boot-timeout var(--dur-base) var(--ease-out) 4s forwards;
+}
+[data-hydrated] [data-slot="loader"][data-variant="boot"] {
+  opacity: 0;
+  visibility: hidden;
+}
+[data-booted] [data-slot="loader"][data-variant="boot"],
+[data-motion="off"] [data-slot="loader"][data-variant="boot"] {
+  display: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  [data-slot="loader"][data-variant="boot"] {
+    display: none;
+  }
+}
+/* The curtain covers the content area only: the sidebar and bottom nav stay usable. */
+[data-slot="loader"][data-variant="nav"] {
+  position: fixed;
+  inset: 0;
+  z-index: 35;
+  background: var(--app-bg);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    opacity var(--dur-fast) var(--ease-out),
+    visibility 0s linear var(--dur-fast);
+}
+@media (min-width: 48rem) {
+  [data-slot="loader"][data-variant="nav"] {
+    left: 15rem;
+  }
+}
+/* Up at once (it must cover the half-loaded page in the same frame); fades out when lifted. */
+[data-navigating] [data-slot="loader"][data-variant="nav"] {
+  opacity: 1;
+  visibility: visible;
+  transition: none;
+}
+
+/* Folium: the leaf grows in (boot) or breathes (nav); the bar fills or sweeps. */
+[data-variant="boot"] [data-slot="loader-mark"] {
+  animation: loader-grow var(--dur-enter) var(--ease-out) both;
+}
+[data-navigating] [data-variant="nav"] [data-slot="loader-mark"] {
+  animation: loader-breathe 0.9s var(--ease-in-out) infinite alternate both;
+}
+[data-variant="nav"] [data-slot="loader-fill"] {
+  width: 40%;
+}
+[data-variant="boot"] [data-slot="loader-fill"] {
+  transform: scaleX(0.85);
+  transition: transform 1.8s var(--ease-out);
+  @starting-style {
+    transform: scaleX(0);
+  }
+}
+[data-navigating] [data-variant="nav"] [data-slot="loader-fill"] {
+  animation: loader-sweep 1.1s var(--ease-in-out) infinite both;
+}
+[data-hydrated] [data-variant="boot"] [data-slot="loader-fill"] {
+  transform: none;
+  transition-duration: var(--dur-base);
+}
+@keyframes boot-timeout {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes loader-grow {
+  from {
+    opacity: 0;
+    transform: scale(0.6) rotate(-14deg);
+  }
+}
+@keyframes loader-breathe {
+  from {
+    opacity: 0.55;
+    transform: scale(0.92) rotate(-4deg);
+  }
+}
+@keyframes loader-sweep {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+/* ---------------------------------------------------------------------------
+ * Scrollbars: thin and quiet, in theme colours. A pack can set the two tokens,
+ * or set `scrollbar-color: auto` on its root and style ::-webkit-scrollbar for a
+ * custom shape (Chromium ignores those pseudo-elements while scrollbar-color is set).
+ * ------------------------------------------------------------------------- */
+
+:root {
+  --scrollbar-thumb: color-mix(in oklab, var(--foreground) 24%, transparent);
+  --scrollbar-track: transparent;
+  scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+}
+
+/* ---------------------------------------------------------------------------
+ * Page navigation: a short crossfade where the View Transitions API exists.
+ * Only the named parts animate (the page content, the nav pill, task rows). The
+ * browser's default whole-screen crossfade (the "root" group) is off: React starts a
+ * view transition for every Suspense reveal too, and crossfading two snapshots of
+ * the whole screen each time made pages ghost and flicker (and froze the loading
+ * curtain mid-fade).
+ * ------------------------------------------------------------------------- */
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+}
 
 ::view-transition-old(*.page-out) {
   animation: vt-fade-out var(--dur-fast) var(--ease-out) both;
@@ -622,6 +768,13 @@
     background-color: var(--popover);
     color: var(--popover-foreground);
   }
+}
+
+/* A select's natural width is its longest option (a time zone, a long account name); that
+   pushed whole pages wider than a phone. Selects here always have a set width (w-full, w-40),
+   so they don't need one of their own. */
+select[data-slot="select"] {
+  contain: inline-size;
 }
 
 /* Unlayered on purpose: it must beat the `appearance-none` utility on the component. */

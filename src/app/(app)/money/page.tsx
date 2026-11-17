@@ -58,7 +58,7 @@ export default function MoneyPage({ searchParams }: PageProps<"/money">) {
           <Planning />
         </Suspense>
       </SectionErrorBoundary>
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <SectionErrorBoundary label="This month">
           <Suspense fallback={<PanelSkeleton label="Loading this month" rows={2} />}>
             <Month searchParams={searchParams} />
