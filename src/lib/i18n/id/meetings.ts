@@ -23,15 +23,15 @@ export const meetings = {
   "Current meeting must be a whole number.": "Pertemuan saat ini harus bilangan bulat.",
   "Current meeting must be at least 1.": "Pertemuan saat ini minimal 1.",
   "Current meeting can be at most 200.": "Pertemuan saat ini maksimal 200.",
-  "A later meeting is already marked. Undo that mark first, or pick a later meeting.":
-    "Pertemuan yang lebih akhir sudah ditandai. Urungkan tandanya dulu, atau pilih pertemuan yang lebih akhir.",
+  "Your marked meetings don't fit before that number. Pick a later meeting.":
+    "Pertemuan yang sudah ditandai tidak muat sebelum nomor itu. Pilih pertemuan yang lebih akhir.",
   "Couldn't set the current meeting. Please try again.": "Gagal mengatur pertemuan saat ini. Coba lagi.",
   "This class is already marked.": "Kelas ini sudah ditandai.",
 
   // Settings: class types
   "Class types": "Jenis kelas",
   "Campus courses pick a type and start from its number of meetings. You can change it per course.":
-    "Mata kuliah kampus memilih jenis dan mulai dari jumlah pertemuannya. Bisa diubah per mata kuliah.",
+    "Kelas kampus memilih jenis dan mulai dari jumlah pertemuannya. Bisa diubah per kelas.",
   "Class type name, row {n}": "Nama jenis kelas, baris {n}",
   "e.g. Practicum": "mis. Praktikum",
   "Meetings for {name}": "Pertemuan untuk {name}",
@@ -62,6 +62,24 @@ export const meetings = {
   "{n} skips left": "Sisa {n} bolos",
   "{n} skip over the limit": "{n} bolos melewati batas",
   "{n} skips over the limit": "{n} bolos melewati batas",
+
+  "1 meeting from before you started counting isn't included.":
+    "1 pertemuan sebelum kamu mulai menghitung tidak dihitung.",
+  "{n} meetings from before you started counting aren't included.":
+    "{n} pertemuan sebelum kamu mulai menghitung tidak dihitung.",
+  "Show all {n} meetings": "Tampilkan semua {n} pertemuan",
+  "That meeting no longer exists.": "Pertemuan itu sudah tidak ada.",
+
+  // Class times in the course form
+  "When it meets each week. Leave a row blank to skip it; you can add more on the course page later.":
+    "Kapan bertemu tiap minggu. Kosongkan baris untuk melewatinya; kamu bisa menambah lagi di halaman kelas nanti.",
+  "Day, class time {n}": "Hari, jadwal {n}",
+  "Starts, class time {n}": "Mulai, jadwal {n}",
+  "Ends, class time {n}": "Selesai, jadwal {n}",
+  "Remove class time {n}": "Hapus jadwal {n}",
+  "Add at most 14 class times here.": "Tambah maksimal 14 jadwal di sini.",
+  "The course is saved, but its class times weren't. Add them on the course page.":
+    "Kelas tersimpan, tapi jadwalnya belum. Tambahkan di halaman kelas.",
 
   // Today
   "Today fills itself in": "Hari Ini terisi sendiri",

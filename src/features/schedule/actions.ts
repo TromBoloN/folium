@@ -14,8 +14,9 @@ import { getSettings } from "../settings/queries";
 import { timesOverlap, trimSeconds } from "../timetable/logic";
 import { parseScheduleCommand, resolveCommand } from "./command";
 import { placementLabel } from "./format";
+import { isCounted } from "./meetings";
 import { isLive, isPast, parseOccurrenceKey } from "./occurrences";
-import { getOccurrence, getSchedule, listAttendanceMarks } from "./queries";
+import { getMeetingLog, getOccurrence, getSchedule, listAttendanceMarks } from "./queries";
 import {
   ATTENDANCE,
   type AttendanceStatus,
@@ -613,12 +614,20 @@ export async function markUnmarkedAttended(courseId: string): Promise<ActionResu
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
   const nowMinute = minutesNowIn(preferences.timeZone, now);
-  const [marks, schedule] = await Promise.all([
+  const [marks, schedule, log] = await Promise.all([
     listAttendanceMarks(courseId),
     getSchedule({ from: addDays(today, -180), to: today }),
+    getMeetingLog(),
   ]);
+  // Classes over before counting started are the backfilled meetings: not marked again.
+  const countFrom = log.progress.get(courseId)?.countFrom ?? null;
   const todo = schedule.filter(
-    (o) => o.courseId === courseId && isLive(o) && isPast(o, { date: today, minute: nowMinute }) && !marks.has(o.key),
+    (o) =>
+      o.courseId === courseId &&
+      isLive(o) &&
+      isPast(o, { date: today, minute: nowMinute }) &&
+      isCounted(o, countFrom) &&
+      !marks.has(o.key),
   );
   if (todo.length === 0) return { ok: true, data: { keys: [] } };
   const supabase = await createClient();
@@ -637,6 +646,39 @@ export async function markUnmarkedAttended(courseId: string): Promise<ActionResu
   }
   revalidatePath("/courses", "layout");
   return { ok: true, data: { keys: todo.map((o) => o.key) } };
+}
+
+/**
+ * Mark a meeting known only by its number (from before counting started):
+ * attended, skipped, or back to unknown. It never gets a date.
+ */
+export async function setMeetingStatus(input: {
+  courseId: string;
+  number: number;
+  status: AttendanceStatus | null;
+}): Promise<ActionResult> {
+  await requireUser();
+  const parsed = z
+    .object({ courseId: z.uuid(), number: z.number().int().min(1).max(200), status: z.enum(ATTENDANCE).nullable() })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: GONE };
+  const supabase = await createClient();
+  const { data, error } = await supabase
+    .from("attendance")
+    .update({ status: parsed.data.status ?? "unknown" })
+    .eq("course_id", parsed.data.courseId)
+    .eq("meeting_number", parsed.data.number)
+    .is("slot_id", null)
+    .is("change_id", null)
+    .select("id");
+  if (error) {
+    console.error("[schedule] meeting status", error.code, error.message);
+    return { ok: false, error: "Couldn't save attendance. Please try again." };
+  }
+  if (data.length === 0) return { ok: false, error: "That meeting no longer exists." };
+  revalidatePath("/courses", "layout");
+  revalidatePath("/");
+  return { ok: true };
 }
 
 /** Undo for markUnmarkedAttended: clear these marks. */

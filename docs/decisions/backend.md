@@ -88,7 +88,9 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Why.** Students rarely know a course's end date, and cancelled weeks push it back anyway. A count of meetings that really happened ends a course at the right time. It also gives "meeting 7 of 16", attendance stats and an undo (delete the row) from one table. Marking backfilled meetings `unknown` keeps the attendance percentage honest. Keeping cancellations in `class_changes` means one record decides whether a class happened: every screen already reads it, and a second "cancelled" log row could disagree.
 
-**Cost.** Numbers follow the order classes were marked, not their dates, so marking an old class late takes the next number. Undoing a mark that isn't the latest leaves a gap until "next meeting is" is set again. Course pages still estimate the term from slot dates when a course has no total.
+**Update (same day).** `courses.meetings_counted_from` records when "next meeting is N" was last set (also on create). Classes that ended before it are the backfilled meetings, so they're never asked about, bulk-marked or numbered again. Past meetings without a date are listed by number only, never matched to a guessed date, and can be marked attended or skipped by number (`setMeetingStatus`). `set_current_meeting` now shifts the existing marks so the newest becomes N-1, keeping their order and gaps, and refuses only when they don't fit below N. The schedule ends at the projected last meeting: the remaining-th class still to log (`projectedEnd`, through `getScheduleInput`), not just after the last logged one.
+
+**Cost.** Numbers follow the order classes were marked, not their dates, so marking an old class late takes the next number. Undoing a mark that isn't the latest leaves a gap until "next meeting is" is set again. The projection builds up to ~2 years of schedule per request when a course has a total (cached per request). Course pages still estimate the term from slot dates when a course has no total.
 
 ## 2026-11-16: Bills never create tasks; tasks are for class assignments
 

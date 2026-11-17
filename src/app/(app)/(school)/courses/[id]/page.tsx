@@ -14,12 +14,13 @@ import { CourseActions } from "@/features/courses/components/course-actions";
 import { type CourseWithSlots, getCourse, listActiveSlots } from "@/features/courses/queries";
 import { mailtoLink, whatsappLink } from "@/features/courses/schema";
 import { CourseSpending } from "@/features/finance/components/course-spending";
-import { attendanceStats } from "@/features/schedule/attendance";
-import { AttendancePanel } from "@/features/schedule/components/attendance-panel";
+import { meetingStats } from "@/features/schedule/attendance";
+import { AttendancePanel, type MeetingItem } from "@/features/schedule/components/attendance-panel";
 import { OccurrenceRow } from "@/features/schedule/components/occurrence-row";
 import { placementLabel, toRowItem } from "@/features/schedule/format";
+import { isCounted, meetingList, meetingProgress, upcomingNumbers } from "@/features/schedule/meetings";
 import { buildSchedule, isListed, isLive, isPast } from "@/features/schedule/occurrences";
-import { getScheduleInput, listAttendanceMarks } from "@/features/schedule/queries";
+import { getMeetingLog, getScheduleInput, listAttendanceMarks } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import type { Preferences } from "@/features/settings/schema";
 import { SlotList } from "@/features/timetable/components/slot-list";
@@ -185,20 +186,47 @@ async function CourseSchedule({ course, preferences }: { course: CourseWithSlots
   // "YYYY-MM-DD" strings sort as dates.
   const range = { from: [from, earliest].sort()[1], to: [termEnd, addDays(today, 21)].sort()[1] };
 
-  const [input, marks] = await Promise.all([getScheduleInput(range.from, range.to), listAttendanceMarks(course.id)]);
+  const [input, marks, log] = await Promise.all([
+    getScheduleInput(range.from, range.to),
+    listAttendanceMarks(course.id),
+    getMeetingLog(),
+  ]);
   const mine = buildSchedule(input, range).filter((o) => o.courseId === course.id);
   const upcoming = mine.filter((o) => isListed(o) && !isPast(o, clock) && o.date <= addDays(today, 21)).slice(0, 6);
-  const term = mine.filter((o) => o.date <= termEnd);
-  const stats = attendanceStats(term, marks, clock, preferences.attendanceTarget, termKnown, course.totalMeetings);
-  const recent = term
-    .filter((o) => isLive(o) && isPast(o, clock))
-    .slice(-5)
-    .reverse()
-    .map((o) => ({
-      key: o.key,
-      label: `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, intl)} · ${placementLabel(o, preferences.timeFormat, o.date, i18n)}`,
-      status: marks.get(o.key) ?? null,
-    }));
+  const progress = log.progress.get(course.id) ?? meetingProgress([], course.totalMeetings);
+  // Classes over before counting started are the backfilled meetings: listed by number, never by a guessed date.
+  const waiting = mine.filter(
+    (o) => isLive(o) && isPast(o, clock) && isCounted(o, progress.countFrom) && !marks.has(o.key),
+  );
+  const termLive = termKnown ? mine.filter((o) => o.date <= termEnd && isLive(o)).length : null;
+  const stats = meetingStats(progress, waiting.length, preferences.attendanceTarget, termLive);
+  const byKey = new Map(mine.map((o) => [o.key, o]));
+  const numbers = upcomingNumbers(waiting, log.progress, new Set(marks.keys()));
+  const meetingLabel = (n: number | null) =>
+    n === null
+      ? null
+      : course.totalMeetings === null
+        ? t("Meeting {n}", { n })
+        : t("Meeting {n} of {total}", { n, total: course.totalMeetings });
+  const meetings: MeetingItem[] = meetingList(
+    log.rows.filter((r) => r.courseId === course.id),
+    waiting,
+  ).map((m) => {
+    const o = m.key ? byKey.get(m.key) : undefined;
+    const number = m.number ?? (m.key ? (numbers.get(m.key) ?? null) : null);
+    const when = o
+      ? `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, intl)} ${placementLabel(o, preferences.timeFormat, o.date, i18n)}`
+      : m.date
+        ? formatDate(m.date, { weekday: "short", day: "numeric", month: "short" }, intl)
+        : null;
+    return {
+      id: m.key ?? `m.${m.number}`,
+      key: m.key,
+      number,
+      label: [meetingLabel(number), when].filter(Boolean).join(" · "),
+      status: m.status === "attended" || m.status === "missed" ? m.status : null,
+    };
+  });
 
   return (
     <>
@@ -226,8 +254,8 @@ async function CourseSchedule({ course, preferences }: { course: CourseWithSlots
           </ul>
         )}
       </section>
-      {stats.held > 0 || stats.missed > 0 ? (
-        <AttendancePanel courseId={course.id} stats={stats} target={preferences.attendanceTarget} recent={recent} />
+      {meetings.length > 0 ? (
+        <AttendancePanel courseId={course.id} stats={stats} target={preferences.attendanceTarget} meetings={meetings} />
       ) : null}
     </>
   );

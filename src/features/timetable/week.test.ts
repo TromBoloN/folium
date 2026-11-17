@@ -19,6 +19,7 @@ const course = (id: string, name: string, code: string | null = null): Course =>
   kind: "campus",
   classType: null,
   totalMeetings: null,
+  meetingsCountedFrom: null,
 });
 
 const calc = course("c1", "Calculus", "MAT101");

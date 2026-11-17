@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { EMAIL_PATTERN, normalizePhone } from "@/lib/safe-links";
+import { slotInputSchema } from "../timetable/schema";
 
 /**
  * Suggested course colours. These are user data (stored per course), not UI
@@ -140,6 +141,8 @@ export type Course = {
   classType: string | null;
   /** Null = open-ended (no end). */
   totalMeetings: number | null;
+  /** When "next meeting is N" was last set (ISO); classes that ended before it aren't asked about. */
+  meetingsCountedFrom: string | null;
 };
 
 /** The database row for a validated course form. */
@@ -182,4 +185,36 @@ export function semesterLabels(courses: readonly { semester: string | null }[]):
   const counts = new Map<string, number>();
   for (const c of courses) if (c.semester) counts.set(c.semester, (counts.get(c.semester) ?? 0) + 1);
   return [...counts].sort((a, b) => b[1] - a[1] || b[0].localeCompare(a[0])).map(([label]) => label);
+}
+
+/** A weekly class time typed in the course form (the course's room is used). */
+export type ClassTimeInput = { weekday: number; startTime: string; endTime: string };
+
+/**
+ * The class-time rows of the course form (parallel lists of weekday, start and
+ * end). Rows left blank are skipped; the first invalid row stops with a message.
+ */
+export function parseClassTimes(
+  weekdays: readonly unknown[],
+  starts: readonly unknown[],
+  ends: readonly unknown[],
+): { ok: true; rows: ClassTimeInput[] } | { ok: false; message: string } {
+  const rows: ClassTimeInput[] = [];
+  for (let i = 0; i < Math.max(weekdays.length, starts.length, ends.length); i++) {
+    const start = String(starts[i] ?? "").trim();
+    const end = String(ends[i] ?? "").trim();
+    if (!start && !end) continue;
+    const parsed = slotInputSchema.safeParse({
+      // Checked again with the real course id when saved.
+      courseId: "00000000-0000-4000-8000-000000000000",
+      weekday: weekdays[i] ?? "",
+      startTime: start,
+      endTime: end,
+      online: false,
+    });
+    if (!parsed.success) return { ok: false, message: parsed.error.issues[0]?.message ?? "Check the class times." };
+    rows.push({ weekday: parsed.data.weekday, startTime: parsed.data.startTime, endTime: parsed.data.endTime });
+    if (rows.length > 14) return { ok: false, message: "Add at most 14 class times here." };
+  }
+  return { ok: true, rows };
 }

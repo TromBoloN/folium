@@ -171,14 +171,14 @@ isOneToOne: false
                   ]
                 },"courses": {
                   Row: {
-                    "archived_at": string | null,"class_type": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"kind": string,"lecturer": string | null,"lecturer_email": string | null,"lecturer_phone": string | null,"name": string,"room": string | null,"semester": string | null,"total_meetings": number | null,"updated_at": string,"user_id": string
+                    "archived_at": string | null,"class_type": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"kind": string,"lecturer": string | null,"lecturer_email": string | null,"lecturer_phone": string | null,"meetings_counted_from": string | null,"name": string,"room": string | null,"semester": string | null,"total_meetings": number | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"class_type"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"kind"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"total_meetings"?: number | null,"updated_at"?: string,"user_id"?: string
+                    "archived_at"?: string | null,"class_type"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"kind"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"meetings_counted_from"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"total_meetings"?: number | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"class_type"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"kind"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"total_meetings"?: number | null,"updated_at"?: string,"user_id"?: string
+                    "archived_at"?: string | null,"class_type"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"kind"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"meetings_counted_from"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"total_meetings"?: number | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     

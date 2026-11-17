@@ -6,7 +6,7 @@ export const idPatterns: [RegExp, string][] = [
   [/^(.+) can be at most (\d+) characters\.$/, "{1} maksimal {2} karakter."],
   [/^Use at least (\d+) characters\.$/, "Minimal {1} karakter."],
   [/^A break can be at most (\d+) days\.$/, "Libur maksimal {1} hari."],
-  [/^No course matches “(.+)”\.$/, "Tidak ada mata kuliah yang cocok dengan “{1}”."],
+  [/^No course matches “(.+)”\.$/, "Tidak ada kelas yang cocok dengan “{1}”."],
   [/^(.+) has no class that day\.$/, "{1} tidak ada kelas hari itu."],
   [/^(.+) has no upcoming class\.$/, "{1} tidak punya kelas mendatang."],
   [/^The current meeting can be at most (\d+)\.$/, "Pertemuan saat ini maksimal {1}."],

@@ -45,6 +45,7 @@ async function EditCourse({ params }: Pick<PageProps<"/courses/[id]/edit">, "par
         semesters={semesterLabels(courses)}
         classTypes={preferences.classTypes}
         currentMeeting={Math.min(log.progress.get(course.id)?.next ?? 1, course.totalMeetings ?? 200)}
+        slots={course.slots}
       />
     </>
   );

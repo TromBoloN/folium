@@ -32,7 +32,7 @@ export const grades = {
   "Letter, row {n}": "Huruf, baris {n}",
   "Min %": "Min %",
   "Minimum percentage, row {n}": "Persentase minimum, baris {n}",
-  "No graded courses yet": "Belum ada mata kuliah yang dinilai",
+  "No graded courses yet": "Belum ada kelas yang dinilai",
   "No semester": "Tanpa semester",
   "Not counted (0 SKS)": "Tidak dihitung (0 SKS)",
   Percentage: "Persentase",
@@ -58,16 +58,16 @@ export const grades = {
   "{n}% of grade": "{n}% dari nilai",
   // Loose strings
   "Course grades from your assessments, and your GPA by semester.":
-    "Nilai mata kuliah dari penilaianmu, dan IPK per semester.",
+    "Nilai kelas dari penilaianmu, dan IPK per semester.",
   "Loading grades": "Memuat nilai",
-  "Loading course grades": "Memuat nilai mata kuliah",
+  "Loading course grades": "Memuat nilai kelas",
   "Add your courses with their credits, then record assessments to see grades and your GPA.":
-    "Tambahkan mata kuliah beserta SKS-nya, lalu catat penilaian untuk melihat nilai dan IPK-mu.",
+    "Tambahkan kelas beserta SKS-nya, lalu catat penilaian untuk melihat nilai dan IPK-mu.",
   "No assessments yet": "Belum ada penilaian",
   "Add quizzes, assignments and exams with their weight. Leave the score empty until it's graded.":
     "Tambahkan kuis, tugas, dan ujian beserta bobotnya. Kosongkan nilainya sampai sudah dinilai.",
   "Give it a name, e.g. Midterm exam.": "Beri nama, mis. UTS.",
-  "Weight (% of the course grade)": "Bobot (% dari nilai mata kuliah)",
+  "Weight (% of the course grade)": "Bobot (% dari nilai kelas)",
   "e.g. 30 for 30%.": "mis. 30 untuk 30%.",
   Score: "Nilai",
   "Out of": "Dari",

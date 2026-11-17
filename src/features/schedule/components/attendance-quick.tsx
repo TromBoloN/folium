@@ -3,6 +3,7 @@
 import { Check, X } from "lucide-react";
 import { useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
+import type { ActionResult } from "@/lib/action-result";
 import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { setAttendance } from "../actions";
@@ -21,8 +22,10 @@ export function AttendanceQuick({
   compact = false,
   meeting = null,
   change,
+  save,
   onMarked,
 }: {
+  /** The class it marks; unused when `save` is given. */
   occurrenceKey: string;
   initial: AttendanceStatus | null;
   /** "Calculus I, Mon 07:30": the buttons' accessible names. */
@@ -32,6 +35,8 @@ export function AttendanceQuick({
   meeting?: number | null;
   /** Also offer Rescheduled / Cancelled while the class is unmarked (day lists). */
   change?: RescheduleTarget;
+  /** Saves the mark another way (a meeting known only by its number). Null clears it. */
+  save?: (status: AttendanceStatus | null) => Promise<ActionResult>;
   onMarked?: (status: AttendanceStatus | null, previous: AttendanceStatus | null) => void;
 }) {
   const [status, setStatus] = useState(initial);
@@ -43,7 +48,7 @@ export function AttendanceQuick({
     const before = status;
     setStatus(value);
     start(async () => {
-      const result = await setAttendance({ key: occurrenceKey, status: value, meeting });
+      const result = save ? await save(value) : await setAttendance({ key: occurrenceKey, status: value, meeting });
       if (!result.ok) {
         setStatus(before);
         toast({ message: result.error, tone: "error" });

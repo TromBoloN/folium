@@ -8,7 +8,15 @@ import { isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
 import { getSettings } from "../settings/queries";
-import { type CourseInput, canonicalSemester, courseInputSchema, courseRow, normalizeCourse } from "./schema";
+import {
+  type ClassTimeInput,
+  type CourseInput,
+  canonicalSemester,
+  courseInputSchema,
+  courseRow,
+  normalizeCourse,
+  parseClassTimes,
+} from "./schema";
 
 const idSchema = z.uuid();
 
@@ -37,7 +45,27 @@ async function readCourse(formData: FormData) {
   const { preferences } = await getSettings();
   const normal = normalizeCourse(parsed.data, preferences.classTypes);
   if (!normal.ok) return { ok: false as const, fieldErrors: { [normal.field]: normal.message } };
-  return { ok: true as const, data: normal.value };
+  const times = parseClassTimes(
+    formData.getAll("slotWeekday"),
+    formData.getAll("slotStart"),
+    formData.getAll("slotEnd"),
+  );
+  if (!times.ok) return { ok: false as const, fieldErrors: { classTimes: times.message } };
+  return { ok: true as const, data: normal.value, classTimes: times.rows };
+}
+
+/** Adds the class times typed in the course form. Returns an error message, or null. */
+async function addClassTimes(courseId: string, rows: readonly ClassTimeInput[]) {
+  if (rows.length === 0) return null;
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("timetable_slots")
+    .insert(
+      rows.map((r) => ({ course_id: courseId, weekday: r.weekday, start_time: r.startTime, end_time: r.endTime })),
+    );
+  if (!error) return null;
+  console.error("[courses] class times", error.code, error.message);
+  return "The course is saved, but its class times weren't. Add them on the course page.";
 }
 
 /**
@@ -51,7 +79,7 @@ async function setCurrentMeeting(courseId: string, next: number | null, was: For
   if (!error) return null;
   console.error("[courses] current meeting", error.code, error.message);
   return error.code === "23514"
-    ? "A later meeting is already marked. Undo that mark first, or pick a later meeting."
+    ? "Your marked meetings don't fit before that number. Pick a later meeting."
     : "Couldn't set the current meeting. Please try again.";
 }
 
@@ -88,9 +116,14 @@ export async function createCourse(_prev: FormState, formData: FormData): Promis
     console.error("[courses] create", error.code, error.message);
     return { ok: false, error: SAVE_FAILED, values };
   }
-  // A new course starts at meeting 1 unless the student says otherwise.
-  const meetingError = await setCurrentMeeting(data.id, parsed.data.currentMeeting, "1");
+  // Counting starts now, at meeting 1 unless the student says otherwise (null "was" forces the call).
+  const meetingError = await setCurrentMeeting(data.id, parsed.data.currentMeeting ?? 1, null);
   if (meetingError) console.error("[courses] create: current meeting not set");
+  const timesError = await addClassTimes(data.id, parsed.classTimes);
+  if (timesError) {
+    revalidatePath("/courses", "layout");
+    return { ok: false, error: timesError, values };
+  }
 
   revalidatePath("/courses", "layout");
   if (fromSheet(formData)) return { ok: true, result: { id: data.id } };
@@ -118,6 +151,8 @@ export async function updateCourse(_prev: FormState, formData: FormData): Promis
     return { ok: false, error: SAVE_FAILED, values };
   }
   if (data.length === 0) return { ok: false, error: "That course no longer exists.", values };
+  const timesError = await addClassTimes(id.data, parsed.classTimes);
+  if (timesError) return { ok: false, error: timesError, values };
   const meetingError = await setCurrentMeeting(id.data, parsed.data.currentMeeting, formData.get("currentMeetingWas"));
   if (meetingError) {
     revalidatePath("/courses", "layout");

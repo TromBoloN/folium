@@ -30,18 +30,17 @@ export const today = {
   "Tasks due today and over the next two days.": "Tugas yang jatuh tempo hari ini dan dua hari ke depan.",
   Overdue: "Terlambat",
   "Open tasks whose deadline has passed.": "Tugas belum selesai yang tenggatnya sudah lewat.",
-  "This semester's GPA and your grade so far in each course.":
-    "IPK semester ini dan nilaimu sejauh ini di tiap mata kuliah.",
+  "This semester's GPA and your grade so far in each course.": "IPK semester ini dan nilaimu sejauh ini di tiap kelas.",
   "Safe to spend, bills due this week, and budgets running out.":
     "Aman dibelanjakan, tagihan minggu ini, dan anggaran yang hampir habis.",
   "Open money": "Buka keuangan",
   "Quick add": "Tambah cepat",
   "Add a task with just a title.": "Tambah tugas cukup dengan judul.",
   // Setup checklist
-  "Add your first course": "Tambah mata kuliah pertamamu",
+  "Add your first course": "Tambah kelas pertamamu",
   "In School: name, code and a colour. Colours follow the course everywhere.":
-    "Di Sekolah: nama, kode, dan warna. Warnanya mengikuti mata kuliah di mana pun.",
-  "Add a course": "Tambah mata kuliah",
+    "Di Sekolah: nama, kode, dan warna. Warnanya mengikuti kelas di mana pun.",
+  "Add a course": "Tambah kelas",
   "Add its class times": "Tambah jadwal kelasnya",
   "Your timetable, the Next up countdown and the day timeline come from these.":
     "Jadwalmu, hitung mundur Berikutnya, dan linimasa harian berasal dari sini.",

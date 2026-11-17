@@ -1,6 +1,6 @@
 import { CheckCircle2 } from "lucide-react";
 import { io } from "next/cache";
-import { upcomingNumbers } from "@/features/schedule/meetings";
+import { isCounted, upcomingNumbers } from "@/features/schedule/meetings";
 import { isLive, isPast, type Occurrence } from "@/features/schedule/occurrences";
 import { getMeetingLog, getSchedule, listAttendanceMarks, listPostponed } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
@@ -49,8 +49,15 @@ export async function AttendancePrompt() {
       ? { number: numbers.get(o.key) as number, total: log.progress.get(o.courseId)?.total ?? null }
       : null,
   });
+  // Classes over before counting started are the backfilled meetings: never asked about.
   const pending = schedule
-    .filter((o) => isLive(o) && isPast(o, clock) && !marks.has(o.key))
+    .filter(
+      (o) =>
+        isLive(o) &&
+        isPast(o, clock) &&
+        isCounted(o, log.progress.get(o.courseId)?.countFrom ?? null) &&
+        !marks.has(o.key),
+    )
     .reverse()
     .slice(0, 3)
     .map(toItem);

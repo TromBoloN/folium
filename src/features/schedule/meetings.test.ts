@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { type MeetingRow, meetingProgress, progressByCourse, skipsLeft, upcomingNumbers } from "./meetings";
+import {
+  isCounted,
+  type MeetingRow,
+  meetingList,
+  meetingProgress,
+  progressByCourse,
+  projectedEnd,
+  skipsLeft,
+  upcomingNumbers,
+} from "./meetings";
 
 const row = (number: number, status: MeetingRow["status"], date: string | null = null): MeetingRow => ({
   courseId: "c1",
@@ -70,19 +79,61 @@ describe("upcomingNumbers", () => {
 
   it("numbers unmarked classes per course in date order, up to the total", () => {
     const classes = [
-      { key: "a", courseId: "c1" },
-      { key: "b", courseId: "c2" },
-      { key: "c", courseId: "c1" },
-      { key: "d", courseId: "c2" },
+      { key: "a", courseId: "c1", date: "2026-11-16", endTime: "10:00" },
+      { key: "b", courseId: "c2", date: "2026-11-16", endTime: "10:00" },
+      { key: "c", courseId: "c1", date: "2026-11-17", endTime: "10:00" },
+      { key: "d", courseId: "c2", date: "2026-11-17", endTime: "10:00" },
     ];
     expect(Object.fromEntries(upcomingNumbers(classes, progress, new Set()))).toEqual({ a: 3, b: 1, d: 2 });
   });
 
   it("skips classes already marked", () => {
     const classes = [
-      { key: "a", courseId: "c2" },
-      { key: "b", courseId: "c2" },
+      { key: "a", courseId: "c2", date: "2026-11-16", endTime: "10:00" },
+      { key: "b", courseId: "c2", date: "2026-11-16", endTime: "10:00" },
     ];
     expect(Object.fromEntries(upcomingNumbers(classes, progress, new Set(["a"])))).toEqual({ b: 1 });
+  });
+});
+
+describe("counting start and the projected end", () => {
+  const cls = (key: string, date: string, endTime = "10:00") => ({ key, courseId: "c1", date, endTime });
+  // Set "next meeting is 15" on Tue 17 Nov at 05:00, after that day's 02:40-04:10 class.
+  const p = meetingProgress(
+    Array.from({ length: 14 }, (_, i) => row(i + 1, "unknown")),
+    16,
+    { date: "2026-11-17", minute: 300 },
+  );
+  const classes = [
+    cls("nov17", "2026-11-17", "04:10"),
+    cls("nov24", "2026-11-24", "04:10"),
+    cls("dec1", "2026-12-01", "04:10"),
+    cls("dec8", "2026-12-08", "04:10"),
+  ];
+
+  it("classes over before counting started are the backfilled meetings, not new ones", () => {
+    expect(isCounted(classes[0], p.countFrom)).toBe(false);
+    expect(isCounted(classes[1], p.countFrom)).toBe(true);
+    expect(Object.fromEntries(upcomingNumbers(classes, new Map([["c1", p]]), new Set()))).toEqual({
+      nov24: 15,
+      dec1: 16,
+    });
+  });
+
+  it("ends on the class that will be the last meeting", () => {
+    expect(projectedEnd(classes, p, new Set())).toBe("2026-12-01");
+    expect(projectedEnd(classes, { ...p, total: null }, new Set())).toBeNull();
+  });
+});
+
+describe("meetingList", () => {
+  it("lists meetings by number, newest first; backfilled ones have no date", () => {
+    const rows = [row(1, "unknown"), row(2, "attended"), { ...row(3, "missed", "2026-11-16"), key: "s.x.2026-11-16" }];
+    expect(meetingList(rows, [{ key: "s.x.2026-11-23", date: "2026-11-23" }])).toEqual([
+      { number: null, status: null, key: "s.x.2026-11-23", date: "2026-11-23" },
+      { number: 3, status: "missed", key: "s.x.2026-11-16", date: "2026-11-16" },
+      { number: 2, status: "attended", key: null, date: null },
+      { number: 1, status: "unknown", key: null, date: null },
+    ]);
   });
 });

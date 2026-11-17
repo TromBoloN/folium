@@ -1,6 +1,7 @@
 "use client";
 
-import { BookOpen, CalendarRange, Hash, ListTodo, MapPin, User } from "lucide-react";
+import { BookOpen, CalendarClock, CalendarRange, Hash, ListTodo, MapPin, Pencil, User } from "lucide-react";
+import Link from "next/link";
 import { useActionState, useEffect, useState } from "react";
 import { ChipGroup } from "@/components/form/chip-group";
 import { FormFooter } from "@/components/form/form-footer";
@@ -11,9 +12,11 @@ import { Button } from "@/components/ui/button";
 import { describedBy, Field } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Pill } from "@/components/ui/pill";
+import { weekdayLabel } from "@/features/timetable/logic";
 import { useI18n, useT } from "@/lib/i18n/client";
 import { createCourse, updateCourse } from "../actions";
 import type { Course } from "../schema";
+import { ClassTimesField } from "./class-times-field";
 import { ColorField } from "./color-field";
 
 type Props = {
@@ -28,6 +31,8 @@ type Props = {
       defaultColor?: undefined;
       /** The next meeting to log, from the meeting log. */
       currentMeeting: number;
+      /** Its weekly class times, listed with edit links (new ones can be added below them). */
+      slots: { id: string; weekday: number; startTime: string; endTime: string; location: string | null }[];
     }
 );
 
@@ -36,7 +41,7 @@ type Props = {
  * A live preview of the course card sits on top and the sheet takes the colour.
  */
 export function CourseForm(props: Props) {
-  const { t, tl } = useI18n();
+  const { t, tl, intl } = useI18n();
   const [state, action, pending] = useActionState(props.mode === "create" ? createCourse : updateCourse, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const initial: Record<string, string | null | undefined> = props.course
@@ -147,6 +152,37 @@ export function CourseForm(props: Props) {
           defaultValue={preview.color}
           error={errors.color}
           onChange={(color) => setPreview((p) => ({ ...p, color }))}
+        />
+      </FormSection>
+
+      <FormSection title="Class times" icon={CalendarClock}>
+        {props.mode === "edit" && props.slots.length > 0 ? (
+          <ul className="flex flex-col gap-1.5">
+            {props.slots.map((slot) => (
+              <li
+                key={slot.id}
+                className="flex items-center justify-between gap-2 rounded-lg bg-muted/60 px-3 py-2 text-sm"
+              >
+                <span className="tabular-nums">
+                  <span className="font-medium">{weekdayLabel(slot.weekday, "label", intl)}</span> {slot.startTime}–
+                  {slot.endTime}
+                  {slot.location ? <span className="text-muted-foreground"> · {slot.location}</span> : null}
+                </span>
+                <Link
+                  href={`/courses/${props.course.id}/slots/${slot.id}/edit`}
+                  className="inline-flex items-center gap-1 rounded-md px-1.5 py-1 text-muted-foreground text-xs hover:text-foreground"
+                >
+                  <Pencil aria-hidden className="size-3.5" />
+                  {t("Edit")}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        <ClassTimesField
+          initialRows={props.mode === "create" ? 1 : 0}
+          credits={Number(preview.credits) || 0}
+          error={errors.classTimes}
         />
       </FormSection>
 

@@ -50,7 +50,7 @@ export const settings = {
   "Attendance target": "Target kehadiran",
   "% of classes": "% dari kelas",
   "Many campuses require about 75% to sit the final exam. Check yours; courses warn you below it.":
-    "Banyak kampus mensyaratkan sekitar 75% untuk ikut ujian akhir. Cek kampusmu; mata kuliah memberi peringatan di bawahnya.",
+    "Banyak kampus mensyaratkan sekitar 75% untuk ikut ujian akhir. Cek kampusmu; kelas memberi peringatan di bawahnya.",
   "Money emails": "Email keuangan",
   "Remind me before a bill is due": "Ingatkan sebelum tagihan jatuh tempo",
   "A Monday summary: spent, left, and what's due": "Ringkasan tiap Senin: pengeluaran, sisa, dan yang jatuh tempo",

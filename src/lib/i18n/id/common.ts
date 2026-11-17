@@ -6,7 +6,7 @@ export const common = {
   School: "Sekolah",
   Money: "Keuangan",
   Settings: "Pengaturan",
-  Courses: "Mata kuliah",
+  Courses: "Kelas",
   Tasks: "Tugas",
   Grades: "Nilai",
   Overview: "Ringkasan",

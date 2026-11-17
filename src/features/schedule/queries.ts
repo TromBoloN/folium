@@ -1,10 +1,12 @@
 import "server-only";
+import { io } from "next/cache";
 import { cache } from "react";
-import { addDays, type CivilDate, isCivilDate } from "@/lib/dates";
+import { addDays, type CivilDate, isCivilDate, minutesNowIn, todayIn } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { listActiveSlots, listCourses } from "../courses/queries";
+import { getSettings } from "../settings/queries";
 import { trimSeconds } from "../timetable/logic";
-import { type MeetingProgress, type MeetingRow, type MeetingStatus, progressByCourse } from "./meetings";
+import { type MeetingProgress, type MeetingRow, type MeetingStatus, progressByCourse, projectedEnd } from "./meetings";
 import {
   buildSchedule,
   type ChangeKind,
@@ -12,6 +14,7 @@ import {
   type ClassChange,
   type DateRange,
   findOccurrence,
+  isLive,
   type Occurrence,
   occurrenceKey,
   parseOccurrenceKey,
@@ -77,10 +80,11 @@ function assertRange(range: DateRange) {
  * that touch the range (by original OR new date), and breaks overlapping it.
  * Cached per request, so several widgets asking for the same range share one load.
  */
-export const getScheduleInput = cache(async (from: CivilDate, to: CivilDate): Promise<ScheduleInput> => {
+/** Slots, changes and breaks for a range, as stored (no course ends applied). */
+const loadInput = cache(async (from: CivilDate, to: CivilDate): Promise<ScheduleInput> => {
   assertRange({ from, to });
   const supabase = await createClient();
-  const [rawSlots, changes, breaks, log] = await Promise.all([
+  const [slots, changes, breaks] = await Promise.all([
     listActiveSlots(),
     supabase
       .from("class_changes")
@@ -88,22 +92,71 @@ export const getScheduleInput = cache(async (from: CivilDate, to: CivilDate): Pr
       // Dates are validated above, so they're safe inside the filter string.
       .or(`and(original_date.gte.${from},original_date.lte.${to}),and(new_date.gte.${from},new_date.lte.${to})`),
     supabase.from("class_breaks").select("id, label, starts_on, ends_on").lte("starts_on", to).gte("ends_on", from),
-    getMeetingLog(),
   ]);
   if (changes.error) throw new Error(`Couldn't load schedule changes: ${changes.error.message}`);
   if (breaks.error) throw new Error(`Couldn't load breaks: ${breaks.error.message}`);
-  // A course whose meetings are all logged ends after its last one (rule 6 in occurrences.ts).
-  const ended = (course: ScheduleCourse): ScheduleCourse => {
-    const endsAfter = log.progress.get(course.id)?.endedOn ?? null;
-    return endsAfter ? { ...course, endsAfter } : course;
-  };
-  const slots = rawSlots.map((s) => ({ ...s, course: ended(s.course) }));
   return {
     slots,
-    changes: (changes.data as unknown as ChangeRow[])
-      .map(toChange)
-      .map((c) => (c.course ? { ...c, course: ended(c.course) } : c)),
+    changes: (changes.data as unknown as ChangeRow[]).map(toChange),
     breaks: breaks.data.map((b) => ({ id: b.id, label: b.label, startsOn: b.starts_on, endsOn: b.ends_on })),
+  };
+});
+
+/**
+ * The last day of each course that has a meeting count: the day its last
+ * meeting was logged, or, projected, the day of the class that will be its
+ * last meeting (cancelled and moved classes and breaks taken into account).
+ * Missing for open-ended courses and ends more than ~2 years out.
+ */
+const getCourseEnds = cache(async (): Promise<Map<string, CivilDate>> => {
+  const [log, courses, { preferences }] = await Promise.all([getMeetingLog(), listCourses(), getSettings()]);
+  const ends = new Map<string, CivilDate>();
+  const counted = courses.filter((c) => !c.archivedAt && c.totalMeetings !== null);
+  const open = counted.filter((c) => {
+    const p = log.progress.get(c.id);
+    if (p?.finished && p.endedOn) ends.set(c.id, p.endedOn);
+    return p && !p.finished;
+  });
+  if (open.length === 0) return ends;
+  await io();
+  const today = todayIn(preferences.timeZone, new Date());
+  // From the earliest moment counting started (classes before it take no number), at most ~6 months back.
+  const floor = addDays(today, -180);
+  const earliest = open.map((c) => log.progress.get(c.id)?.countFrom?.date ?? floor).sort()[0];
+  // "YYYY-MM-DD" strings sort as dates: the later of the two.
+  const start = [earliest, floor].sort()[1];
+  const span = { from: start, to: addDays(start, 790) };
+  const live = buildSchedule(await loadInput(span.from, span.to), span).filter(isLive);
+  const marked = new Set(log.marks.keys());
+  for (const c of open) {
+    const progress = log.progress.get(c.id);
+    if (!progress) continue;
+    const end = projectedEnd(
+      live.filter((o) => o.courseId === c.id),
+      progress,
+      marked,
+    );
+    if (end) ends.set(c.id, end);
+  }
+  return ends;
+});
+
+/**
+ * Everything `buildSchedule` needs for a date range: active slots, the changes
+ * that touch the range (by original OR new date), breaks overlapping it, and
+ * where each counted course ends (rule 6 in occurrences.ts). Cached per
+ * request, so several widgets asking for the same range share one load.
+ */
+export const getScheduleInput = cache(async (from: CivilDate, to: CivilDate): Promise<ScheduleInput> => {
+  const [input, ends] = await Promise.all([loadInput(from, to), getCourseEnds()]);
+  const ended = (course: ScheduleCourse): ScheduleCourse => {
+    const endsAfter = ends.get(course.id);
+    return endsAfter ? { ...course, endsAfter } : course;
+  };
+  return {
+    ...input,
+    slots: input.slots.map((s) => ({ ...s, course: ended(s.course) })),
+    changes: input.changes.map((c) => (c.course ? { ...c, course: ended(c.course) } : c)),
   };
 });
 
@@ -188,11 +241,12 @@ export type MeetingLog = {
 /** The whole meeting log (attendance rows) and each course's progress. Cached per request. */
 export const getMeetingLog = cache(async (): Promise<MeetingLog> => {
   const supabase = await createClient();
-  const [{ data, error }, courses] = await Promise.all([
+  const [{ data, error }, courses, { preferences }] = await Promise.all([
     supabase
       .from("attendance")
       .select("course_id, slot_id, occurs_on, change_id, status, meeting_number, class_changes(new_date)"),
     listCourses(),
+    getSettings(),
   ]);
   if (error) throw new Error(`Couldn't load attendance: ${error.message}`);
   const rows: MeetingRow[] = [];
@@ -222,7 +276,13 @@ export const getMeetingLog = cache(async (): Promise<MeetingLog> => {
     });
     if (key && status !== "unknown") marks.set(key, { status, number: row.meeting_number });
   }
-  return { rows, marks, progress: progressByCourse(rows, courses) };
+  // When counting started, as a moment in the user's zone.
+  const zone = preferences.timeZone;
+  const withStart = courses.map((c) => {
+    const at = c.meetingsCountedFrom ? new Date(c.meetingsCountedFrom) : null;
+    return { ...c, countFrom: at ? { date: todayIn(zone, at), minute: minutesNowIn(zone, at) } : null };
+  });
+  return { rows, marks, progress: progressByCourse(rows, withStart) };
 });
 
 /** Attendance marks (attended / missed), keyed by occurrence key. Optionally for one course. */

@@ -75,5 +75,5 @@ export const loose = {
   "…and money in": "…dan uang masuk",
   "…or money out": "…atau uang keluar",
   "GPA counts courses with credits and at least one graded assessment, weighted by credits. Grades in progress use what's graded so far.":
-    "IPK menghitung mata kuliah ber-SKS yang punya minimal satu penilaian, dibobot dengan SKS. Nilai yang masih berjalan memakai yang sudah dinilai.",
+    "IPK menghitung kelas ber-SKS yang punya minimal satu penilaian, dibobot dengan SKS. Nilai yang masih berjalan memakai yang sudah dinilai.",
 };

@@ -10,7 +10,7 @@ import type { Course } from "./schema";
 export type CourseWithSlots = Course & { slots: TimetableSlot[] };
 
 const COURSE_COLUMNS =
-  "id, name, code, color, lecturer, lecturer_email, lecturer_phone, room, semester, credits, archived_at, kind, class_type, total_meetings, timetable_slots(id, weekday, start_time, end_time, location, starts_on, ends_on, is_online, meeting_url)";
+  "id, name, code, color, lecturer, lecturer_email, lecturer_phone, room, semester, credits, archived_at, kind, class_type, total_meetings, meetings_counted_from, timetable_slots(id, weekday, start_time, end_time, location, starts_on, ends_on, is_online, meeting_url)";
 
 type Row = {
   id: string;
@@ -27,6 +27,7 @@ type Row = {
   kind: string;
   class_type: string | null;
   total_meetings: number | null;
+  meetings_counted_from: string | null;
   timetable_slots: {
     id: string;
     weekday: number;
@@ -56,6 +57,7 @@ function toCourse(row: Row): CourseWithSlots {
     kind: row.kind === "external" ? "external" : "campus",
     classType: row.class_type,
     totalMeetings: row.total_meetings,
+    meetingsCountedFrom: row.meetings_counted_from,
   };
   return {
     ...course,

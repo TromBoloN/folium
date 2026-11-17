@@ -9,22 +9,37 @@ import { ProgressRing } from "@/components/ui/progress-ring";
 import { useT } from "@/lib/i18n/client";
 import { plural } from "@/lib/i18n/core";
 import { cn } from "@/lib/utils";
-import { clearAttendance, markUnmarkedAttended } from "../actions";
+import { clearAttendance, markUnmarkedAttended, setMeetingStatus } from "../actions";
 import type { AttendanceStats } from "../attendance";
 import type { AttendanceStatus } from "../schema";
 import { AttendanceQuick } from "./attendance-quick";
 
-export type RecentClass = { key: string; label: string; status: AttendanceStatus | null };
+/**
+ * One meeting in the list: a class (key, with its date in the label) or a
+ * meeting known only by its number (before counting started; no date guessed).
+ */
+export type MeetingItem = {
+  id: string;
+  key: string | null;
+  /** Logged, or the number it will take; null when the course is over. */
+  number: number | null;
+  /** "Meeting 14" or "Meeting 15 · Tue 24 Nov 02:40". */
+  label: string;
+  status: AttendanceStatus | null;
+};
+
+/** Newest meetings shown; the rest fold away. */
+const SHOWN = 6;
 
 type Props = {
   courseId: string;
   stats: AttendanceStats;
   target: number;
-  recent: RecentClass[];
+  meetings: MeetingItem[];
 };
 
 /** Attendance for a course: the share attended against the campus target, and quick marks for recent classes. */
-export function AttendancePanel({ courseId, stats, target, recent }: Props) {
+export function AttendancePanel({ courseId, stats, target, meetings }: Props) {
   const toast = useToast();
   const t = useT();
   const [pending, start] = useTransition();
@@ -73,6 +88,18 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
                   target,
                 })}
           </p>
+          {stats.unknown ? (
+            <p className="text-muted-foreground text-xs">
+              {t(
+                plural(
+                  stats.unknown,
+                  "1 meeting from before you started counting isn't included.",
+                  "{n} meetings from before you started counting aren't included.",
+                ),
+                { n: stats.unknown },
+              )}
+            </p>
+          ) : null}
           {stats.canMiss !== null ? (
             <p
               className={cn(
@@ -96,12 +123,24 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
         </div>
       </div>
 
-      {recent.length > 0 ? (
+      {meetings.length > 0 ? (
         <ul className="flex flex-col divide-y divide-border-soft">
-          {recent.map((c) => (
-            <RecentRow key={c.key} item={c} />
+          {meetings.slice(0, SHOWN).map((m) => (
+            <MeetingRow key={m.id} item={m} courseId={courseId} />
           ))}
         </ul>
+      ) : null}
+      {meetings.length > SHOWN ? (
+        <details className="group -mt-2">
+          <summary className="w-fit cursor-pointer list-none rounded-md text-muted-foreground text-sm hover:text-foreground">
+            {t("Show all {n} meetings", { n: meetings.length })}
+          </summary>
+          <ul className="flex flex-col divide-y divide-border-soft">
+            {meetings.slice(SHOWN).map((m) => (
+              <MeetingRow key={m.id} item={m} courseId={courseId} />
+            ))}
+          </ul>
+        </details>
       ) : null}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -143,13 +182,27 @@ export function AttendancePanel({ courseId, stats, target, recent }: Props) {
   );
 }
 
-function RecentRow({ item }: { item: RecentClass }) {
+function MeetingRow({ item, courseId }: { item: MeetingItem; courseId: string }) {
   return (
     <li className="flex items-center justify-between gap-2 py-2 text-sm">
-      <Link href={`/courses/class/${item.key}`} className="min-w-0 truncate tabular-nums hover:underline">
-        {item.label}
-      </Link>
-      <AttendanceQuick occurrenceKey={item.key} initial={item.status} label={item.label} />
+      {item.key ? (
+        <Link href={`/courses/class/${item.key}`} className="min-w-0 truncate tabular-nums hover:underline">
+          {item.label}
+        </Link>
+      ) : (
+        <span className="min-w-0 truncate tabular-nums">{item.label}</span>
+      )}
+      <AttendanceQuick
+        occurrenceKey={item.key ?? ""}
+        initial={item.status}
+        label={item.label}
+        meeting={item.number}
+        save={
+          item.key || item.number === null
+            ? undefined
+            : (status) => setMeetingStatus({ courseId, number: item.number as number, status })
+        }
+      />
     </li>
   );
 }
