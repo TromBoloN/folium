@@ -27,6 +27,53 @@ export const LANGUAGES = ["en", "id"] as const;
 export const COURSES_VIEWS = ["cards", "day", "week"] as const;
 export type CoursesView = (typeof COURSES_VIEWS)[number];
 
+/**
+ * Kinds of campus class ("Regular class", "Practicum") and how many meetings
+ * each usually has. A course picks one; its meeting count starts from the
+ * type's and can be changed per course.
+ */
+export const classTypeSchema = z.object({
+  id: z.string().regex(/^[a-z0-9-]{1,40}$/, "That class type isn't valid."),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Give each class type a name.")
+    .max(40, "Class type names can be at most 40 characters."),
+  meetings: z
+    .number("Meetings must be a number.")
+    .int("Meetings must be a whole number.")
+    .min(1, "A class type has at least 1 meeting.")
+    .max(200, "Meetings can be at most 200."),
+});
+export type ClassType = z.infer<typeof classTypeSchema>;
+
+export const classTypesSchema = z
+  .array(classTypeSchema)
+  .max(12, "Up to 12 class types.")
+  .refine((types) => new Set(types.map((t) => t.id)).size === types.length, "Class types must be different.");
+
+/** Defaults; names are shown translated until the user renames them ("Regular class" → "Kelas Biasa"). */
+export const DEFAULT_CLASS_TYPES: ClassType[] = [
+  { id: "regular", name: "Regular class", meetings: 16 },
+  { id: "practicum", name: "Practicum", meetings: 8 },
+];
+
+/** The class types editor submits its rows as one JSON field. */
+export function parseClassTypesField(value: unknown): unknown {
+  if (typeof value !== "string") return undefined;
+  try {
+    const rows = JSON.parse(value) as { id?: unknown; name?: unknown; meetings?: unknown }[];
+    if (!Array.isArray(rows)) return undefined;
+    return rows.map((r) => ({
+      id: String(r.id ?? ""),
+      name: String(r.name ?? ""),
+      meetings: r.meetings === "" || r.meetings == null ? Number.NaN : Number(r.meetings),
+    }));
+  } catch {
+    return undefined;
+  }
+}
+
 const hexColor = z
   .string()
   .trim()
@@ -57,6 +104,8 @@ export const preferencesSchema = z.object({
   coursesView: z.enum(COURSES_VIEWS),
   /** Minimum attendance (percent of all classes) the campus requires; warnings use it. */
   attendanceTarget: z.number().int().min(0, "Use 0–100.").max(100, "Use 0–100."),
+  /** Kinds of campus class and their usual meeting counts (see classTypeSchema). */
+  classTypes: classTypesSchema,
   /** Email a reminder before a recurring bill is due (its own "remind me" days). Quiet by default. */
   billReminderEmails: z.boolean(),
   /** A Monday email: spent, left to spend, what's due. Quiet by default. */
@@ -85,6 +134,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   gradeScale: DEFAULT_GRADE_SCALE,
   coursesView: "cards",
   attendanceTarget: 75,
+  classTypes: DEFAULT_CLASS_TYPES,
   billReminderEmails: false,
   weeklySummaryEmail: false,
 };

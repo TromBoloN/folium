@@ -9,6 +9,7 @@ export const idPatterns: [RegExp, string][] = [
   [/^No course matches “(.+)”\.$/, "Tidak ada mata kuliah yang cocok dengan “{1}”."],
   [/^(.+) has no class that day\.$/, "{1} tidak ada kelas hari itu."],
   [/^(.+) has no upcoming class\.$/, "{1} tidak punya kelas mendatang."],
+  [/^The current meeting can be at most (\d+)\.$/, "Pertemuan saat ini maksimal {1}."],
 ];
 idPatterns.push(
   [/^“(.+)” matches several accounts\.$/, "“{1}” cocok dengan beberapa rekening."],

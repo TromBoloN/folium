@@ -5,14 +5,16 @@ import { useState, useTransition } from "react";
 import { useToast } from "@/components/toast/toaster";
 import { cancelOccurrence, setAttendance, undoChange } from "@/features/schedule/actions";
 import { AttendanceQuick } from "@/features/schedule/components/attendance-quick";
+import { useMeetingLabel } from "@/features/schedule/components/meeting-quick";
 import {
   RescheduleDialog,
   type RescheduleOutcome,
   type RescheduleTarget,
 } from "@/features/schedule/components/reschedule-dialog";
+import type { MeetingInfo } from "@/features/schedule/meetings";
 import { useT } from "@/lib/i18n/client";
 
-type Item = RescheduleTarget & { color: string };
+type Item = RescheduleTarget & { color: string; meeting?: MeetingInfo | null };
 
 const chip =
   "inline-flex h-9 items-center gap-1 rounded-pill border border-border bg-surface-1 px-2.5 font-medium text-muted-foreground text-xs transition-colors hover:border-foreground/25 hover:text-foreground disabled:opacity-60";
@@ -38,6 +40,7 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
   const [pending, start] = useTransition();
   const toast = useToast();
   const t = useT();
+  const meetingLabel = useMeetingLabel();
   const left = items.filter((i) => !done.includes(i.key));
   const stillWaiting = waiting.filter((i) => !done.includes(i.key));
 
@@ -90,9 +93,13 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
                 <Dot color={i.color} />
                 <span className="truncate font-medium">{i.name}</span>
                 <span className="shrink-0 text-muted-foreground tabular-nums">{i.when}</span>
+                {i.meeting ? (
+                  <span className="shrink-0 text-muted-foreground text-xs tabular-nums">{meetingLabel(i.meeting)}</span>
+                ) : null}
               </span>
               <span className="flex flex-wrap items-center gap-1">
                 <AttendanceQuick
+                  meeting={i.meeting?.number ?? null}
                   occurrenceKey={i.key}
                   initial={null}
                   label={`${i.name}, ${i.when}`}
@@ -100,7 +107,7 @@ export function AttendancePromptList({ items, waiting }: { items: Item[]; waitin
                     if (!status) return;
                     finished(
                       i.key,
-                      t(status === "attended" ? "Attended: {name}" : "Missed: {name}", { name: i.name }),
+                      t(status === "attended" ? "Attended: {name}" : "Skipped: {name}", { name: i.name }),
                       () => setAttendance({ key: i.key, status: null }),
                     );
                   }}

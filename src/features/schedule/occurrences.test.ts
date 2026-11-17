@@ -480,3 +480,27 @@ describe("buildSchedule: rescheduled without a date yet (postponed)", () => {
     expect(next.find((o) => o.slotId === calcMon.id)?.status).toBe("scheduled");
   });
 });
+
+describe("buildSchedule: finished courses (meeting log)", () => {
+  it("drops a course's classes after the day of its last meeting, extras included", () => {
+    const done = { ...CALC, endsAfter: MON };
+    const out = buildSchedule(
+      {
+        slots: [slot("s-mon", done, 1, "07:30", "09:10"), slot("s-wed", done, 3, "07:30", "09:10"), physMon],
+        changes: [
+          change("x1", {
+            kind: "extra",
+            courseId: done.id,
+            course: done,
+            newDate: THU,
+            startTime: "10:00",
+            endTime: "11:00",
+          }),
+        ],
+        breaks: [],
+      },
+      WEEK,
+    );
+    expect(out.map((o) => `${o.course.code} ${o.date}`)).toEqual(["MAT101 2026-11-16", "FIS101 2026-11-16"]);
+  });
+});

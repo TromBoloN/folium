@@ -21,6 +21,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Today dashboard**
 
+- [2026-11-17: Today shows a widget only when it has something to show](#2026-11-17-today-shows-a-widget-only-when-it-has-something-to-show)
 - [2026-11-15: Today is a bento grid with fixed size hints per widget](#2026-11-15-today-is-a-bento-grid-with-fixed-size-hints-per-widget)
 - [2026-11-15: Dashboard widgets come from a registry; the layout stores overrides only](#2026-11-15-dashboard-widgets-come-from-a-registry-the-layout-stores-overrides-only)
 
@@ -41,6 +42,16 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 - [2026-11-16: Forms share primitives and only enhance a real form](#2026-11-16-forms-share-primitives-and-only-enhance-a-real-form)
 - [2026-11-15: Settings apply instantly; the action is called directly](#2026-11-15-settings-apply-instantly-the-action-is-called-directly)
 - [2026-11-15: Forms echo submitted values back on error](#2026-11-15-forms-echo-submitted-values-back-on-error)
+
+## 2026-11-17: Today shows a widget only when it has something to show
+
+**Status.** Accepted.
+
+**Decision.** Before the grid renders, `getDashboardFacts()` (`features/dashboard/queries.ts`) counts what there is, using the same cached loaders as the widgets, and `widgetsToShow()` (`presence.ts`, tested) keeps only the visible widgets with at least one data point. There are no thresholds. With no course, task or transaction at all, Today is one `Welcome` prompt ("Add your first class" / "Start managing your finances"). "At a glance" shows only its non-zero numbers. The setup checklist and "Did you go?" render inside the dashboard's Suspense instead of their own, so they arrive with the grid. While a class is on, the hero offers Attend / Skip / Cancelled (`MeetingQuick`). The buttons name the meeting they log ("Log Meeting 7 of 16"), take one answer per class, and offer Undo inline and in the toast.
+
+**Why.** A new user saw nine cards of zeros and "nothing yet". Deciding visibility up front, rather than letting each widget return null, keeps the layout from jumping as cards resolve: each card's skeleton holds its place until its data arrives.
+
+**Cost.** The facts query runs before any widget streams, so the dashboard's first paint waits for it (cached data, shared with the widgets). A widget's own empty state now shows only if the data changes between the count and the render.
 
 ## 2026-11-17: Themes are packs: a manifest plus scoped CSS on `data-theme`, effects lazy-loaded
 

@@ -1,6 +1,7 @@
 import { BackLink } from "@/components/back-link";
 import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
+import { getSettings } from "@/features/settings/queries";
 import { Tr } from "@/lib/i18n/client";
 import { listCourses } from "../queries";
 import { nextCourseColor, nextSemesterName, semesterLabels } from "../schema";
@@ -10,10 +11,11 @@ import { RolloverForm } from "./rollover-form";
 /** New course form, shared by the page and the sheet. Suggests a colour no other course uses. */
 export async function NewCourseScreen() {
   await requireUser();
-  const courses = await listCourses();
+  const [courses, { preferences }] = await Promise.all([listCourses(), getSettings()]);
   return (
     <CourseForm
       mode="create"
+      classTypes={preferences.classTypes}
       defaultColor={nextCourseColor(courses.map((c) => c.color))}
       semesters={semesterLabels(courses)}
     />

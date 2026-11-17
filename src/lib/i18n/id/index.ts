@@ -4,6 +4,7 @@ import { courses } from "./courses";
 import { calendar, emails } from "./emails";
 import { grades } from "./grades";
 import { loose } from "./loose";
+import { meetings } from "./meetings";
 import { messages } from "./messages";
 import { money } from "./money";
 import { pages } from "./pages";
@@ -23,6 +24,7 @@ export const id = {
   ...auth,
   ...grades,
   ...loose,
+  ...meetings,
   ...messages,
   ...money,
   ...pages,

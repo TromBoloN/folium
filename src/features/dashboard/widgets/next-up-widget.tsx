@@ -1,6 +1,7 @@
 import { io } from "next/cache";
+import { upcomingNumbers } from "@/features/schedule/meetings";
 import { isLive, liveOn } from "@/features/schedule/occurrences";
-import { getSchedule } from "@/features/schedule/queries";
+import { getMeetingLog, getSchedule } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { dueState, formatDue } from "@/features/tasks/due";
 import { listOpenTasks } from "@/features/tasks/queries";
@@ -16,9 +17,16 @@ export async function NextUpWidget() {
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
   const tomorrow = addDays(today, 1);
-  const schedule = await getSchedule({ from: today, to: tomorrow });
+  const [schedule, log] = await Promise.all([getSchedule({ from: today, to: tomorrow }), getMeetingLog()]);
   const fmt = preferences.timeFormat;
-  const hero = (o: (typeof schedule)[number]) => toHeroClass(o, fmt, i18n);
+  // Which meeting each class is (marked) or will log (not yet): "Meeting 7 of 16".
+  const numbers = upcomingNumbers(schedule.filter(isLive), log.progress, new Set(log.marks.keys()));
+  const hero = (o: (typeof schedule)[number]) => {
+    const mark = log.marks.get(o.key) ?? null;
+    const number = mark?.number ?? numbers.get(o.key) ?? null;
+    const total = log.progress.get(o.courseId)?.total ?? null;
+    return { ...toHeroClass(o, fmt, i18n), mark, meeting: number === null ? null : { number, total } };
+  };
   // Open tasks come sorted by deadline; the first not yet overdue is the next one.
   const next = tasks.find((t) => t.dueAt && dueState(t, now, preferences.timeZone) !== "overdue");
 

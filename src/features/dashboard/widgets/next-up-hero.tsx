@@ -7,7 +7,10 @@ import { useEffect } from "react";
 import { Pill } from "@/components/ui/pill";
 import { Tile } from "@/components/ui/tile";
 import { ChangeChips } from "@/features/schedule/components/change-chips";
+import { MeetingQuick, useMeetingLabel } from "@/features/schedule/components/meeting-quick";
 import type { Chip } from "@/features/schedule/format";
+import type { MeetingInfo } from "@/features/schedule/meetings";
+import type { AttendanceStatus } from "@/features/schedule/schema";
 import { formatTime, type SlotTiming } from "@/features/timetable/logic";
 import type { CivilDate } from "@/lib/dates";
 import { useT } from "@/lib/i18n/client";
@@ -27,6 +30,10 @@ export type HeroClass = SlotTiming & {
   chips: Chip[];
   note: string | null;
   meetingUrl: string | null;
+  /** The meeting this class is (if marked) or will log (if not). */
+  meeting?: MeetingInfo | null;
+  /** Already marked: one answer per class. */
+  mark?: { status: AttendanceStatus; number: number | null } | null;
 };
 
 type Props = {
@@ -61,6 +68,7 @@ export function NextUpHero({
     if (stale) router.refresh();
   }, [stale, router]);
 
+  const meetingLabel = useMeetingLabel();
   const up = nextUp(today, tomorrow, clock.minute);
   const time = (value: string) => formatTime(value, timeFormat);
 
@@ -106,6 +114,9 @@ export function NextUpHero({
             </span>
           ) : null}
           {slot.code ? <Pill tone="course">{slot.code}</Pill> : null}
+          {slot.meeting && up.kind !== "now" ? (
+            <span className="tabular-nums">{meetingLabel(slot.meeting)}</span>
+          ) : null}
           <ChangeChips chips={slot.chips} />
         </span>
         {slot.meetingUrl && up.kind !== "tomorrow" ? (
@@ -134,6 +145,15 @@ export function NextUpHero({
           ) : (
             <p className="font-display text-2xl tabular-nums sm:text-3xl">{countdownText(up, t)}</p>
           )}
+          {up.kind === "now" ? (
+            <MeetingQuick
+              key={slot.key}
+              occurrenceKey={slot.key}
+              name={slot.name}
+              meeting={slot.meeting ?? null}
+              initial={slot.mark ?? null}
+            />
+          ) : null}
           {up.kind === "now" ? (
             <span
               aria-hidden

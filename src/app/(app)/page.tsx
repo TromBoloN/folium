@@ -11,9 +11,11 @@ import { AttendancePrompt } from "@/features/dashboard/components/attendance-pro
 import { DashboardEditor } from "@/features/dashboard/components/dashboard-editor";
 import { Greeting, GreetingSkeleton } from "@/features/dashboard/components/greeting";
 import { Onboarding } from "@/features/dashboard/components/onboarding";
+import { Welcome } from "@/features/dashboard/components/welcome";
 import { SIZE_CLASSES, WidgetFrame, WidgetSkeleton } from "@/features/dashboard/components/widget-frame";
 import { visibleWidgets } from "@/features/dashboard/layout";
-import { getDashboardLayout } from "@/features/dashboard/queries";
+import { isBlank, widgetsToShow } from "@/features/dashboard/presence";
+import { getDashboardFacts, getDashboardLayout } from "@/features/dashboard/queries";
 import { WIDGETS } from "@/features/dashboard/registry";
 import { WIDGET_IDS, type WidgetId } from "@/features/dashboard/widget-ids";
 import { getT } from "@/lib/i18n/server";
@@ -90,8 +92,8 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
     );
   }
 
-  const ids = visibleWidgets(layout) as WidgetId[];
-  if (ids.length === 0) {
+  const visible = visibleWidgets(layout) as WidgetId[];
+  if (visible.length === 0) {
     return (
       <EmptyState
         icon={LayoutGrid}
@@ -105,19 +107,22 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
     );
   }
 
+  const facts = await getDashboardFacts();
+  // Nothing at all yet: one prompt, not a grid of empty cards.
+  if (isBlank(facts)) return <Welcome />;
+  // Only widgets with something to show; decided now, so the grid doesn't jump as data arrives.
+  const ids = widgetsToShow(visible, facts);
+
   return (
     // A container, so the bento adapts to the space beside the sidebar: 1 column, 2 from @xl, 12 from @4xl.
     // Dense flow lets small tiles fill gaps; items-start keeps tiles at their content height.
     <div className="@container flex flex-col gap-4">
+      {/* No Suspense of their own: they arrive with the grid instead of pushing it down later. */}
       <SectionErrorBoundary label="Setup checklist">
-        <Suspense fallback={null}>
-          <Onboarding />
-        </Suspense>
+        <Onboarding />
       </SectionErrorBoundary>
       <SectionErrorBoundary label="Attendance">
-        <Suspense fallback={null}>
-          <AttendancePrompt />
-        </Suspense>
+        <AttendancePrompt />
       </SectionErrorBoundary>
       <div className="grid grid-flow-row-dense grid-cols-1 items-start gap-4 @xl:grid-cols-2 @4xl:grid-cols-12">
         {ids.map((id, index) => {

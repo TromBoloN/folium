@@ -2,8 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { addDays, type CivilDate, isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
-import { listActiveSlots } from "../courses/queries";
+import { listActiveSlots, listCourses } from "../courses/queries";
 import { trimSeconds } from "../timetable/logic";
+import { type MeetingProgress, type MeetingRow, type MeetingStatus, progressByCourse } from "./meetings";
 import {
   buildSchedule,
   type ChangeKind,
@@ -14,6 +15,7 @@ import {
   type Occurrence,
   occurrenceKey,
   parseOccurrenceKey,
+  type ScheduleCourse,
   type ScheduleInput,
 } from "./occurrences";
 import type { AttendanceStatus } from "./schema";
@@ -78,7 +80,7 @@ function assertRange(range: DateRange) {
 export const getScheduleInput = cache(async (from: CivilDate, to: CivilDate): Promise<ScheduleInput> => {
   assertRange({ from, to });
   const supabase = await createClient();
-  const [slots, changes, breaks] = await Promise.all([
+  const [rawSlots, changes, breaks, log] = await Promise.all([
     listActiveSlots(),
     supabase
       .from("class_changes")
@@ -86,12 +88,21 @@ export const getScheduleInput = cache(async (from: CivilDate, to: CivilDate): Pr
       // Dates are validated above, so they're safe inside the filter string.
       .or(`and(original_date.gte.${from},original_date.lte.${to}),and(new_date.gte.${from},new_date.lte.${to})`),
     supabase.from("class_breaks").select("id, label, starts_on, ends_on").lte("starts_on", to).gte("ends_on", from),
+    getMeetingLog(),
   ]);
   if (changes.error) throw new Error(`Couldn't load schedule changes: ${changes.error.message}`);
   if (breaks.error) throw new Error(`Couldn't load breaks: ${breaks.error.message}`);
+  // A course whose meetings are all logged ends after its last one (rule 6 in occurrences.ts).
+  const ended = (course: ScheduleCourse): ScheduleCourse => {
+    const endsAfter = log.progress.get(course.id)?.endedOn ?? null;
+    return endsAfter ? { ...course, endsAfter } : course;
+  };
+  const slots = rawSlots.map((s) => ({ ...s, course: ended(s.course) }));
   return {
     slots,
-    changes: (changes.data as unknown as ChangeRow[]).map(toChange),
+    changes: (changes.data as unknown as ChangeRow[])
+      .map(toChange)
+      .map((c) => (c.course ? { ...c, course: ended(c.course) } : c)),
     breaks: breaks.data.map((b) => ({ id: b.id, label: b.label, startsOn: b.starts_on, endsOn: b.ends_on })),
   };
 });
@@ -166,17 +177,61 @@ export function rangeFrom(today: CivilDate, days: number): DateRange {
   return { from: today, to: addDays(today, days) };
 }
 
-/** Attendance marks, keyed by occurrence key ("s.<slot>.<date>" / "x.<change>"). Optionally for one course. */
-export async function listAttendanceMarks(courseId?: string): Promise<Map<string, AttendanceStatus>> {
+export type MeetingLog = {
+  rows: MeetingRow[];
+  /** Real marks (attended / missed) with their meeting number, keyed by occurrence key. */
+  marks: Map<string, { status: AttendanceStatus; number: number | null }>;
+  /** Per course (every course, archived too). */
+  progress: Map<string, MeetingProgress>;
+};
+
+/** The whole meeting log (attendance rows) and each course's progress. Cached per request. */
+export const getMeetingLog = cache(async (): Promise<MeetingLog> => {
   const supabase = await createClient();
-  let query = supabase.from("attendance").select("slot_id, occurs_on, change_id, status");
-  if (courseId) query = query.eq("course_id", courseId);
-  const { data, error } = await query;
+  const [{ data, error }, courses] = await Promise.all([
+    supabase
+      .from("attendance")
+      .select("course_id, slot_id, occurs_on, change_id, status, meeting_number, class_changes(new_date)"),
+    listCourses(),
+  ]);
   if (error) throw new Error(`Couldn't load attendance: ${error.message}`);
+  const rows: MeetingRow[] = [];
+  const marks: MeetingLog["marks"] = new Map();
+  for (const row of data as unknown as {
+    course_id: string;
+    slot_id: string | null;
+    occurs_on: string | null;
+    change_id: string | null;
+    status: string;
+    meeting_number: number | null;
+    class_changes: { new_date: string | null } | null;
+  }[]) {
+    const status = row.status as MeetingStatus;
+    const key =
+      row.slot_id && row.occurs_on
+        ? occurrenceKey(row.slot_id, row.occurs_on)
+        : row.change_id
+          ? `x.${row.change_id}`
+          : null;
+    rows.push({
+      courseId: row.course_id,
+      number: row.meeting_number,
+      status,
+      key,
+      date: row.occurs_on ?? row.class_changes?.new_date ?? null,
+    });
+    if (key && status !== "unknown") marks.set(key, { status, number: row.meeting_number });
+  }
+  return { rows, marks, progress: progressByCourse(rows, courses) };
+});
+
+/** Attendance marks (attended / missed), keyed by occurrence key. Optionally for one course. */
+export async function listAttendanceMarks(courseId?: string): Promise<Map<string, AttendanceStatus>> {
+  const log = await getMeetingLog();
   const marks = new Map<string, AttendanceStatus>();
-  for (const row of data) {
-    const key = row.slot_id && row.occurs_on ? occurrenceKey(row.slot_id, row.occurs_on) : `x.${row.change_id}`;
-    marks.set(key, row.status as AttendanceStatus);
+  for (const row of log.rows) {
+    if (!row.key || row.status === "unknown" || (courseId && row.courseId !== courseId)) continue;
+    marks.set(row.key, row.status);
   }
   return marks;
 }

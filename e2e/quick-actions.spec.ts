@@ -19,8 +19,10 @@ async function openAdd(page: Page) {
 
 test("first run: the setup checklist ticks itself off", async ({ page }) => {
   await signUp(page);
+  // With nothing at all, Today is one welcome prompt; the checklist takes over after the first step.
+  await expect(page.getByRole("region", { name: "Today fills itself in" })).toBeVisible();
   const setup = page.getByRole("region", { name: "Set up Folium" });
-  await expect(setup).toContainText("0/4");
+  await expect(setup).toHaveCount(0);
   await addCourse(page, "Academic English", "ING101");
   await page.goto("/");
   await expect(setup).toContainText("1/4");

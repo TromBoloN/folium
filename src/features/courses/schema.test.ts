@@ -6,6 +6,7 @@ import {
   courseInputSchema,
   nextCourseColor,
   nextSemesterName,
+  normalizeCourse,
   semesterLabels,
   whatsappLink,
 } from "./schema";
@@ -24,6 +25,10 @@ describe("courseInputSchema", () => {
       credits: 0,
       lecturerEmail: null,
       lecturerPhone: null,
+      kind: "campus",
+      classType: null,
+      totalMeetings: null,
+      currentMeeting: null,
     });
   });
 
@@ -191,5 +196,37 @@ describe("links in course and class-time forms", () => {
     ]) {
       expect(courseInputSchema.safeParse({ ...course, lecturerEmail }).success, lecturerEmail).toBe(false);
     }
+  });
+});
+
+describe("normalizeCourse (kind, class type, meetings)", () => {
+  const types = [
+    { id: "regular", meetings: 16 },
+    { id: "practicum", meetings: 8 },
+  ];
+  const input = (extra: Record<string, unknown>) =>
+    courseInputSchema.parse({ name: "Fisika", color: "#2f9e44", ...extra });
+
+  it("takes the class type's meeting count when none is typed, and keeps an override", () => {
+    const fromType = normalizeCourse(input({ classType: "practicum" }), types);
+    expect(fromType.ok && fromType.value.totalMeetings).toBe(8);
+    const override = normalizeCourse(input({ classType: "practicum", totalMeetings: "10" }), types);
+    expect(override.ok && override.value.totalMeetings).toBe(10);
+  });
+
+  it("an external course drops credits, semester and type, and can be open-ended", () => {
+    const r = normalizeCourse(
+      input({ kind: "external", credits: "3", semester: "2026 Ganjil", classType: "regular", totalMeetings: "" }),
+      types,
+    );
+    expect(r.ok && r.value).toMatchObject({ credits: 0, semester: null, classType: null, totalMeetings: null });
+  });
+
+  it("rejects an unknown type and a current meeting past the end", () => {
+    expect(normalizeCourse(input({ classType: "gone" }), types)).toMatchObject({ ok: false, field: "classType" });
+    expect(normalizeCourse(input({ totalMeetings: "8", currentMeeting: "9" }), types)).toMatchObject({
+      ok: false,
+      field: "currentMeeting",
+    });
   });
 });

@@ -29,6 +29,8 @@ export function attendanceStats(
   now: { date: CivilDate; minute: number },
   targetPercent: number,
   termKnown: boolean,
+  /** The course's meeting count, when set: the term is that many meetings, whatever the dates say. */
+  totalMeetings: number | null = null,
 ): AttendanceStats {
   const live = occurrences.filter(isLive);
   const held = live.filter((o) => isPast(o, now));
@@ -45,7 +47,7 @@ export function attendanceStats(
   }
   const marked = attended + missed;
   const percent = marked > 0 ? (attended / marked) * 100 : null;
-  const planned = termKnown ? live.length : null;
+  const planned = totalMeetings ?? (termKnown ? live.length : null);
   const allowedMisses = planned === null ? null : Math.floor(planned * (1 - targetPercent / 100) + 1e-9);
   const canMiss = allowedMisses === null ? null : allowedMisses - missed;
   return {

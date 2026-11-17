@@ -19,8 +19,9 @@ import { ViewSwitch } from "@/features/schedule/components/view-switch";
 import { WeekRail } from "@/features/schedule/components/week-rail";
 import { WeekToolbar } from "@/features/schedule/components/week-toolbar";
 import { nextLabel, occurrenceChips } from "@/features/schedule/format";
+import { skipsLeft } from "@/features/schedule/meetings";
 import { buildSchedule, changesByCourse, nextOccurrence } from "@/features/schedule/occurrences";
-import { getScheduleInput, listAttendanceMarks, listUpcomingBreaks } from "@/features/schedule/queries";
+import { getMeetingLog, getScheduleInput, listAttendanceMarks, listUpcomingBreaks } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { COURSES_VIEWS, type CoursesView, type Preferences } from "@/features/settings/schema";
 import { listOpenTasks } from "@/features/tasks/queries";
@@ -173,11 +174,12 @@ async function cardStats(
   const i18n = await getI18n();
   const thisWeek = weekRange(today, preferences.weekStart);
   const range = { from: thisWeek.from, to: addDays(today, 13) };
-  const [input, tasks, gradebook, courses] = await Promise.all([
+  const [input, tasks, gradebook, courses, log] = await Promise.all([
     getScheduleInput(range.from, range.to),
     listOpenTasks(),
     listGradebook(),
     listCourses(),
+    getMeetingLog(),
   ]);
   const schedule = buildSchedule(input, range);
   const changes = changesByCourse(schedule.filter((o) => o.date <= thisWeek.to));
@@ -186,6 +188,8 @@ async function cardStats(
   for (const course of courses) {
     const next = nextOccurrence(schedule, now, course.id);
     const book = gradebook.find((g) => g.id === course.id);
+    const progress = log.progress.get(course.id) ?? null;
+    const type = course.classType ? preferences.classTypes.find((c) => c.id === course.classType) : undefined;
     const result = book ? courseResult(book.assessments, preferences.gradeScale) : null;
     stats[course.id] = {
       next: next
@@ -202,6 +206,9 @@ async function cardStats(
           ? { letter: result.band.letter, percent: `${formatPercent(result.percent)}%` }
           : null,
       changesThisWeek: changes.get(course.id) ?? 0,
+      meeting: progress ? { next: progress.next, total: progress.total, finished: progress.finished } : null,
+      skipsLeft: progress && course.kind === "campus" ? skipsLeft(progress, preferences.attendanceTarget) : null,
+      typeName: type ? i18n.tl(type.name) : null,
     };
   }
   return stats;

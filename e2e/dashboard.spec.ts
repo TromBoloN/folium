@@ -2,17 +2,8 @@ import { expect, type Page, test } from "@playwright/test";
 import { localDate, signUp, waitForContent, waitForHydration } from "./helpers";
 
 const TZ = "Asia/Makassar";
-const DEFAULT_TITLES = [
-  "Next up",
-  "At a glance",
-  "Today's classes",
-  "This week",
-  "Due soon",
-  "Overdue",
-  "Grades",
-  "Money",
-  "Quick add",
-];
+/** The default order, showing only widgets that have something (a task due today) to show. */
+const WITH_DATA = ["Next up", "At a glance", "This week", "Due soon", "Quick add"];
 
 /** Current local time in the default zone, shifted by some minutes, as "HH:MM". */
 function localTime(offsetMinutes: number) {
@@ -35,9 +26,9 @@ async function widgetTitles(page: Page) {
 test("sign up, add a task due today, see it on the dashboard", async ({ page }) => {
   await signUp(page);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(/^Good (morning|afternoon|evening)/);
-  await expect(widget(page, "Today's classes")).toContainText("No classes today");
-  await expect(widget(page, "Overdue")).toContainText("Nothing overdue");
-  await expect(widget(page, "Due soon")).toContainText("Nothing due");
+  // Nothing yet: one welcome prompt, no grid of empty cards.
+  await expect(page.getByRole("region", { name: "Today fills itself in" })).toBeVisible();
+  expect(await widgetTitles(page)).toEqual([]);
 
   await page.goto("/tasks/new");
   await page.getByLabel("Title").fill("Hand in essay");
@@ -48,6 +39,9 @@ test("sign up, add a task due today, see it on the dashboard", async ({ page }) 
   await page.goto("/");
   await expect(widget(page, "Due soon")).toContainText("Hand in essay");
   await expect(widget(page, "Due soon")).toContainText("Today");
+  // Cards come with their first data point; the ones with nothing to show stay away.
+  await expect(widget(page, "Overdue")).toHaveCount(0);
+  await expect(widget(page, "Today's classes")).toHaveCount(0);
 
   // Quick add from the dashboard; a task with no deadline doesn't belong in "Due soon".
   // Wait for hydration: before it, Enter submits the plain form, which keeps the typed text.
@@ -98,8 +92,15 @@ test("today's classes highlight what's on now and next", async ({ page }) => {
 
 test("customize: hide and reorder widgets, saved across reloads", async ({ page }) => {
   await signUp(page);
+  // A task due today gives Next up, At a glance, This week, Due soon and Quick add something to show.
+  await page.goto("/tasks/new");
+  await page.getByLabel("Title").fill("Hand in essay");
+  await page.getByLabel("Date").fill(localDate(0));
+  await page.getByRole("button", { name: "Add task" }).click();
+  await expect(page.getByRole("heading", { name: "Hand in essay" })).toBeVisible();
+  await page.goto("/");
   await waitForContent(page);
-  expect(await widgetTitles(page)).toEqual(DEFAULT_TITLES);
+  expect(await widgetTitles(page)).toEqual(WITH_DATA);
 
   await page.getByRole("link", { name: "Customize" }).click();
   await expect(page.getByRole("heading", { name: "Customize your dashboard" })).toBeVisible();
@@ -126,16 +127,8 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
 
   await page.getByRole("button", { name: "Save layout" }).click();
   await expect(page).toHaveURL(/\/$/);
-  const expected = [
-    "Quick add",
-    "Next up",
-    "At a glance",
-    "Today's classes",
-    "Due soon",
-    "This week",
-    "Grades",
-    "Money",
-  ];
+  // The saved order, minus widgets with nothing to show (Today's classes, Grades, Money).
+  const expected = ["Quick add", "Next up", "At a glance", "Due soon", "This week"];
   await expect.poll(() => widgetTitles(page)).toEqual(expected);
 
   await page.reload();
@@ -145,5 +138,5 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
   await page.getByRole("link", { name: "Customize" }).click();
   await page.getByRole("button", { name: "Reset to default" }).click();
   await page.getByRole("button", { name: "Save layout" }).click();
-  await expect.poll(() => widgetTitles(page)).toEqual(DEFAULT_TITLES);
+  await expect.poll(() => widgetTitles(page)).toEqual(WITH_DATA);
 });

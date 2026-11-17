@@ -1,7 +1,8 @@
 "use client";
 
-import { BookOpen, CalendarRange, ListTodo, MapPin, User } from "lucide-react";
+import { BookOpen, CalendarRange, Hash, ListTodo, MapPin, User } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
+import { ChipGroup } from "@/components/form/chip-group";
 import { FormFooter } from "@/components/form/form-footer";
 import { FormSection, MoreDetails } from "@/components/form/form-section";
 import { Stepper } from "@/components/form/stepper";
@@ -15,9 +16,19 @@ import { createCourse, updateCourse } from "../actions";
 import type { Course } from "../schema";
 import { ColorField } from "./color-field";
 
-type Props = { semesters: string[] } & (
-  | { mode: "create"; defaultColor: string; course?: undefined }
-  | { mode: "edit"; course: Course; defaultColor?: undefined }
+type Props = {
+  semesters: string[];
+  /** The user's class types (settings). */
+  classTypes: { id: string; name: string; meetings: number }[];
+} & (
+  | { mode: "create"; defaultColor: string; course?: undefined; currentMeeting?: undefined }
+  | {
+      mode: "edit";
+      course: Course;
+      defaultColor?: undefined;
+      /** The next meeting to log, from the meeting log. */
+      currentMeeting: number;
+    }
 );
 
 /**
@@ -29,8 +40,13 @@ export function CourseForm(props: Props) {
   const [state, action, pending] = useActionState(props.mode === "create" ? createCourse : updateCourse, null);
   const errors = state && !state.ok ? (state.fieldErrors ?? {}) : {};
   const initial: Record<string, string | null | undefined> = props.course
-    ? { ...props.course, credits: String(props.course.credits) }
-    : { semester: props.semesters[0] ?? "" };
+    ? {
+        ...props.course,
+        credits: String(props.course.credits),
+        totalMeetings: props.course.totalMeetings === null ? "" : String(props.course.totalMeetings),
+        currentMeeting: String(props.currentMeeting),
+      }
+    : { semester: props.semesters[0] ?? "", kind: "campus", currentMeeting: "1" };
   const value = (name: string) => state?.values?.[name] ?? initial[name] ?? "";
   const cancelHref = props.mode === "edit" ? `/courses/${props.course.id}` : "/courses";
 
@@ -42,6 +58,12 @@ export function CourseForm(props: Props) {
     room: value("room"),
     color: (state?.values?.color ?? props.course?.color ?? props.defaultColor ?? "").toLowerCase(),
   });
+  // Campus-only fields hide for an external course (without JavaScript they all show; the server ignores them).
+  const [kind, setKind] = useState(value("kind") || "campus");
+  const campus = kind !== "external";
+  // Picking a class type fills in its meeting count; typing one yourself stops that.
+  const [meetings, setMeetings] = useState(value("totalMeetings"));
+  const [meetingsTouched, setMeetingsTouched] = useState(props.mode === "edit");
   const sheet = useSheet();
   useEffect(() => {
     sheet?.setTint(preview.color || null);
@@ -49,6 +71,7 @@ export function CourseForm(props: Props) {
   }, [sheet, preview.color]);
 
   const details = ["lecturer", "lecturerEmail", "lecturerPhone", "room", "semester"];
+  const typeName = (name: string) => tl(name);
   const detailsOpen = details.some((f) => errors[f]) || (props.mode === "edit" && details.some((f) => value(f)));
 
   const text = (
@@ -88,22 +111,35 @@ export function CourseForm(props: Props) {
       <CoursePreview {...preview} />
 
       <FormSection title="Basics" icon={BookOpen}>
+        <ChipGroup
+          name="kind"
+          legend={t("Where is it?")}
+          defaultValue={kind}
+          error={errors.kind}
+          options={[
+            { value: "campus", label: t("Campus") },
+            { value: "external", label: t("Outside campus") },
+          ]}
+          onChange={([v]) => setKind(v ?? "campus")}
+        />
         {text("name", "Name", { required: true, autoFocus: true, autoComplete: "off", placeholder: "e.g. Calculus I" })}
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto]">
           {text("code", "Code", { placeholder: "e.g. MAT101", autoComplete: "off" })}
-          <Field id="credits" label="Credits" optional error={errors.credits} hint="0 for things that aren't graded.">
-            <Stepper
-              id="credits"
-              name="credits"
-              unit="SKS"
-              min={0}
-              max={24}
-              step={0.5}
-              defaultValue={value("credits") || "0"}
-              aria-invalid={errors.credits ? true : undefined}
-              aria-describedby={describedBy("credits", errors.credits, "hint")}
-            />
-          </Field>
+          <div className={campus ? undefined : "hidden"}>
+            <Field id="credits" label="Credits" optional error={errors.credits} hint="0 for things that aren't graded.">
+              <Stepper
+                id="credits"
+                name="credits"
+                unit="SKS"
+                min={0}
+                max={24}
+                step={0.5}
+                defaultValue={value("credits") || "0"}
+                aria-invalid={errors.credits ? true : undefined}
+                aria-describedby={describedBy("credits", errors.credits, "hint")}
+              />
+            </Field>
+          </div>
         </div>
         <ColorField
           // Remount with the submitted colour if the server sends the form back.
@@ -112,6 +148,74 @@ export function CourseForm(props: Props) {
           error={errors.color}
           onChange={(color) => setPreview((p) => ({ ...p, color }))}
         />
+      </FormSection>
+
+      <FormSection title="Meetings" icon={Hash}>
+        {campus && props.classTypes.length > 0 ? (
+          <ChipGroup
+            name="classType"
+            legend={t("Class type")}
+            optional
+            defaultValue={value("classType")}
+            error={errors.classType}
+            options={[
+              { value: "", label: t("None") },
+              ...props.classTypes.map((c) => ({
+                value: c.id,
+                label: t("{name} · {n}", { name: typeName(c.name), n: c.meetings }),
+              })),
+            ]}
+            onChange={([id]) => {
+              const type = props.classTypes.find((c) => c.id === id);
+              if (type && !meetingsTouched) setMeetings(String(type.meetings));
+            }}
+          />
+        ) : null}
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field
+            id="totalMeetings"
+            label="Meetings in total"
+            optional
+            error={errors.totalMeetings}
+            hint={campus ? "Leave blank to use the class type's." : "Leave blank if it has no set end."}
+          >
+            <Stepper
+              id="totalMeetings"
+              name="totalMeetings"
+              min={1}
+              max={200}
+              step={1}
+              value={meetings}
+              onChange={(e) => {
+                setMeetings(e.target.value);
+                setMeetingsTouched(true);
+              }}
+              aria-invalid={errors.totalMeetings ? true : undefined}
+              aria-describedby={describedBy("totalMeetings", errors.totalMeetings, "hint")}
+            />
+          </Field>
+          <Field
+            id="currentMeeting"
+            label="Next meeting is number"
+            optional
+            error={errors.currentMeeting}
+            hint="Joining mid-way? Earlier meetings count as unknown, not attended."
+          >
+            <Stepper
+              id="currentMeeting"
+              name="currentMeeting"
+              min={1}
+              max={Number(meetings) || 200}
+              step={1}
+              defaultValue={value("currentMeeting")}
+              aria-invalid={errors.currentMeeting ? true : undefined}
+              aria-describedby={describedBy("currentMeeting", errors.currentMeeting, "hint")}
+            />
+          </Field>
+        </div>
+        {props.mode === "edit" ? (
+          <input type="hidden" name="currentMeetingWas" value={String(props.currentMeeting)} />
+        ) : null}
       </FormSection>
 
       <MoreDetails hint="Lecturer, contact, room and semester" open={detailsOpen}>
@@ -130,15 +234,17 @@ export function CourseForm(props: Props) {
         </FormSection>
         <FormSection title="Room and semester" icon={MapPin}>
           {text("room", "Room", { placeholder: "e.g. B2.04", hint: "Used for class times without their own room." })}
-          {text("semester", "Semester", {
-            list: "semester-options",
-            autoComplete: "off",
-            placeholder: "e.g. 2026 Ganjil",
-            hint:
-              props.semesters.length > 0
-                ? "Pick one you already use, or type a new one."
-                : "Courses with the same semester are grouped together.",
-          })}
+          {campus
+            ? text("semester", "Semester", {
+                list: "semester-options",
+                autoComplete: "off",
+                placeholder: "e.g. 2026 Ganjil",
+                hint:
+                  props.semesters.length > 0
+                    ? "Pick one you already use, or type a new one."
+                    : "Courses with the same semester are grouped together.",
+              })
+            : null}
           <datalist id="semester-options">
             {props.semesters.map((s) => (
               <option key={s} value={s} />

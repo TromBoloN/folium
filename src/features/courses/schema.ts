@@ -33,7 +33,37 @@ function optionalText(max: number, label: string) {
     .default(null);
 }
 
+export const COURSE_KINDS = ["campus", "external"] as const;
+export type CourseKind = (typeof COURSE_KINDS)[number];
+
+/** Blank → null; otherwise a whole number in range. */
+function optionalCount(label: string, max: number) {
+  return z.preprocess(
+    (v) => (v === "" || v == null ? null : typeof v === "string" ? Number(v) : v),
+    z
+      .number(`${label} must be a number.`)
+      .int(`${label} must be a whole number.`)
+      .min(1, `${label} must be at least 1.`)
+      .max(max, `${label} can be at most ${max}.`)
+      .nullable(),
+  );
+}
+
 export const courseInputSchema = z.object({
+  /** campus: credits, semester and a class type. external: a bootcamp or course outside campus. */
+  kind: z.enum(COURSE_KINDS, { error: "Choose campus or outside campus." }).default("campus"),
+  /** An id from preferences.classTypes; blank = none. Checked against the user's types in the action. */
+  classType: z
+    .string()
+    .trim()
+    .transform((v) => (v === "" ? null : v))
+    .nullable()
+    .default(null)
+    .refine((v) => v === null || /^[a-z0-9-]{1,40}$/.test(v), "Choose a class type from the list."),
+  /** How many meetings; blank = the class type's, or open-ended. */
+  totalMeetings: optionalCount("Meetings", 200),
+  /** "I'm at meeting N": the next meeting to log. Blank = leave as it is. */
+  currentMeeting: optionalCount("Current meeting", 200),
   name: z.string().trim().min(1, "Give the course a name.").max(120, "Name can be at most 120 characters."),
   code: optionalText(40, "Code"),
   color: z
@@ -69,6 +99,31 @@ export const courseInputSchema = z.object({
 
 export type CourseInput = z.infer<typeof courseInputSchema>;
 
+/**
+ * The parsed form, made consistent: an external course has no credits, semester
+ * or class type; a campus course with a type and no count takes the type's
+ * count; the current meeting can't be past the last one.
+ */
+export function normalizeCourse(
+  input: CourseInput,
+  classTypes: readonly { id: string; meetings: number }[],
+): { ok: true; value: CourseInput } | { ok: false; field: string; message: string } {
+  if (input.kind === "external") {
+    input = { ...input, credits: 0, semester: null, classType: null };
+  }
+  const type = input.classType ? classTypes.find((t) => t.id === input.classType) : undefined;
+  if (input.classType && !type) return { ok: false, field: "classType", message: "Choose a class type from the list." };
+  const totalMeetings = input.totalMeetings ?? type?.meetings ?? null;
+  if (totalMeetings !== null && input.currentMeeting !== null && input.currentMeeting > totalMeetings) {
+    return {
+      ok: false,
+      field: "currentMeeting",
+      message: `The current meeting can be at most ${totalMeetings}.`,
+    };
+  }
+  return { ok: true, value: { ...input, totalMeetings } };
+}
+
 export type Course = {
   id: string;
   name: string;
@@ -81,12 +136,22 @@ export type Course = {
   archivedAt: string | null;
   lecturerEmail: string | null;
   lecturerPhone: string | null;
+  kind: CourseKind;
+  classType: string | null;
+  /** Null = open-ended (no end). */
+  totalMeetings: number | null;
 };
 
 /** The database row for a validated course form. */
 export function courseRow(input: CourseInput) {
-  const { lecturerEmail, lecturerPhone, ...rest } = input;
-  return { ...rest, lecturer_email: lecturerEmail, lecturer_phone: lecturerPhone };
+  const { lecturerEmail, lecturerPhone, classType, totalMeetings, currentMeeting: _, ...rest } = input;
+  return {
+    ...rest,
+    lecturer_email: lecturerEmail,
+    lecturer_phone: lecturerPhone,
+    class_type: classType,
+    total_meetings: totalMeetings,
+  };
 }
 
 /** Re-exported for the course screens; the rules live in `lib/safe-links.ts`. */

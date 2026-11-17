@@ -7,7 +7,7 @@ import { type ActionResult, type FormState, fieldErrorsFrom, formValues, fromShe
 import { addDays, type CivilDate, formatDate, isoWeekday, minutesNowIn, todayIn } from "@/lib/dates";
 import { getI18n } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
-import type { Tables } from "@/types/database";
+import type { Tables, TablesInsert } from "@/types/database";
 import { requireUser } from "../auth/queries";
 import { listCourseOptions } from "../courses/queries";
 import { getSettings } from "../settings/queries";
@@ -467,9 +467,17 @@ export async function restoreBreak(row: BreakRow): Promise<ActionResult> {
 export async function setAttendance(input: {
   key: string;
   status: AttendanceStatus | null;
-}): Promise<ActionResult<{ previous: AttendanceStatus | null }>> {
+  /** The meeting number the button showed; used when still free, else the next free one. */
+  meeting?: number | null;
+}): Promise<ActionResult<{ previous: AttendanceStatus | null; number: number | null }>> {
   await requireUser();
-  const parsed = z.object({ key: occurrenceKeySchema, status: z.enum(ATTENDANCE).nullable() }).safeParse(input);
+  const parsed = z
+    .object({
+      key: occurrenceKeySchema,
+      status: z.enum(ATTENDANCE).nullable(),
+      meeting: z.number().int().min(1).max(200).nullable().default(null),
+    })
+    .safeParse({ ...input, meeting: input.meeting ?? null });
   if (!parsed.success) return { ok: false, error: GONE };
   const occurrence = await getOccurrence(parsed.data.key);
   if (!occurrence || !isLive(occurrence)) return { ok: false, error: "Only classes that took place can be marked." };
@@ -479,7 +487,7 @@ export async function setAttendance(input: {
     occurrence.slotId && occurrence.originalDate
       ? { slot_id: occurrence.slotId, occurs_on: occurrence.originalDate, change_id: null }
       : { slot_id: null, occurs_on: null, change_id: occurrence.changeId };
-  let query = supabase.from("attendance").select("id, status");
+  let query = supabase.from("attendance").select("id, status, meeting_number");
   query = target.slot_id
     ? query.eq("slot_id", target.slot_id).eq("occurs_on", target.occurs_on as string)
     : query.eq("change_id", target.change_id as string);
@@ -487,21 +495,36 @@ export async function setAttendance(input: {
   const previous = (existing?.status as AttendanceStatus | undefined) ?? null;
 
   let error: { code: string; message: string } | null = null;
+  let number: number | null = existing?.meeting_number ?? null;
   if (parsed.data.status === null) {
     if (existing) ({ error } = await supabase.from("attendance").delete().eq("id", existing.id));
+    number = null;
   } else if (existing) {
     ({ error } = await supabase.from("attendance").update({ status: parsed.data.status }).eq("id", existing.id));
   } else {
-    ({ error } = await supabase
+    // The number the student saw, if nobody took it meanwhile; otherwise the database numbers it.
+    const row: TablesInsert<"attendance"> = { course_id: occurrence.courseId, status: parsed.data.status, ...target };
+    let inserted = await supabase
       .from("attendance")
-      .insert({ course_id: occurrence.courseId, status: parsed.data.status, ...target }));
+      .insert({ ...row, meeting_number: parsed.data.meeting })
+      .select("meeting_number")
+      .single();
+    if (inserted.error?.code === "23505" && parsed.data.meeting !== null) {
+      inserted = await supabase.from("attendance").insert(row).select("meeting_number").single();
+    }
+    error = inserted.error;
+    number = inserted.data?.meeting_number ?? null;
   }
   if (error) {
     console.error("[schedule] attendance", error.code, error.message);
-    return { ok: false, error: "Couldn't save attendance. Please try again." };
+    return {
+      ok: false,
+      error: error.code === "23505" ? "This class is already marked." : "Couldn't save attendance. Please try again.",
+    };
   }
   revalidatePath("/courses", "layout");
-  return { ok: true, data: { previous } };
+  revalidatePath("/");
+  return { ok: true, data: { previous, number } };
 }
 
 // --- Typed commands (Ctrl/⌘K) -------------------------------------------------

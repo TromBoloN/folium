@@ -20,6 +20,12 @@ export type CourseCardStats = {
   openTasks: number;
   grade: { letter: string; percent: string } | null;
   changesThisWeek: number;
+  /** From the meeting log: the next meeting to log, of how many. */
+  meeting: { next: number; total: number | null; finished: boolean } | null;
+  /** Campus courses with a total and at least one mark: skips left before the attendance target. */
+  skipsLeft: number | null;
+  /** The class type's name, already translated; null for none. */
+  typeName: string | null;
 };
 
 type Props = {
@@ -106,6 +112,8 @@ function CourseCard({
           <span className="flex min-w-0 flex-col gap-1">
             <span className="flex flex-wrap items-center gap-1.5">
               {course.code ? <Pill tone="course">{course.code}</Pill> : null}
+              {course.kind === "external" ? <Pill>{t("Outside campus")}</Pill> : null}
+              {stats?.typeName ? <Pill>{stats.typeName}</Pill> : null}
               {stats && stats.changesThisWeek > 0 ? (
                 <Pill tone="warning">
                   <ArrowRightLeft aria-hidden />
@@ -179,6 +187,10 @@ function CourseCard({
           </span>
         )}
 
+        {stats?.meeting && !muted ? (
+          <MeetingProgressLine meeting={stats.meeting} skipsLeft={stats.skipsLeft} i18n={i18n} />
+        ) : null}
+
         <span className="mt-auto flex flex-wrap items-center gap-x-3 gap-y-1 border-border-soft border-t pt-3 text-muted-foreground text-xs">
           {facts.map((f, i) => (
             <span key={f} className="inline-flex items-center gap-1">
@@ -207,4 +219,53 @@ function weekdayText(days: Set<number>, { t, intl }: I18n) {
       .map((d) => weekdayLabel(d.value, "label", intl))
       .join(", "),
   });
+}
+
+/** "Meeting 5 of 16" with a bar, or "Meeting 5" when open-ended; then "2 skips left" once there's a mark. */
+function MeetingProgressLine({
+  meeting,
+  skipsLeft,
+  i18n,
+}: {
+  meeting: NonNullable<CourseCardStats["meeting"]>;
+  skipsLeft: number | null;
+  i18n: I18n;
+}) {
+  const { t } = i18n;
+  const { next, total, finished } = meeting;
+  const text = finished
+    ? t("All {total} meetings done", { total: total ?? 0 })
+    : total === null
+      ? t("Meeting {n}", { n: next })
+      : t("Meeting {n} of {total}", { n: next, total });
+  return (
+    <span className="flex flex-col gap-1.5 text-sm">
+      <span className="flex flex-wrap items-baseline justify-between gap-x-3">
+        <span className="tabular-nums">{text}</span>
+        {skipsLeft !== null ? (
+          <span
+            className={cn(
+              "font-medium text-xs tabular-nums",
+              skipsLeft < 0 ? "text-destructive" : skipsLeft <= 1 ? "text-warning" : "text-muted-foreground",
+            )}
+          >
+            {skipsLeft < 0
+              ? t(plural(-skipsLeft, "{n} skip over the limit", "{n} skips over the limit"), { n: -skipsLeft })
+              : t(plural(skipsLeft, "{n} skip left", "{n} skips left"), { n: skipsLeft })}
+          </span>
+        ) : null}
+      </span>
+      {total !== null ? (
+        <span
+          aria-hidden
+          className="h-1.5 overflow-hidden rounded-pill bg-[color-mix(in_oklab,var(--tint)_18%,transparent)]"
+        >
+          <span
+            className="grow-x block h-full w-full origin-left rounded-pill bg-(--tint)"
+            style={{ transform: `scaleX(${Math.min(1, (next - 1) / total)})` }}
+          />
+        </span>
+      ) : null}
+    </span>
+  );
 }

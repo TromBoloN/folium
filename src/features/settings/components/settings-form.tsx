@@ -16,6 +16,7 @@ import { getManifest } from "../../themes/registry";
 import { updateSettings } from "../actions";
 import { DEFAULT_THEME, DENSITIES, FONTS, MODES, MOTIONS, PRESETS, type Settings, type Theme } from "../schema";
 import { PRESET_LABELS, themeAttributes } from "../theme";
+import { ClassTypesEditor } from "./class-types-editor";
 import { PresetCard } from "./preset-card";
 
 const DEFAULT_ACCENT_PICK = "#2f9e44";
@@ -342,6 +343,7 @@ function SettingsFields({
                 {t("Many campuses require about 75% to sit the final exam. Check yours; courses warn you below it.")}
               </p>
             </div>
+            <ClassTypesEditor initial={submitted?.classTypes ?? preferences.classTypes} onEdit={onChange} />
             <GradeScaleEditor initial={submitted?.gradeScale ?? preferences.gradeScale} onEdit={onChange} />
             <fieldset className="flex flex-col gap-2">
               <legend className="mb-1 font-medium text-sm">{t("Money emails")}</legend>

@@ -17,6 +17,7 @@ export function AttendanceQuick({
   initial,
   label,
   compact = false,
+  meeting = null,
   onMarked,
 }: {
   occurrenceKey: string;
@@ -24,6 +25,8 @@ export function AttendanceQuick({
   /** "Calculus I, Mon 07:30": the buttons' accessible names. */
   label: string;
   compact?: boolean;
+  /** The meeting number to log (shown on the button that logs it). */
+  meeting?: number | null;
   onMarked?: (status: AttendanceStatus | null, previous: AttendanceStatus | null) => void;
 }) {
   const [status, setStatus] = useState(initial);
@@ -35,7 +38,7 @@ export function AttendanceQuick({
     const before = status;
     setStatus(value);
     start(async () => {
-      const result = await setAttendance({ key: occurrenceKey, status: value });
+      const result = await setAttendance({ key: occurrenceKey, status: value, meeting });
       if (!result.ok) {
         setStatus(before);
         toast({ message: result.error, tone: "error" });
@@ -50,7 +53,7 @@ export function AttendanceQuick({
       {(
         [
           ["attended", t("Attended"), Check],
-          ["missed", t("Missed"), X],
+          ["missed", t("Skipped"), X],
         ] as const
       ).map(([value, text, Icon]) => {
         const on = status === value;

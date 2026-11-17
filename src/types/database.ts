@@ -59,14 +59,14 @@ isOneToOne: false
                   ]
                 },"attendance": {
                   Row: {
-                    "change_id": string | null,"course_id": string,"created_at": string,"id": string,"occurs_on": string | null,"slot_id": string | null,"status": string,"updated_at": string,"user_id": string
+                    "change_id": string | null,"course_id": string,"created_at": string,"id": string,"meeting_number": number | null,"occurs_on": string | null,"slot_id": string | null,"status": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "change_id"?: string | null,"course_id": string,"created_at"?: string,"id"?: string,"occurs_on"?: string | null,"slot_id"?: string | null,"status": string,"updated_at"?: string,"user_id"?: string
+                    "change_id"?: string | null,"course_id": string,"created_at"?: string,"id"?: string,"meeting_number"?: number | null,"occurs_on"?: string | null,"slot_id"?: string | null,"status": string,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "change_id"?: string | null,"course_id"?: string,"created_at"?: string,"id"?: string,"occurs_on"?: string | null,"slot_id"?: string | null,"status"?: string,"updated_at"?: string,"user_id"?: string
+                    "change_id"?: string | null,"course_id"?: string,"created_at"?: string,"id"?: string,"meeting_number"?: number | null,"occurs_on"?: string | null,"slot_id"?: string | null,"status"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     {
@@ -171,14 +171,14 @@ isOneToOne: false
                   ]
                 },"courses": {
                   Row: {
-                    "archived_at": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"lecturer": string | null,"lecturer_email": string | null,"lecturer_phone": string | null,"name": string,"room": string | null,"semester": string | null,"updated_at": string,"user_id": string
+                    "archived_at": string | null,"class_type": string | null,"code": string | null,"color": string,"created_at": string,"credits": number,"id": string,"kind": string,"lecturer": string | null,"lecturer_email": string | null,"lecturer_phone": string | null,"name": string,"room": string | null,"semester": string | null,"total_meetings": number | null,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "archived_at"?: string | null,"class_type"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"kind"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name": string,"room"?: string | null,"semester"?: string | null,"total_meetings"?: number | null,"updated_at"?: string,"user_id"?: string
                   }
                   Update: {
-                    "archived_at"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"updated_at"?: string,"user_id"?: string
+                    "archived_at"?: string | null,"class_type"?: string | null,"code"?: string | null,"color"?: string,"created_at"?: string,"credits"?: number,"id"?: string,"kind"?: string,"lecturer"?: string | null,"lecturer_email"?: string | null,"lecturer_phone"?: string | null,"name"?: string,"room"?: string | null,"semester"?: string | null,"total_meetings"?: number | null,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: [
                     
@@ -482,6 +482,9 @@ isOneToOne: false
                            },
 "ensure_finance_defaults":
 { Args: Record<PropertyKey, never>; Returns: undefined
+                           },
+"set_current_meeting":
+{ Args: { "p_course_id": string,"p_next": number }; Returns: undefined
                            }
           }
           Enums: {

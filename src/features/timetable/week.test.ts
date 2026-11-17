@@ -16,6 +16,9 @@ const course = (id: string, name: string, code: string | null = null): Course =>
   archivedAt: null,
   lecturerEmail: null,
   lecturerPhone: null,
+  kind: "campus",
+  classType: null,
+  totalMeetings: null,
 });
 
 const calc = course("c1", "Calculus", "MAT101");

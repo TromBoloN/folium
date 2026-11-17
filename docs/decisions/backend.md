@@ -31,6 +31,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Data model**
 
+- [2026-11-17: Courses count meetings; attendance is the meeting log](#2026-11-17-courses-count-meetings-attendance-is-the-meeting-log)
 - [2026-11-16: A class can be rescheduled without a date yet (`postponed`)](#2026-11-16-a-class-can-be-rescheduled-without-a-date-yet-postponed)
 - [2026-11-16: Semesters stay free text, normalised on save](#2026-11-16-semesters-stay-free-text-normalised-on-save)
 - [2026-11-15: Attendance is keyed by the original occurrence](#2026-11-15-attendance-is-keyed-by-the-original-occurrence)
@@ -78,6 +79,16 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-17: Courses count meetings; attendance is the meeting log
+
+**Status.** Accepted. Slot start/end dates still work but are no longer how a course ends.
+
+**Decision.** A course is `campus` or `external` (`courses.kind`), may have a class type (`class_type`, an id from `preferences.classTypes`, campus only) and a meeting count (`total_meetings`, null = open-ended). Picking a type fills in its count ("Practicum" 8, "Regular class" 16); the course can override it. The weekly slots stay the schedule. The `attendance` table is now the meeting log: each mark (attended, or missed = "skipped") carries a `meeting_number`, given by a trigger as the next free number unless the client sends the number it showed. "Currently at meeting X" is the next unlogged number. Joining mid-way, `set_current_meeting(course, n)` logs meetings 1..n-1 as `unknown`, which percentages leave out. A cancelled class stays a `class_changes` row and is never logged, so it never takes a number. Once every meeting is logged, `getScheduleInput` sets `course.endsAfter` and `buildSchedule` drops the course's classes after that day (rule 6). The skip budget is `floor(total × (1 − target)) − skipped`, shown only for campus courses with a total and at least one real mark.
+
+**Why.** Students rarely know a course's end date, and cancelled weeks push it back anyway. A count of meetings that really happened ends a course at the right time. It also gives "meeting 7 of 16", attendance stats and an undo (delete the row) from one table. Marking backfilled meetings `unknown` keeps the attendance percentage honest. Keeping cancellations in `class_changes` means one record decides whether a class happened: every screen already reads it, and a second "cancelled" log row could disagree.
+
+**Cost.** Numbers follow the order classes were marked, not their dates, so marking an old class late takes the next number. Undoing a mark that isn't the latest leaves a gap until "next meeting is" is set again. Course pages still estimate the term from slot dates when a course has no total.
 
 ## 2026-11-16: Bills never create tasks; tasks are for class assignments
 

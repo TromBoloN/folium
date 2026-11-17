@@ -8,6 +8,8 @@ import { requireUser } from "@/features/auth/queries";
 import { CourseForm } from "@/features/courses/components/course-form";
 import { getCourse, listCourses } from "@/features/courses/queries";
 import { semesterLabels } from "@/features/courses/schema";
+import { getMeetingLog } from "@/features/schedule/queries";
+import { getSettings } from "@/features/settings/queries";
 import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -27,12 +29,23 @@ export default function EditCoursePage({ params }: PageProps<"/courses/[id]/edit
 async function EditCourse({ params }: Pick<PageProps<"/courses/[id]/edit">, "params">) {
   await requireUser();
   const { id } = await params;
-  const [course, courses] = await Promise.all([getCourse(id), listCourses()]);
+  const [course, courses, log, { preferences }] = await Promise.all([
+    getCourse(id),
+    listCourses(),
+    getMeetingLog(),
+    getSettings(),
+  ]);
   if (!course) notFound();
   return (
     <>
       <PageHeader title="Edit course" back={<BackLink href={`/courses/${course.id}`}>{course.name}</BackLink>} />
-      <CourseForm mode="edit" course={course} semesters={semesterLabels(courses)} />
+      <CourseForm
+        mode="edit"
+        course={course}
+        semesters={semesterLabels(courses)}
+        classTypes={preferences.classTypes}
+        currentMeeting={Math.min(log.progress.get(course.id)?.next ?? 1, course.totalMeetings ?? 200)}
+      />
     </>
   );
 }

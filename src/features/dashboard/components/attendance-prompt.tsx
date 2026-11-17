@@ -1,7 +1,8 @@
 import { CheckCircle2 } from "lucide-react";
 import { io } from "next/cache";
+import { upcomingNumbers } from "@/features/schedule/meetings";
 import { isLive, isPast, type Occurrence } from "@/features/schedule/occurrences";
-import { getSchedule, listAttendanceMarks, listPostponed } from "@/features/schedule/queries";
+import { getMeetingLog, getSchedule, listAttendanceMarks, listPostponed } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { formatTime } from "@/features/timetable/logic";
 import { addDays, type CivilDate, formatDate, minutesNowIn, todayIn } from "@/lib/dates";
@@ -20,11 +21,14 @@ export async function AttendancePrompt() {
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
   const clock = { date: today, minute: minutesNowIn(preferences.timeZone, now) };
-  const [schedule, marks, postponed] = await Promise.all([
+  const [schedule, marks, postponed, log] = await Promise.all([
     getSchedule({ from: addDays(today, -1), to: today }),
     listAttendanceMarks(),
     listPostponed(),
+    getMeetingLog(),
   ]);
+  // "Meeting 7 of 16": unmarked classes of one course take the next numbers in date order.
+  const numbers = upcomingNumbers(schedule.filter(isLive), log.progress, new Set(marks.keys()));
   const dayLabel = (date: CivilDate) =>
     date === today
       ? t("Today")
@@ -41,6 +45,9 @@ export async function AttendancePrompt() {
     endTime: o.endTime,
     location: o.location,
     canWait: o.slotId !== null,
+    meeting: numbers.has(o.key)
+      ? { number: numbers.get(o.key) as number, total: log.progress.get(o.courseId)?.total ?? null }
+      : null,
   });
   const pending = schedule
     .filter((o) => isLive(o) && isPast(o, clock) && !marks.has(o.key))

@@ -189,7 +189,7 @@ async function CourseSchedule({ course, preferences }: { course: CourseWithSlots
   const mine = buildSchedule(input, range).filter((o) => o.courseId === course.id);
   const upcoming = mine.filter((o) => isListed(o) && !isPast(o, clock) && o.date <= addDays(today, 21)).slice(0, 6);
   const term = mine.filter((o) => o.date <= termEnd);
-  const stats = attendanceStats(term, marks, clock, preferences.attendanceTarget, termKnown);
+  const stats = attendanceStats(term, marks, clock, preferences.attendanceTarget, termKnown, course.totalMeetings);
   const recent = term
     .filter((o) => isLive(o) && isPast(o, clock))
     .slice(-5)

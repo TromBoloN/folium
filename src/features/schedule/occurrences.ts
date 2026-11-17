@@ -19,6 +19,8 @@ import { appliesOn, compareSlots, type SlotTiming, toMinutes } from "../timetabl
  *  4. Extra sessions always happen, breaks or not (an exam in exam week).
  *  5. A change whose slot no longer applies on its original date (the slot was
  *     edited or ended) is stale and ignored.
+ *  6. A course whose meetings are all logged ends: nothing of it after the day
+ *     of its last meeting (`course.endsAfter`, from the meeting log).
  *
  * Each occurrence is also a SlotTiming for its own date only (weekday of the
  * date, startsOn = endsOn = date), so the weekly helpers (sorting, overlap
@@ -32,6 +34,8 @@ export type ScheduleCourse = {
   color: string;
   room: string | null;
   lecturer?: string | null;
+  /** Set when every meeting is logged (see meetings.ts): its classes stop after this day. */
+  endsAfter?: CivilDate | null;
 };
 
 export type ScheduleSlot = SlotTiming & {
@@ -282,7 +286,8 @@ export function buildSchedule(input: ScheduleInput, range: DateRange): Occurrenc
     });
   }
 
-  return out.sort(compareOccurrences);
+  // 6: finished courses.
+  return out.filter((o) => !o.course.endsAfter || o.date <= o.course.endsAfter).sort(compareOccurrences);
 }
 
 // --- Reading the schedule ----------------------------------------------------

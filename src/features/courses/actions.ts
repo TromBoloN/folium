@@ -7,7 +7,8 @@ import { type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/ac
 import { isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
-import { type CourseInput, canonicalSemester, courseInputSchema, courseRow } from "./schema";
+import { getSettings } from "../settings/queries";
+import { type CourseInput, canonicalSemester, courseInputSchema, courseRow, normalizeCourse } from "./schema";
 
 const idSchema = z.uuid();
 
@@ -22,7 +23,36 @@ function parseCourse(formData: FormData) {
     credits: formData.get("credits") ?? "",
     lecturerEmail: formData.get("lecturerEmail") ?? "",
     lecturerPhone: formData.get("lecturerPhone") ?? "",
+    kind: formData.get("kind") || "campus",
+    classType: formData.get("classType") ?? "",
+    totalMeetings: formData.get("totalMeetings") ?? "",
+    currentMeeting: formData.get("currentMeeting") ?? "",
   });
+}
+
+/** Parse, then make consistent against the user's class types (see normalizeCourse). */
+async function readCourse(formData: FormData) {
+  const parsed = parseCourse(formData);
+  if (!parsed.success) return { ok: false as const, fieldErrors: fieldErrorsFrom(parsed.error.issues) };
+  const { preferences } = await getSettings();
+  const normal = normalizeCourse(parsed.data, preferences.classTypes);
+  if (!normal.ok) return { ok: false as const, fieldErrors: { [normal.field]: normal.message } };
+  return { ok: true as const, data: normal.value };
+}
+
+/**
+ * "I'm at meeting N": logs the meetings before it as unknown (see the
+ * set_current_meeting function). Skipped when the form's number is unchanged.
+ */
+async function setCurrentMeeting(courseId: string, next: number | null, was: FormDataEntryValue | null) {
+  if (next === null || String(next) === was) return null;
+  const supabase = await createClient();
+  const { error } = await supabase.rpc("set_current_meeting", { p_course_id: courseId, p_next: next });
+  if (!error) return null;
+  console.error("[courses] current meeting", error.code, error.message);
+  return error.code === "23514"
+    ? "A later meeting is already marked. Undo that mark first, or pick a later meeting."
+    : "Couldn't set the current meeting. Please try again.";
 }
 
 const SAVE_FAILED = "Couldn't save the course. Please try again.";
@@ -43,14 +73,9 @@ async function rowFor(input: CourseInput) {
 export async function createCourse(_prev: FormState, formData: FormData): Promise<FormState> {
   await requireUser();
   const values = formValues(formData);
-  const parsed = parseCourse(formData);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: "Check the highlighted fields.",
-      fieldErrors: fieldErrorsFrom(parsed.error.issues),
-      values,
-    };
+  const parsed = await readCourse(formData);
+  if (!parsed.ok) {
+    return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.fieldErrors, values };
   }
 
   const supabase = await createClient();
@@ -63,6 +88,9 @@ export async function createCourse(_prev: FormState, formData: FormData): Promis
     console.error("[courses] create", error.code, error.message);
     return { ok: false, error: SAVE_FAILED, values };
   }
+  // A new course starts at meeting 1 unless the student says otherwise.
+  const meetingError = await setCurrentMeeting(data.id, parsed.data.currentMeeting, "1");
+  if (meetingError) console.error("[courses] create: current meeting not set");
 
   revalidatePath("/courses", "layout");
   if (fromSheet(formData)) return { ok: true, result: { id: data.id } };
@@ -74,14 +102,9 @@ export async function updateCourse(_prev: FormState, formData: FormData): Promis
   const values = formValues(formData);
   const id = idSchema.safeParse(formData.get("id"));
   if (!id.success) return { ok: false, error: "That course no longer exists.", values };
-  const parsed = parseCourse(formData);
-  if (!parsed.success) {
-    return {
-      ok: false,
-      error: "Check the highlighted fields.",
-      fieldErrors: fieldErrorsFrom(parsed.error.issues),
-      values,
-    };
+  const parsed = await readCourse(formData);
+  if (!parsed.ok) {
+    return { ok: false, error: "Check the highlighted fields.", fieldErrors: parsed.fieldErrors, values };
   }
 
   const supabase = await createClient();
@@ -95,8 +118,14 @@ export async function updateCourse(_prev: FormState, formData: FormData): Promis
     return { ok: false, error: SAVE_FAILED, values };
   }
   if (data.length === 0) return { ok: false, error: "That course no longer exists.", values };
+  const meetingError = await setCurrentMeeting(id.data, parsed.data.currentMeeting, formData.get("currentMeetingWas"));
+  if (meetingError) {
+    revalidatePath("/courses", "layout");
+    return { ok: false, error: meetingError, fieldErrors: { currentMeeting: meetingError }, values };
+  }
 
   revalidatePath("/courses", "layout");
+  revalidatePath("/");
   redirect(`/courses/${id.data}`);
 }
 
@@ -193,7 +222,7 @@ export async function startNewSemester(_prev: FormState, formData: FormData): Pr
   let query = supabase
     .from("courses")
     .select(
-      "id, name, code, color, lecturer, lecturer_email, lecturer_phone, room, credits, timetable_slots(weekday, start_time, end_time, location, is_online, meeting_url)",
+      "id, name, code, color, lecturer, lecturer_email, lecturer_phone, room, credits, kind, class_type, total_meetings, timetable_slots(weekday, start_time, end_time, location, is_online, meeting_url)",
     );
   query = r.from ? query.eq("semester", r.from) : query.is("semester", null);
   const { data: old, error } = await query;
@@ -212,6 +241,9 @@ export async function startNewSemester(_prev: FormState, formData: FormData): Pr
         lecturer_phone: c.lecturer_phone,
         room: c.room,
         credits: c.credits,
+        kind: c.kind,
+        class_type: c.class_type,
+        total_meetings: c.total_meetings,
         semester: r.to,
       })
       .select("id")
