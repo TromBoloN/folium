@@ -148,8 +148,17 @@ export function NextUpHero({
           {up.kind === "now" ? (
             <MeetingQuick
               key={slot.key}
-              occurrenceKey={slot.key}
-              name={slot.name}
+              target={{
+                key: slot.key,
+                name: slot.name,
+                when: `${t("Today")} ${time(slot.startTime)}`,
+                date: serverToday,
+                startTime: slot.startTime,
+                endTime: slot.endTime,
+                location: slot.location,
+                // Weekly classes can wait for a new date; an extra session can only move or be cancelled.
+                canWait: slot.key.startsWith("s."),
+              }}
               meeting={slot.meeting ?? null}
               initial={slot.mark ?? null}
             />

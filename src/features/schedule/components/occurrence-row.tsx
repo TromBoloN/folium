@@ -91,6 +91,7 @@ export function OccurrenceRow({ item }: { item: RowItem }) {
           occurrenceKey={item.id}
           initial={item.attendance ?? null}
           label={`${item.courseName}, ${item.dateLabel ? `${item.dateLabel} ` : ""}${item.timeLabel}`}
+          change={item.change}
           compact
         />
       ) : null}

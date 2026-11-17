@@ -7,6 +7,8 @@ import { useT } from "@/lib/i18n/client";
 import { cn } from "@/lib/utils";
 import { setAttendance } from "../actions";
 import type { AttendanceStatus } from "../schema";
+import { ChangeQuick } from "./change-quick";
+import type { RescheduleTarget } from "./reschedule-dialog";
 
 /**
  * Attended / Missed for one class that took place. Tapping the chosen one again
@@ -18,6 +20,7 @@ export function AttendanceQuick({
   label,
   compact = false,
   meeting = null,
+  change,
   onMarked,
 }: {
   occurrenceKey: string;
@@ -27,6 +30,8 @@ export function AttendanceQuick({
   compact?: boolean;
   /** The meeting number to log (shown on the button that logs it). */
   meeting?: number | null;
+  /** Also offer Rescheduled / Cancelled while the class is unmarked (day lists). */
+  change?: RescheduleTarget;
   onMarked?: (status: AttendanceStatus | null, previous: AttendanceStatus | null) => void;
 }) {
   const [status, setStatus] = useState(initial);
@@ -48,7 +53,7 @@ export function AttendanceQuick({
     });
   };
   return (
-    <fieldset className="flex shrink-0 gap-1">
+    <fieldset className="flex shrink-0 flex-wrap justify-end gap-1">
       <legend className="sr-only">{t("Attendance: {label}", { label })}</legend>
       {(
         [
@@ -79,6 +84,7 @@ export function AttendanceQuick({
           </button>
         );
       })}
+      {change && status === null ? <ChangeQuick target={change} compact={compact} disabled={pending} /> : null}
     </fieldset>
   );
 }

@@ -1,6 +1,7 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
 import { EN, type I18n } from "@/lib/i18n/core";
 import { formatTime, toMinutes } from "../timetable/logic";
+import type { RescheduleTarget } from "./components/reschedule-dialog";
 import { isLive, type Occurrence, type Placement } from "./occurrences";
 import type { AttendanceStatus } from "./schema";
 
@@ -100,6 +101,8 @@ export type RowItem = {
   /** Took place and is over: can be marked attended or missed. */
   canMark?: boolean;
   attendance?: AttendanceStatus | null;
+  /** Markable classes also offer Rescheduled / Cancelled; this is what the dialog needs. */
+  change?: RescheduleTarget;
   color: string;
   timeLabel: string;
   /** Shown above the time when rows span several days (e.g. a course's upcoming classes). */
@@ -111,6 +114,20 @@ export type RowItem = {
   past: boolean;
   overlapsWith: string[];
 };
+
+/** What the Rescheduled / Cancelled buttons need for one occurrence. */
+export function changeTarget(o: Occurrence, when: string): RescheduleTarget {
+  return {
+    key: o.key,
+    name: o.course.name,
+    when,
+    date: o.date,
+    startTime: o.startTime,
+    endTime: o.endTime,
+    location: o.location,
+    canWait: o.slotId !== null,
+  };
+}
 
 export function toRowItem(
   o: Occurrence,

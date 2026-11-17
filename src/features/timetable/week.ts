@@ -1,6 +1,7 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
 import { EN, type I18n } from "@/lib/i18n/core";
-import { type Chip, durationLabel, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
+import type { RescheduleTarget } from "../schedule/components/reschedule-dialog";
+import { type Chip, changeTarget, durationLabel, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
 import {
   buildSchedule,
   type DateRange,
@@ -11,7 +12,7 @@ import {
   type ScheduleInput,
 } from "../schedule/occurrences";
 import type { AttendanceStatus } from "../schedule/schema";
-import { findConflicts, layoutDay, toMinutes, type WeekStart, weekDates } from "./logic";
+import { findConflicts, formatTime, layoutDay, toMinutes, type WeekStart, weekDates } from "./logic";
 
 export type WeekItem = {
   /** The occurrence key: opens the class sheet. */
@@ -39,6 +40,7 @@ export type WeekItem = {
   /** Took place and is over: can be marked attended or missed. */
   canMark: boolean;
   attendance: AttendanceStatus | null;
+  change?: RescheduleTarget;
 };
 
 export type Ghost = {
@@ -144,6 +146,12 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
         durationLabel: durationLabel(o, i18n),
         canMark,
         attendance: canMark ? (options.marks?.get(o.key) ?? null) : null,
+        change: canMark
+          ? changeTarget(
+              o,
+              `${formatDate(date, { weekday: "short", day: "numeric", month: "short" }, i18n.intl)} ${formatTime(o.startTime, options.timeFormat)}`,
+            )
+          : undefined,
         id: o.key,
         courseId: o.courseId,
         title: courseTitle(o),
