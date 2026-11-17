@@ -75,11 +75,11 @@ async function CourseDetail({ params }: Pick<PageProps<"/courses/[id]">, "params
       style={{ "--course": course.color, "--tint": course.color } as React.CSSProperties}
     >
       <div className="flex flex-col gap-6">
-        <header className="tile tile-tinted flex flex-col gap-4 overflow-hidden p-5">
-          <span
-            aria-hidden
-            className="leaf-veins pointer-events-none absolute -right-8 -bottom-10 size-52 opacity-15"
-          />
+        {/* Not overflow-hidden: the "⋯" menu has to spill out of the card. Only the leaf is clipped, in its own layer. */}
+        <header className="tile tile-tinted relative z-10 flex flex-col gap-4 p-5">
+          <span aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden rounded-[inherit]">
+            <span className="leaf-veins absolute -right-8 -bottom-10 size-52 opacity-15" />
+          </span>
           <div className="relative flex flex-col gap-1">
             {course.code ? <span className="font-medium text-muted-foreground text-sm">{course.code}</span> : null}
             <h1 className="font-display font-medium text-3xl leading-tight tracking-tight">{course.name}</h1>
