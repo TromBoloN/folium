@@ -3,6 +3,7 @@ import type { MessageKey } from "@/lib/i18n/core";
 import { getI18n } from "@/lib/i18n/server";
 import { type DueState, dueState, formatDue } from "../due";
 import type { Task } from "../queries";
+import { BulkOverdueBar } from "./bulk-overdue-bar";
 import { TaskRow } from "./task-row";
 
 type Props = { tasks: Task[]; now: Date; timeZone: string; timeFormat: "24h" | "12h"; grouped: boolean };
@@ -44,12 +45,15 @@ export async function TaskList({ tasks, now, timeZone, timeFormat, grouped }: Pr
             className="reveal flex flex-col gap-2"
             style={{ "--i": i + 3 } as React.CSSProperties}
           >
-            <h2 id={`group-${state}`} className="flex items-center gap-2 px-1 font-medium text-sm">
-              {i18n.t(title)}{" "}
-              <Pill tone={state === "overdue" ? "danger" : state === "today" ? "warning" : "neutral"}>
-                {group.length}
-              </Pill>
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+              <h2 id={`group-${state}`} className="flex items-center gap-2 font-medium text-sm">
+                {i18n.t(title)}{" "}
+                <Pill tone={state === "overdue" ? "danger" : state === "today" ? "warning" : "neutral"}>
+                  {group.length}
+                </Pill>
+              </h2>
+              {state === "overdue" && group.length > 1 ? <BulkOverdueBar ids={group.map((r) => r.task.id)} /> : null}
+            </div>
             <ul className="tile divide-y divide-border-soft overflow-hidden">
               {group.map((r) => (
                 <TaskRow key={r.task.id} task={r.task} dueLabel={r.label} dueState={r.state} />

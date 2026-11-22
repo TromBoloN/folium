@@ -3,9 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { type FormState, fieldErrorsFrom, formValues } from "@/lib/action-result";
+import { type ActionResult, type FormState, fieldErrorsFrom, formValues } from "@/lib/action-result";
 import { isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
+import type { TablesInsert } from "@/types/database";
 import { requireUser } from "../../auth/queries";
 import { getSettings } from "../../settings/queries";
 import { suggestBudget } from "../lib/budgets";
@@ -379,4 +380,181 @@ export async function deleteGoal(_prev: FormState, formData: FormData): Promise<
   if (error) return { ok: false, error: "Couldn't delete. Please try again." };
   refresh();
   return { ok: true, result: { message: "Goal removed" } };
+}
+
+// ---------------------------------------------------------------- catch-up bills
+
+export type PastDueBillUndo =
+  | { kind: "reopen"; id: string; occurredOn: string }
+  | {
+      kind: "reinsert";
+      row: {
+        id: string;
+        kind: "expense" | "income" | "transfer";
+        amount: number;
+        fee_amount: number;
+        account_id: string;
+        to_account_id: string | null;
+        category_id: string | null;
+        payee: string | null;
+        note: string | null;
+        occurred_on: string;
+        due_on: string | null;
+        recurring_rule_id: string | null;
+      };
+    };
+
+/**
+ * Catch-up for past-due planned bills on Welcome back:
+ * - "paid": posts each bill dated on its `due_on` (not today, so Reports land in the right month).
+ * - "skip": deletes the missed planned occurrence (rule.generated_through keeps it skipped).
+ */
+export async function resolvePastDueBills(input: {
+  action: "paid" | "skip";
+  ids: string[];
+}): Promise<ActionResult<{ count: number; undo: PastDueBillUndo[] }>> {
+  await requireUser();
+  const parsed = z
+    .object({ action: z.enum(["paid", "skip"]), ids: z.array(z.uuid()).min(1).max(100) })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Those bills no longer exist." };
+
+  const supabase = await createClient();
+  const { data: rows, error: readError } = await supabase
+    .from("transactions")
+    .select(
+      "id, kind, amount, fee_amount, account_id, to_account_id, category_id, payee, note, occurred_on, due_on, recurring_rule_id",
+    )
+    .in("id", parsed.data.ids)
+    .eq("status", "planned")
+    .not("recurring_rule_id", "is", null);
+  if (readError) {
+    console.error("[finance] catch-up bills read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't update those bills. Please try again." };
+  }
+  if (!rows || rows.length === 0) return { ok: true, data: { count: 0, undo: [] } };
+
+  if (parsed.data.action === "paid") {
+    const results = await Promise.all(
+      rows.map((r) =>
+        supabase
+          .from("transactions")
+          .update({ status: "posted", occurred_on: r.due_on ?? r.occurred_on })
+          .eq("id", r.id)
+          .eq("status", "planned"),
+      ),
+    );
+    const failed = results.find((r) => r.error);
+    if (failed?.error) {
+      console.error("[finance] catch-up bills paid", failed.error.code, failed.error.message);
+      refresh();
+      return { ok: false, error: "Couldn't mark those bills paid. Please try again." };
+    }
+    refresh();
+    return {
+      ok: true,
+      data: {
+        count: rows.length,
+        undo: rows.map((r) => ({ kind: "reopen", id: r.id, occurredOn: r.occurred_on })),
+      },
+    };
+  }
+
+  const { error: deleteError } = await supabase
+    .from("transactions")
+    .delete()
+    .in(
+      "id",
+      rows.map((r) => r.id),
+    )
+    .eq("status", "planned");
+  if (deleteError) {
+    console.error("[finance] catch-up bills skip", deleteError.code, deleteError.message);
+    return { ok: false, error: "Couldn't skip those bills. Please try again." };
+  }
+  refresh();
+  return {
+    ok: true,
+    data: {
+      count: rows.length,
+      undo: rows.map((r) => ({
+        kind: "reinsert",
+        row: {
+          id: r.id,
+          kind: r.kind as "expense" | "income" | "transfer",
+          amount: Number(r.amount),
+          fee_amount: Number(r.fee_amount),
+          account_id: r.account_id,
+          to_account_id: r.to_account_id,
+          category_id: r.category_id,
+          payee: r.payee,
+          note: r.note,
+          occurred_on: r.occurred_on,
+          due_on: r.due_on,
+          recurring_rule_id: r.recurring_rule_id,
+        },
+      })),
+    },
+  };
+}
+
+/** FormData wrapper for resolvePastDueBills (no-JS <form> fallback). */
+export async function resolvePastDueBillsForm(formData: FormData): Promise<void> {
+  const action = formData.get("action");
+  if (action !== "paid" && action !== "skip") return;
+  const ids = formData.getAll("id").filter((v): v is string => typeof v === "string");
+  await resolvePastDueBills({ action, ids });
+}
+
+const billUndoSchema = z.array(
+  z.discriminatedUnion("kind", [
+    z.object({ kind: z.literal("reopen"), id: z.uuid(), occurredOn: z.string() }),
+    z.object({
+      kind: z.literal("reinsert"),
+      row: z.object({
+        id: z.uuid(),
+        kind: z.enum(["expense", "income", "transfer"]),
+        amount: z.number().int().positive(),
+        fee_amount: z.number().int().min(0),
+        account_id: z.uuid(),
+        to_account_id: z.uuid().nullable(),
+        category_id: z.uuid().nullable(),
+        payee: z.string().nullable(),
+        note: z.string().nullable(),
+        occurred_on: z.string(),
+        due_on: z.string().nullable(),
+        recurring_rule_id: z.uuid().nullable(),
+      }),
+    }),
+  ]),
+);
+
+/** Undo for resolvePastDueBills: put paid bills back to planned, or restore skipped bills. */
+export async function undoPastDueBills(undo: PastDueBillUndo[]): Promise<ActionResult> {
+  await requireUser();
+  const parsed = billUndoSchema.safeParse(undo);
+  if (!parsed.success) return { ok: false, error: "Couldn't undo." };
+  const supabase = await createClient();
+  const reopens = parsed.data.filter((u): u is Extract<PastDueBillUndo, { kind: "reopen" }> => u.kind === "reopen");
+  const reinserts = parsed.data.filter(
+    (u): u is Extract<PastDueBillUndo, { kind: "reinsert" }> => u.kind === "reinsert",
+  );
+  if (reopens.length > 0) {
+    const results = await Promise.all(
+      reopens.map((u) =>
+        supabase.from("transactions").update({ status: "planned", occurred_on: u.occurredOn }).eq("id", u.id),
+      ),
+    );
+    if (results.some((r) => r.error)) return { ok: false, error: "Couldn't undo." };
+  }
+  if (reinserts.length > 0) {
+    const inserts: TablesInsert<"transactions">[] = reinserts.map((u) => ({
+      ...u.row,
+      status: "planned",
+    }));
+    const { error } = await supabase.from("transactions").upsert(inserts, { onConflict: "id" });
+    if (error) return { ok: false, error: "Couldn't undo." };
+  }
+  refresh();
+  return { ok: true };
 }

@@ -12,6 +12,7 @@ import { DashboardEditor } from "@/features/dashboard/components/dashboard-edito
 import { Greeting, GreetingSkeleton } from "@/features/dashboard/components/greeting";
 import { Onboarding } from "@/features/dashboard/components/onboarding";
 import { Welcome } from "@/features/dashboard/components/welcome";
+import { WelcomeBack } from "@/features/dashboard/components/welcome-back";
 import { SIZE_CLASSES, WidgetFrame, WidgetSkeleton } from "@/features/dashboard/components/widget-frame";
 import { visibleWidgets } from "@/features/dashboard/layout";
 import { isBlank, widgetsToShow } from "@/features/dashboard/presence";
@@ -120,6 +121,9 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
       {/* No Suspense of their own: they arrive with the grid instead of pushing it down later. */}
       <SectionErrorBoundary label="Setup checklist">
         <Onboarding />
+      </SectionErrorBoundary>
+      <SectionErrorBoundary label="Welcome back">
+        <WelcomeBack />
       </SectionErrorBoundary>
       <SectionErrorBoundary label="Attendance">
         <AttendancePrompt />

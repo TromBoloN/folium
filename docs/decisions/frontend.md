@@ -21,6 +21,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Today dashboard**
 
+- [2026-11-22: Welcome back is backlog-driven, never gated on last activity](#2026-11-22-welcome-back-is-backlog-driven-never-gated-on-last-activity)
 - [2026-11-17: Today shows a widget only when it has something to show](#2026-11-17-today-shows-a-widget-only-when-it-has-something-to-show)
 - [2026-11-15: Today is a bento grid with fixed size hints per widget](#2026-11-15-today-is-a-bento-grid-with-fixed-size-hints-per-widget)
 - [2026-11-15: Dashboard widgets come from a registry; the layout stores overrides only](#2026-11-15-dashboard-widgets-come-from-a-registry-the-layout-stores-overrides-only)
@@ -43,6 +44,18 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 - [2026-11-16: Forms share primitives and only enhance a real form](#2026-11-16-forms-share-primitives-and-only-enhance-a-real-form)
 - [2026-11-15: Settings apply instantly; the action is called directly](#2026-11-15-settings-apply-instantly-the-action-is-called-directly)
 - [2026-11-15: Forms echo submitted values back on error](#2026-11-15-forms-echo-submitted-values-back-on-error)
+
+## 2026-11-22: Welcome back is backlog-driven, never gated on last activity
+
+**Status:** active.
+
+**Decision.** Today renders one `<WelcomeBack>` catch-up card whenever real backlog from before yesterday exists: past-due bills (`due_on < today`), balances stale for 3+ days (hidden while past-due bills remain, dismissed across devices via `preferences.catchUp.balancesCheckedOn`), unmarked classes older than yesterday (up to 14 days back), and tasks overdue by more than 1 day. Bulk task moves offer Tomorrow and Next week (not Today), and every action wraps a real `<form>` for no-JS fallback with 1-tap Undo when JS is loaded.
+
+**Why.** Gating the card on "last activity ≥ 2 days ago" breaks mid-catch-up because the first tap creates activity today and hides the remaining rows; it also misfires for users who only use tasks. Putting bills before balances (and posting paid catch-up bills on `due_on`, not today) stops a bill from being counted twice when syncing balances and keeps monthly Reports accurate.
+
+**Cost.** One extra server query block on Today when loading the dashboard (reusing cached `listOpenTasks`, `listAccounts`, `getMeetingLog`).
+
+---
 
 ## 2026-11-17: Today shows a widget only when it has something to show
 

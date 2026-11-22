@@ -80,4 +80,13 @@ export const tasks = {
   "Give the task a title.": "Beri judul tugasnya.",
   "Progress and notes": "Progres dan catatan",
   "Status and notes": "Status dan catatan",
+  // Bulk overdue reschedule
+  "Moved 1 task to tomorrow": "1 tugas dipindah ke besok",
+  "Moved {n} tasks to tomorrow": "{n} tugas dipindah ke besok",
+  "Moved 1 task to next week": "1 tugas dipindah ke minggu depan",
+  "Moved {n} tasks to next week": "{n} tugas dipindah ke minggu depan",
+  "Move waiting tasks to tomorrow": "Pindahkan tugas yang menunggu ke besok",
+  "Move waiting tasks to next week": "Pindahkan tugas yang menunggu ke minggu depan",
+  "Couldn't move those tasks. Please try again.": "Tidak dapat memindahkan tugas tersebut. Coba lagi.",
+  "Couldn't move all of those tasks. Please try again.": "Tidak dapat memindahkan semua tugas tersebut. Coba lagi.",
 };

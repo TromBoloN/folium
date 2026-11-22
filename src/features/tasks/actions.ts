@@ -504,3 +504,118 @@ export async function deleteSubtask(_prev: FormState, formData: FormData): Promi
   done();
   return { ok: true };
 }
+
+// --- Bulk overdue reschedule (Welcome back + Overdue lists) ------------------
+
+export type TaskDueSnapshot = { id: string; dueAt: string | null; dueHasTime: boolean };
+
+const bulkRescheduleSchema = z.object({
+  target: z.enum(["tomorrow", "next-week"]),
+  ids: z.array(z.uuid()).max(200).optional(),
+});
+
+/**
+ * Move open overdue tasks to tomorrow or next week (never "today", so catching
+ * up doesn't recreate a wall of chores). Returns previous deadlines for Undo.
+ */
+export async function rescheduleOverdueTasks(input: {
+  target: "tomorrow" | "next-week";
+  ids?: string[];
+}): Promise<ActionResult<{ previous: TaskDueSnapshot[]; count: number }>> {
+  await requireUser();
+  const parsed = bulkRescheduleSchema.safeParse(input);
+  if (!parsed.success) return { ok: false, error: "Couldn't move those tasks. Please try again." };
+
+  const { preferences } = await getSettings();
+  const now = new Date();
+  const targetDate = rescheduleDate(parsed.data.target, todayIn(preferences.timeZone, now), preferences.weekStart);
+  const supabase = await createClient();
+
+  let query = supabase
+    .from("tasks")
+    .select("id, due_at, due_has_time")
+    .is("parent_id", null)
+    .neq("status", "done")
+    .lt("due_at", now.toISOString())
+    .limit(200);
+  if (parsed.data.ids && parsed.data.ids.length > 0) query = query.in("id", parsed.data.ids);
+
+  const { data: rows, error: readError } = await query;
+  if (readError) {
+    console.error("[tasks] bulk reschedule read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't move those tasks. Please try again." };
+  }
+  if (!rows || rows.length === 0) return { ok: true, data: { previous: [], count: 0 } };
+
+  const previous: TaskDueSnapshot[] = rows.map((r) => ({
+    id: r.id,
+    dueAt: r.due_at,
+    dueHasTime: r.due_has_time,
+  }));
+
+  // Group by target (dueAt, dueHasTime) so date-only tasks finish in one UPDATE.
+  const groups = new Map<string, { dueAt: string; dueHasTime: boolean; ids: string[] }>();
+  for (const r of rows) {
+    const moved = movedDue({ dueAt: r.due_at, dueHasTime: r.due_has_time }, targetDate, now, preferences.timeZone);
+    const key = `${moved.dueAt}|${moved.dueHasTime ? 1 : 0}`;
+    const g = groups.get(key) ?? { ...moved, ids: [] };
+    g.ids.push(r.id);
+    groups.set(key, g);
+  }
+
+  const results = await Promise.all(
+    [...groups.values()].map((g) =>
+      supabase
+        .from("tasks")
+        .update({ due_at: g.dueAt, due_has_time: g.dueHasTime })
+        .in("id", g.ids)
+        .is("parent_id", null),
+    ),
+  );
+  const failed = results.find((r) => r.error);
+  if (failed?.error) {
+    console.error("[tasks] bulk reschedule update", failed.error.code, failed.error.message);
+    done();
+    return { ok: false, error: "Couldn't move all of those tasks. Please try again." };
+  }
+
+  done();
+  return { ok: true, data: { previous, count: rows.length } };
+}
+
+/** FormData wrapper for rescheduleOverdueTasks (no-JS <form> fallback). */
+export async function rescheduleOverdueTasksForm(formData: FormData): Promise<void> {
+  const target = formData.get("target");
+  if (target !== "tomorrow" && target !== "next-week") return;
+  const ids = formData.getAll("id").filter((v): v is string => typeof v === "string");
+  await rescheduleOverdueTasks({ target, ids: ids.length > 0 ? ids : undefined });
+}
+
+/** Undo for rescheduleOverdueTasks: restore each task's previous deadline. */
+export async function restoreTaskDueDates(previous: TaskDueSnapshot[]): Promise<ActionResult> {
+  await requireUser();
+  const parsed = z
+    .array(
+      z.object({
+        id: z.uuid(),
+        dueAt: z.iso.datetime({ offset: true }).nullable(),
+        dueHasTime: z.boolean(),
+      }),
+    )
+    .max(200)
+    .safeParse(previous);
+  if (!parsed.success) return { ok: false, error: "Couldn't undo." };
+  const supabase = await createClient();
+  const results = await Promise.all(
+    parsed.data.map((t) =>
+      supabase
+        .from("tasks")
+        .update({ due_at: t.dueAt, due_has_time: t.dueAt ? t.dueHasTime : false })
+        .eq("id", t.id)
+        .is("parent_id", null),
+    ),
+  );
+  if (results.some((r) => r.error)) return { ok: false, error: "Couldn't undo." };
+  done();
+  return { ok: true };
+}

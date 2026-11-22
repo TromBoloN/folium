@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { type FormState, formValues } from "@/lib/action-result";
+import { todayIn } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 import { parseGradeScaleField } from "../grades/scale";
@@ -67,14 +68,17 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
     return { ok: false, error: "Couldn't save your settings. Please try again.", values };
   }
   const current = resolveSettings(stored);
-  const { coursesView } = current.preferences;
+  const { coursesView, catchUp } = current.preferences;
 
   const { error } = await supabase
     .from("user_settings")
     .update({
       version: SETTINGS_VERSION,
       theme: diffFromDefaults({ ...parsed.data.theme, pack: current.theme.pack }, DEFAULT_THEME) as JsonObject,
-      preferences: diffFromDefaults({ ...parsed.data.preferences, coursesView }, DEFAULT_PREFERENCES) as JsonObject,
+      preferences: diffFromDefaults(
+        { ...parsed.data.preferences, coursesView, catchUp },
+        DEFAULT_PREFERENCES,
+      ) as JsonObject,
     })
     .eq("user_id", auth.user.id);
 
@@ -167,4 +171,40 @@ export async function rememberCoursesView(view: CoursesView): Promise<void> {
     .update({ preferences: diffFromDefaults(preferences, DEFAULT_PREFERENCES) as JsonObject })
     .eq("user_id", auth.user.id);
   if (error) console.error("[settings] courses view", error.code, error.message);
+}
+
+/**
+ * Mark balances as checked today ("Looks right" on Welcome back, or after Sync).
+ * Stored in preferences.catchUp.balancesCheckedOn so it stays synced across devices.
+ */
+export async function markBalancesChecked(): Promise<FormState> {
+  const supabase = await createClient();
+  const { data: auth } = await supabase.auth.getUser();
+  if (!auth.user) return { ok: false, error: "Your session has ended. Sign in again." };
+  const { data: stored, error: readError } = await supabase
+    .from("user_settings")
+    .select("version, theme, preferences")
+    .maybeSingle();
+  if (readError) {
+    console.error("[settings] catch-up read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't save your settings. Please try again." };
+  }
+  const current = resolveSettings(stored).preferences;
+  const today = todayIn(current.timeZone, new Date());
+  const preferences = { ...current, catchUp: { balancesCheckedOn: today } };
+  const { error } = await supabase
+    .from("user_settings")
+    .update({ preferences: diffFromDefaults(preferences, DEFAULT_PREFERENCES) as JsonObject })
+    .eq("user_id", auth.user.id);
+  if (error) {
+    console.error("[settings] catch-up save", error.code, error.message);
+    return { ok: false, error: "Couldn't save your settings. Please try again." };
+  }
+  revalidatePath("/");
+  return { ok: true, result: { message: "Balances marked up to date" } };
+}
+
+/** FormData wrapper for markBalancesChecked (no-JS <form> fallback). */
+export async function markBalancesCheckedForm(): Promise<void> {
+  await markBalancesChecked();
 }

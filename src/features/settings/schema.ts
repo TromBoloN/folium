@@ -117,6 +117,13 @@ export const preferencesSchema = z.object({
   billReminderEmails: z.boolean(),
   /** A Monday email: spent, left to spend, what's due. Quiet by default. */
   weeklySummaryEmail: z.boolean(),
+  /** Catch-up state kept across devices without a schema migration (not in the settings form). */
+  catchUp: z.object({
+    balancesCheckedOn: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .nullable(),
+  }),
 });
 
 export type Theme = z.infer<typeof themeSchema>;
@@ -145,6 +152,7 @@ export const DEFAULT_PREFERENCES: Preferences = {
   classTypes: DEFAULT_CLASS_TYPES,
   billReminderEmails: false,
   weeklySummaryEmail: false,
+  catchUp: { balancesCheckedOn: null },
 };
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -200,8 +208,8 @@ export const settingsFormSchema = z.object({
   theme: themeSchema.omit({ pack: true }).extend({
     accent: z.preprocess((v) => (v === "" || v == null ? null : v), hexColor.nullable()),
   }),
-  // The view switch saves coursesView on its own; the form keeps whatever is stored.
-  preferences: preferencesSchema.omit({ coursesView: true }),
+  // The view switch and catch-up actions save coursesView and catchUp on their own; the form keeps whatever is stored.
+  preferences: preferencesSchema.omit({ coursesView: true, catchUp: true }),
 });
 
 /** Choosing a theme pack on /themes. */

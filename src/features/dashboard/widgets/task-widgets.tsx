@@ -1,6 +1,7 @@
 import { io } from "next/cache";
 import Link from "next/link";
 import { getSettings } from "@/features/settings/queries";
+import { BulkOverdueBar } from "@/features/tasks/components/bulk-overdue-bar";
 import { TaskRow } from "@/features/tasks/components/task-row";
 import { type DueState, dueState, formatDue } from "@/features/tasks/due";
 import { listOpenTasks } from "@/features/tasks/queries";
@@ -31,7 +32,16 @@ async function TasksIn({ states, empty, moreHref }: { states: DueState[]; empty:
           />
         ))}
       </ul>
-      {rows.length > LIMIT ? (
+      {states.includes("overdue") && rows.length > 1 ? (
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+          <BulkOverdueBar ids={rows.map((r) => r.task.id)} />
+          {rows.length > LIMIT ? (
+            <Link href={moreHref} className="w-fit text-muted-foreground text-sm hover:text-foreground">
+              {i18n.t("+ {n} more", { n: rows.length - LIMIT })}
+            </Link>
+          ) : null}
+        </div>
+      ) : rows.length > LIMIT ? (
         <Link href={moreHref} className="w-fit text-muted-foreground text-sm hover:text-foreground">
           {i18n.t("+ {n} more", { n: rows.length - LIMIT })}
         </Link>

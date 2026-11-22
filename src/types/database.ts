@@ -492,6 +492,9 @@ isOneToOne: false
 "generate_recurring_transactions":
 { Args: { "p_dates": (string)[],"p_expected_updated_at": string,"p_rule_id": string,"p_to": string }; Returns: number
                            },
+"mark_attendance_batch":
+{ Args: { "p_rows": Json,"p_status": string }; Returns: (string)[]
+                           },
 "match_account_balance":
 { Args: { "p_account_id": string,"p_real_balance": number }; Returns: undefined
                            },

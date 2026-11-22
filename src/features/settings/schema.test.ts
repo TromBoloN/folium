@@ -123,6 +123,20 @@ describe("timeZone preference", () => {
   });
 });
 
+describe("catchUp preference", () => {
+  it("defaults balancesCheckedOn to null and keeps a valid civil date", () => {
+    expect(DEFAULT_PREFERENCES.catchUp).toEqual({ balancesCheckedOn: null });
+    expect(
+      resolveSettings({ version: 1, theme: {}, preferences: { catchUp: { balancesCheckedOn: "2026-11-22" } } })
+        .preferences.catchUp,
+    ).toEqual({ balancesCheckedOn: "2026-11-22" });
+    expect(
+      resolveSettings({ version: 1, theme: {}, preferences: { catchUp: { balancesCheckedOn: "bad" } } }).preferences
+        .catchUp,
+    ).toEqual({ balancesCheckedOn: null });
+  });
+});
+
 describe("profileFormSchema", () => {
   it("trims and collapses spaces", async () => {
     const { profileFormSchema } = await import("./schema");

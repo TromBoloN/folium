@@ -360,6 +360,31 @@ export const hasAnyTransaction = cache(async (): Promise<boolean> => {
   return (count ?? 0) > 0;
 });
 
+/**
+ * Latest posted non-recurring transaction date (or any posted transaction if
+ * only recurring bills exist). Used by Welcome back so marking a past-due bill
+ * paid doesn't falsely mark everyday balances as fresh.
+ */
+export const lastActivityTransactionDate = cache(async (): Promise<string | null> => {
+  const supabase = await createClient();
+  const { data: manual, error: manualError } = await supabase
+    .from("transactions")
+    .select("occurred_on")
+    .eq("status", "posted")
+    .is("recurring_rule_id", null)
+    .order("occurred_on", { ascending: false })
+    .limit(1);
+  if (!manualError && manual?.[0]?.occurred_on) return manual[0].occurred_on;
+  const { data: anyPosted, error } = await supabase
+    .from("transactions")
+    .select("occurred_on")
+    .eq("status", "posted")
+    .order("occurred_on", { ascending: false })
+    .limit(1);
+  if (error) return null;
+  return anyPosted?.[0]?.occurred_on ?? null;
+});
+
 /** The account used last (a cookie set by the save actions), if it's still one of the user's active accounts. */
 export async function lastUsedAccountId(accounts: readonly Account[]): Promise<string | undefined> {
   const id = (await cookies()).get(LAST_ACCOUNT_COOKIE)?.value;

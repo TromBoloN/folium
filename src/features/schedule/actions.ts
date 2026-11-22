@@ -737,7 +737,86 @@ export async function setMeetingStatus(input: {
   return { ok: true };
 }
 
-/** Undo for markUnmarkedAttended: clear these marks. */
+/**
+ * Mark many occurrences as attended or missed in one atomic DB call.
+ * Only live classes are marked; already-marked ones are skipped. Returns the
+ * exact keys newly inserted so Undo clears only those.
+ */
+export async function markOccurrencesBatch(input: {
+  keys: string[];
+  status: AttendanceStatus;
+}): Promise<ActionResult<{ keys: string[] }>> {
+  await requireUser();
+  const parsed = z
+    .object({ keys: z.array(occurrenceKeySchema).min(1).max(200), status: z.enum(ATTENDANCE) })
+    .safeParse(input);
+  if (!parsed.success) return { ok: false, error: GONE };
+
+  const uniqueKeys = [...new Set(parsed.data.keys)];
+  const slotDates: CivilDate[] = [];
+  const extraKeys: string[] = [];
+  for (const key of uniqueKeys) {
+    const ref = parseOccurrenceKey(key);
+    if (!ref) continue;
+    if (ref.kind === "slot") slotDates.push(ref.date);
+    else extraKeys.push(key);
+  }
+
+  const byKey = new Map<string, Awaited<ReturnType<typeof getOccurrence>>>();
+  if (slotDates.length > 0) {
+    slotDates.sort();
+    // Pad by a week on both ends so a moved class still lands inside the span.
+    const schedule = await getSchedule({
+      from: addDays(slotDates[0], -7),
+      to: addDays(slotDates[slotDates.length - 1], 7),
+    });
+    for (const o of schedule) byKey.set(o.key, o);
+  }
+  if (extraKeys.length > 0) {
+    const extras = await Promise.all(extraKeys.map((k) => getOccurrence(k)));
+    for (const o of extras) if (o) byKey.set(o.key, o);
+  }
+
+  const rows: {
+    key: string;
+    course_id: string;
+    slot_id?: string;
+    occurs_on?: string;
+    change_id?: string;
+  }[] = [];
+  for (const key of uniqueKeys) {
+    const o = byKey.get(key);
+    if (!o || !isLive(o)) continue;
+    if (o.slotId && o.originalDate) {
+      rows.push({ key: o.key, course_id: o.courseId, slot_id: o.slotId, occurs_on: o.originalDate });
+    } else if (o.changeId) {
+      rows.push({ key: o.key, course_id: o.courseId, change_id: o.changeId });
+    }
+  }
+  if (rows.length === 0) return { ok: true, data: { keys: [] } };
+
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("mark_attendance_batch", {
+    p_rows: rows,
+    p_status: parsed.data.status,
+  });
+  if (error) {
+    console.error("[schedule] mark batch", error.code, error.message);
+    return { ok: false, error: "Couldn't save attendance. Please try again." };
+  }
+  refresh();
+  return { ok: true, data: { keys: (data ?? []).filter((k): k is string => typeof k === "string") } };
+}
+
+/** FormData wrapper for markOccurrencesBatch (no-JS <form> fallback). */
+export async function markOccurrencesBatchForm(formData: FormData): Promise<void> {
+  const keys = formData.getAll("key").filter((v): v is string => typeof v === "string");
+  const status = formData.get("status");
+  if (status !== "attended" && status !== "missed") return;
+  await markOccurrencesBatch({ keys, status });
+}
+
+/** Undo for markUnmarkedAttended / markOccurrencesBatch: clear these marks. */
 export async function clearAttendance(keys: string[]): Promise<ActionResult> {
   await requireUser();
   const parsed = z.array(occurrenceKeySchema).max(500).safeParse(keys);
@@ -752,6 +831,6 @@ export async function clearAttendance(keys: string[]): Promise<ActionResult> {
         : await supabase.from("attendance").delete().eq("change_id", ref.changeId);
     if (error) return { ok: false, error: "Couldn't undo." };
   }
-  revalidatePath("/courses", "layout");
+  refresh();
   return { ok: true };
 }

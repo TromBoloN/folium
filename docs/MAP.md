@@ -41,7 +41,7 @@ Routes `/login`, `/signup`, `/forgot-password`, `/update-password`, `app/auth/co
 
 ## Settings — `features/settings/`
 
-Route `/settings`. `schema.ts` (theme incl. `pack` and `effects` + preferences, defaults, merge/diff, `SETTINGS_VERSION`), `theme.ts` (`themeAttributes`, `accentTokens`), `queries.ts` (`getSettings`, cached, never throws), `actions.ts` (`updateSettings`; `rememberCoursesView`), `components/settings-form.tsx` (applies instantly, saves after 500 ms, Undo). Preferences include time zone, week start, time format, grade scale, `coursesView`, `attendanceTarget`.
+Route `/settings`. `schema.ts` (theme incl. `pack` and `effects` + preferences, defaults, merge/diff, `SETTINGS_VERSION`), `theme.ts` (`themeAttributes`, `accentTokens`), `queries.ts` (`getSettings`, cached, never throws), `actions.ts` (`updateSettings`, `rememberCoursesView`, `markBalancesChecked`), `components/settings-form.tsx` (applies instantly, saves after 500 ms, Undo). Preferences include time zone, week start, time format, grade scale, `coursesView`, `attendanceTarget`, `catchUp.balancesCheckedOn`.
 
 ## School (Courses, Tasks, Grades)
 
@@ -63,7 +63,7 @@ Routes `/courses/class/[key]` (class sheet; key `s.<slot>.<originalDate>` or `x.
 
 ## Tasks — `features/tasks/`
 
-Routes `/tasks` (`?status&due&course`), `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit` (all also as sheets). `due.ts` (deadline rules: `dueState`, `dueWindowRange`, `formatDue`, `compareTasks`, `movedDue`), `parse.ts` (quick-add grammar, `matchCourse`; date/time matchers reused by schedule commands), `schema.ts`, `queries.ts` (`listTasks`, `getTask`, `listOpenTasks` cached), `actions.ts` (CRUD, steps, `quickAddTask`, `patchTask`, `removeTask`/`restoreTask` for Undo). Components: `task-ops.tsx` (optimistic changes + Undo), `task-row.tsx` + `task-row-frame.tsx` (swipe, quick move), `task-menu.tsx`, `task-form.tsx`, `quick-add.tsx` + `parse-preview.tsx`, `client-data-store.ts` (courses/zone for client code; not context), `task-screens.tsx`.
+Routes `/tasks` (`?status&due&course`), `/tasks/new`, `/tasks/[id]`, `/tasks/[id]/edit` (all also as sheets). `due.ts` (deadline rules: `dueState`, `dueWindowRange`, `formatDue`, `compareTasks`, `movedDue`), `parse.ts` (quick-add grammar, `matchCourse`; date/time matchers reused by schedule commands), `schema.ts`, `queries.ts` (`listTasks`, `getTask`, `listOpenTasks` cached), `actions.ts` (CRUD, steps, `quickAddTask`, `patchTask`, `removeTask`/`restoreTask`, `rescheduleOverdueTasks`/`restoreTaskDueDates` for Undo). Components: `task-ops.tsx` (optimistic changes + Undo), `task-row.tsx` + `task-row-frame.tsx` (swipe, quick move), `bulk-overdue-bar.tsx` (Tomorrow / Next week with no-JS form fallback), `task-menu.tsx`, `task-form.tsx`, `quick-add.tsx` + `parse-preview.tsx`, `client-data-store.ts` (courses/zone for client code; not context), `task-screens.tsx`.
 
 ## Grades — `features/grades/`
 
@@ -71,7 +71,7 @@ Routes `/grades`, `/grades/[courseId]` (`?target=`), assessment new/edit (also s
 
 ## Today dashboard — `features/dashboard/`
 
-Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `registry.tsx` (`WIDGETS`: title, icon, component, size, link), `presence.ts` (`widgetsToShow`: a widget shows from its first data point; `isBlank` → `components/welcome.tsx`), `getDashboardFacts` in `queries.ts`, `layout.ts` (`resolveLayout`: unknown ids dropped, new ids appended, junk → defaults; only overrides stored), `now.ts` (hero `nextUp`, timeline maths, `weekLoad`), `today.ts` (`classMoment`, `greeting`), `widgets/` (one file per widget; `hero-class.ts` turns occurrences into widget data), `components/` (`dashboard-editor.tsx` with dnd-kit + up/down buttons, `onboarding.tsx` first-run checklist, `attendance-prompt.tsx` "Did you go?", `widget-frame.tsx`, `greeting.tsx`). Each widget has its own Suspense and error boundary.
+Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `registry.tsx` (`WIDGETS`: title, icon, component, size, link), `presence.ts` (`widgetsToShow`: a widget shows from its first data point; `isBlank` → `components/welcome.tsx`), `catch-up.ts` (backlog-driven Welcome back rules), `getDashboardFacts` in `queries.ts`, `layout.ts` (`resolveLayout`: unknown ids dropped, new ids appended, junk → defaults; only overrides stored), `now.ts` (hero `nextUp`, timeline maths, `weekLoad`), `today.ts` (`classMoment`, `greeting`), `widgets/` (one file per widget; `hero-class.ts` turns occurrences into widget data), `components/` (`dashboard-editor.tsx` with dnd-kit + up/down buttons, `onboarding.tsx` first-run checklist, `welcome-back.tsx` + `welcome-back-card.tsx` backlog catch-up, `attendance-prompt.tsx` "Did you go?", `widget-frame.tsx`, `greeting.tsx`). Each widget has its own Suspense and error boundary.
 
 ## Money (finance) — `features/finance/`
 
