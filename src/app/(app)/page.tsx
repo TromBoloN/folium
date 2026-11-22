@@ -18,7 +18,7 @@ import { visibleWidgets } from "@/features/dashboard/layout";
 import { isBlank, widgetsToShow } from "@/features/dashboard/presence";
 import { getDashboardFacts, getDashboardLayout } from "@/features/dashboard/queries";
 import { WIDGETS } from "@/features/dashboard/registry";
-import { WIDGET_IDS, type WidgetId } from "@/features/dashboard/widget-ids";
+import { DEFAULT_HIDDEN_WIDGETS, WIDGET_IDS, type WidgetId } from "@/features/dashboard/widget-ids";
 import { getT } from "@/lib/i18n/server";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -88,6 +88,7 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
           }))}
           layout={layout}
           defaultOrder={[...WIDGET_IDS]}
+          defaultHidden={[...DEFAULT_HIDDEN_WIDGETS]}
         />
       </section>
     );

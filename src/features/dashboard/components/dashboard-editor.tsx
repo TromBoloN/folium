@@ -30,14 +30,14 @@ import { moveItem, type ResolvedLayout } from "../layout";
 
 export type WidgetMeta = { id: string; title: string; description: string };
 
-type Props = { widgets: WidgetMeta[]; layout: ResolvedLayout; defaultOrder: string[] };
+type Props = { widgets: WidgetMeta[]; layout: ResolvedLayout; defaultOrder: string[]; defaultHidden: string[] };
 
 /**
  * Show, hide and reorder widgets. Drag with a mouse, touch (press and hold) or
  * the keyboard (Space to pick up, arrows to move, Space to drop); the up/down
  * buttons do the same in one tap. Nothing is saved until "Save layout".
  */
-export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
+export function DashboardEditor({ widgets, layout, defaultOrder, defaultHidden }: Props) {
   const t = useT();
   const [order, setOrder] = useState(layout.order);
   const [hidden, setHidden] = useState<string[]>(layout.hidden);
@@ -137,7 +137,7 @@ export function DashboardEditor({ widgets, layout, defaultOrder }: Props) {
           className="ml-auto text-muted-foreground"
           onClick={() => {
             setOrder(defaultOrder);
-            setHidden([]);
+            setHidden(defaultHidden);
           }}
         >
           {t("Reset to default")}

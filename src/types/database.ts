@@ -511,6 +511,9 @@ isOneToOne: false
                            },
 "split_timetable_slot":
 { Args: { "p_end_time": string,"p_from": string,"p_location"?: string,"p_slot_id": string,"p_start_time": string,"p_weekday": number }; Returns: undefined
+                           },
+"sync_account_balances":
+{ Args: { "p_items": Json,"p_occurred_on": string }; Returns: (string)[]
                            }
           }
           Enums: {

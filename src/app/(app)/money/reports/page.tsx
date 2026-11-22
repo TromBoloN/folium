@@ -1,11 +1,13 @@
-import { BarChart3, Lightbulb } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, BarChart3, Lightbulb } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Suspense } from "react";
 import { EmptyState } from "@/components/empty-state";
 import { SectionErrorBoundary } from "@/components/section-error-boundary";
 import { requireUser } from "@/features/auth/queries";
+import { MonthNav } from "@/features/finance/components/money-overview";
 import { PanelSkeleton } from "@/features/finance/components/money-skeletons";
-import { shiftMonth } from "@/features/finance/lib/compare-months";
+import { compareMonths, resolveMonth, shiftMonth } from "@/features/finance/lib/compare-months";
 import { formatIdr } from "@/features/finance/lib/format-idr";
 import { addDays } from "@/features/finance/lib/local-date";
 import {
@@ -17,6 +19,7 @@ import {
   savingsRate,
   topPayees,
 } from "@/features/finance/lib/reports";
+import { OTHER, rollupByCategory, type Slice, UNCATEGORISED } from "@/features/finance/lib/rollup-by-category";
 import { ensureFinanceDefaults, listAccounts, listCategories, listPostedSince } from "@/features/finance/queries";
 import { ensureRecurringGenerated, listBills } from "@/features/finance/queries/planning";
 import { moneyToday } from "@/features/finance/queries/today";
@@ -30,11 +33,11 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: (await getT())("Reports") };
 }
 
-export default function ReportsPage() {
+export default function ReportsPage({ searchParams }: PageProps<"/money/reports">) {
   return (
     <SectionErrorBoundary label="Reports">
       <Suspense fallback={<PanelSkeleton label="Loading reports" rows={6} />}>
-        <Reports />
+        <Reports searchParams={searchParams} />
       </Suspense>
     </SectionErrorBoundary>
   );
@@ -48,15 +51,28 @@ const short = (n: bigint) => {
   return `${sign}${abs}`;
 };
 
-async function Reports() {
+function sliceHref(slice: Slice, month: string) {
+  if (slice.id === UNCATEGORISED) return `/money/transactions?category=none&kind=expense&month=${month}`;
+  if (slice.id === OTHER) return `/money/transactions?kind=expense&month=${month}`;
+  return `/money/transactions?category=${slice.id}&month=${month}`;
+}
+
+function sliceColor(slice: Slice) {
+  if (slice.id === UNCATEGORISED) return "var(--border)";
+  return slice.color ?? "var(--muted-foreground)";
+}
+
+async function Reports({ searchParams }: Pick<PageProps<"/money/reports">, "searchParams">) {
   await requireUser();
   await ensureFinanceDefaults();
-  const { today } = await moneyToday();
+  const [{ today }, params, { t, tl, intl }] = await Promise.all([moneyToday(), searchParams, getI18n()]);
   await ensureRecurringGenerated(today);
   const current = today.slice(0, 7);
-  const months = Array.from({ length: 12 }, (_, i) => shiftMonth(current, i - 11));
+  const selected = resolveMonth(typeof params.month === "string" ? params.month : undefined, current);
+  const previous = shiftMonth(selected, -1);
+  const months = Array.from({ length: 12 }, (_, i) => shiftMonth(selected, i - 11));
   const firstEnd = monthBounds(months[0]).from;
-  const { t, intl } = await getI18n();
+
   const [rows, accounts, categories, bills] = await Promise.all([
     listPostedSince(addDays(firstEnd, -1)),
     listAccounts(),
@@ -81,26 +97,40 @@ async function Reports() {
     report,
     months.map((m) => monthBounds(m).to),
   );
-  const previous = shiftMonth(current, -1);
-  const trends = categoryTrends(report, categories, current, previous);
-  const monthRows = report.filter((r) => r.occurredOn.startsWith(current));
-  const year = current.slice(0, 4);
+  const trends = categoryTrends(report, categories, selected, previous);
+  const trendById = new Map(trends.map((tr) => [tr.categoryId, tr]));
+  const monthRows = report.filter((r) => r.occurredOn.startsWith(selected));
+  const { slices, total: monthSpent } = rollupByCategory(
+    monthRows.map((r) => ({ ...r, status: "posted" })),
+    categories,
+  );
+
+  const year = selected.slice(0, 4);
   const yearRows = inOut.filter((m) => m.month.startsWith(year));
   const yearIncome = yearRows.reduce((s, m) => s + m.income, 0n);
   const yearExpense = yearRows.reduce((s, m) => s + m.expense, 0n);
-  const thisMonth = inOut[inOut.length - 1];
-  const rate = savingsRate(thisMonth.income, thisMonth.expense);
+
+  const selectedSummary = inOut[inOut.length - 1];
+  const prevSummary = inOut[inOut.length - 2];
+  const selectedNet = selectedSummary.income - selectedSummary.expense;
+  const comparison = compareMonths(selectedSummary.expense, prevSummary?.expense ?? 0n);
+  const rate = savingsRate(selectedSummary.income, selectedSummary.expense);
+
   const weekEnd = addDays(today, 7);
   const renewing = bills.filter(
     (b) => b.kind === "expense" && (b.dueOn ?? b.occurredOn) >= today && (b.dueOn ?? b.occurredOn) <= weekEnd,
   ).length;
-  const notes = insights({
-    trends,
-    previousLabel: formatDate(`${previous}-01`, { month: "long" }, intl),
-    renewingThisWeek: renewing,
-    t,
-  });
-  // The tallest bar (bigint, so no Math.max).
+  const prevLabel = formatDate(`${previous}-01`, { month: "long" }, intl);
+  const selectedLabel = formatDate(`${selected}-01`, { month: "long", year: "numeric" }, intl);
+  const prevHref = `/money/reports?month=${previous}`;
+  const nextHref =
+    selected < current
+      ? shiftMonth(selected, 1) === current
+        ? "/money/reports"
+        : `/money/reports?month=${shiftMonth(selected, 1)}`
+      : null;
+
+  const notes = insights({ trends, previousLabel: prevLabel, renewingThisWeek: renewing, t });
   let maxBar = 1n;
   for (const x of inOut) for (const v of [x.income, x.expense]) if (v > maxBar) maxBar = v;
   const worthValues = worth.map((w) => Number(w.total));
@@ -125,16 +155,64 @@ async function Reports() {
         </section>
       ) : null}
 
+      {/* Merged: selected month In/Out/Net + comparison + 12-month history in one section */}
       <section aria-labelledby="inout-h" className="tile flex flex-col gap-4 p-5">
-        <div className="flex flex-wrap items-baseline justify-between gap-3">
-          <h2 id="inout-h" className="font-medium">
-            {t("In and out, last 12 months")}
-          </h2>
-          <p className="text-muted-foreground text-sm">
-            {rate === null ? t("No income this month") : t("Kept {n}% of this month's income", { n: rate })}
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 id="inout-h" className="font-medium">
+              {t("In and out, last 12 months")}
+            </h2>
+            <p className="text-muted-foreground text-xs">
+              {selectedLabel} ·{" "}
+              {rate === null ? t("No income this month") : t("Kept {n}% of this month's income", { n: rate })}
+            </p>
+          </div>
+          <MonthNav prevHref={prevHref} nextHref={nextHref} label={selectedLabel} />
         </div>
-        <div aria-hidden className="flex h-40 items-end gap-1.5">
+
+        <dl data-slot="amount-summary" className="grid grid-cols-3 gap-3 border-border-soft border-y py-3 text-sm">
+          <div>
+            <dt className="flex items-center gap-1 text-muted-foreground text-xs">
+              <ArrowDownLeft aria-hidden className="size-3.5 text-money-in" />
+              {t("In")}
+            </dt>
+            <dd className="font-display font-medium text-base text-money-in tabular-nums sm:text-xl">
+              {formatIdr(selectedSummary.income)}
+            </dd>
+          </div>
+          <div>
+            <dt className="flex items-center gap-1 text-muted-foreground text-xs">
+              <ArrowUpRight aria-hidden className="size-3.5 text-money-out" />
+              {t("Out")}
+            </dt>
+            <dd className="font-display font-medium text-base text-money-out tabular-nums sm:text-xl">
+              {formatIdr(selectedSummary.expense)}
+            </dd>
+          </div>
+          <div>
+            <dt className="text-muted-foreground text-xs">{t("Net")}</dt>
+            <dd
+              className={cn(
+                "font-display font-medium text-base tabular-nums sm:text-xl",
+                selectedNet < 0n ? "text-money-out" : selectedNet > 0n ? "text-money-in" : "",
+              )}
+            >
+              {selectedNet > 0n ? `+${formatIdr(selectedNet)}` : formatIdr(selectedNet)}
+            </dd>
+          </div>
+        </dl>
+        {comparison ? (
+          <p className="text-muted-foreground text-xs">
+            {comparison.direction === "same"
+              ? t("Spent the same as {month}.", { month: prevLabel })
+              : t(comparison.direction === "more" ? "Spent {n}% more than {month}." : "Spent {n}% less than {month}.", {
+                  n: comparison.percent,
+                  month: prevLabel,
+                })}
+          </p>
+        ) : null}
+
+        <div aria-hidden className="flex h-36 items-end gap-1.5">
           {inOut.map((m) => (
             <div key={m.month} className="flex h-full flex-1 flex-col items-center justify-end gap-1">
               <div className="flex h-full w-full items-end justify-center gap-0.5">
@@ -252,39 +330,83 @@ async function Reports() {
       </div>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+        {/* Merged: spending breakdown bar + share % + vs previous month trend in one card */}
         <section aria-labelledby="trends-h" className="tile flex flex-col gap-3 p-5">
-          <h2 id="trends-h" className="font-medium">
-            {t("Categories vs {month}", { month: formatDate(`${previous}-01`, { month: "long" }, intl) })}
-          </h2>
-          {trends.length === 0 ? (
-            <p className="text-muted-foreground text-sm">{t("No categorised spending in these two months.")}</p>
+          <div className="flex items-baseline justify-between gap-3">
+            <h2 id="trends-h" className="font-medium">
+              {t("Categories vs {month}", { month: prevLabel })}
+            </h2>
+            {monthSpent > 0n ? (
+              <span className="text-muted-foreground text-xs tabular-nums">{formatIdr(monthSpent)}</span>
+            ) : null}
+          </div>
+          {slices.length === 0 ? (
+            <p className="text-muted-foreground text-sm">{t("No spending this month yet.")}</p>
           ) : (
-            <ul className="flex flex-col divide-y divide-border-soft text-sm">
-              {trends.slice(0, 8).map((trend) => (
-                <li key={trend.categoryId} className="flex items-center gap-3 py-2">
-                  <span className="min-w-0 flex-1 truncate">{trend.name}</span>
-                  <span className="tabular-nums">{formatIdr(trend.current)}</span>
-                  <span
-                    className={cn(
-                      "w-24 text-right text-xs tabular-nums",
-                      trend.change?.direction === "more"
-                        ? "text-money-out"
-                        : trend.change?.direction === "less"
-                          ? "text-money-in"
-                          : "text-muted-foreground",
-                    )}
-                  >
-                    {trend.change === null
-                      ? t("new")
-                      : trend.change.direction === "same"
-                        ? t("same")
-                        : trend.change.direction === "more"
-                          ? t("▲ {n}% more", { n: trend.change.percent })
-                          : t("▼ {n}% less", { n: trend.change.percent })}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <>
+              <div aria-hidden className="flex h-2.5 gap-0.5 overflow-hidden rounded-pill">
+                {slices.map((s) =>
+                  s.percent > 0 ? (
+                    <span
+                      key={s.id}
+                      className="money-accent h-full first:rounded-l-full last:rounded-r-full"
+                      style={{ width: `${s.percent}%`, "--c": sliceColor(s) } as React.CSSProperties}
+                    />
+                  ) : null,
+                )}
+              </div>
+              <ul className="flex flex-col divide-y divide-border-soft text-sm">
+                {slices.map((s) => {
+                  const trend = trendById.get(s.id);
+                  return (
+                    <li key={s.id}>
+                      <Link
+                        href={sliceHref(s, selected)}
+                        className="-mx-2 flex items-center gap-2.5 rounded-md px-2 py-2 transition-colors hover:bg-accent/60 focus-visible:outline-none focus-visible:ring-[3px] focus-visible:ring-ring/30"
+                      >
+                        <span
+                          aria-hidden
+                          className="money-accent size-2.5 shrink-0 rounded-full"
+                          style={{ "--c": sliceColor(s) } as React.CSSProperties}
+                        />
+                        {s.id === UNCATEGORISED ? (
+                          <span className="flex min-w-0 flex-1 items-baseline gap-2">
+                            <span className="truncate text-muted-foreground">{tl(s.name)}</span>
+                            <span className="font-medium text-primary text-xs underline underline-offset-2">
+                              {t("Categorise")}
+                            </span>
+                          </span>
+                        ) : (
+                          <span className="min-w-0 flex-1 truncate">{s.id === OTHER ? tl(s.name) : s.name}</span>
+                        )}
+                        <span className="tabular-nums">{formatIdr(s.amount)}</span>
+                        <span className="w-8 text-right text-muted-foreground text-xs tabular-nums">{s.percent}%</span>
+                        {trend ? (
+                          <span
+                            className={cn(
+                              "w-20 text-right text-xs tabular-nums",
+                              trend.change?.direction === "more"
+                                ? "text-money-out"
+                                : trend.change?.direction === "less"
+                                  ? "text-money-in"
+                                  : "text-muted-foreground",
+                            )}
+                          >
+                            {trend.change === null
+                              ? t("new")
+                              : trend.change.direction === "same"
+                                ? t("same")
+                                : trend.change.direction === "more"
+                                  ? t("▲ {n}% more", { n: trend.change.percent })
+                                  : t("▼ {n}% less", { n: trend.change.percent })}
+                          </span>
+                        ) : null}
+                      </Link>
+                    </li>
+                  );
+                })}
+              </ul>
+            </>
           )}
         </section>
 

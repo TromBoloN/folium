@@ -15,14 +15,14 @@ import { addDays, todayIn } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { type ResolvedLayout, resolveLayout } from "./layout";
 import type { DashboardFacts } from "./presence";
-import { WIDGET_IDS } from "./widget-ids";
+import { DEFAULT_HIDDEN_WIDGETS, WIDGET_IDS } from "./widget-ids";
 
 /** The user's dashboard layout merged over the registry defaults. Falls back to defaults on any problem. */
 export const getDashboardLayout = cache(async (): Promise<ResolvedLayout> => {
   const supabase = await createClient();
   const { data, error } = await supabase.from("user_settings").select("dashboard_layout").maybeSingle();
   if (error) console.error("[dashboard] layout load failed", error.code, error.message);
-  return resolveLayout(data?.dashboard_layout, WIDGET_IDS);
+  return resolveLayout(data?.dashboard_layout, WIDGET_IDS, DEFAULT_HIDDEN_WIDGETS);
 });
 
 export const getDisplayName = cache(async (): Promise<string | null> => {

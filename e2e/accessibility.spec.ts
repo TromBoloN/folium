@@ -149,6 +149,7 @@ test.describe("signed-in pages", () => {
           "/themes",
           "/money/categories",
           "/money",
+          "/money/sync",
           "/money/transactions",
           "/money/new",
           "/money/accounts",

@@ -35,7 +35,7 @@ export async function StatsWidget() {
       <StatTile key="today" label="Due today" value={dueToday} href="/tasks?due=today" tone="warning" reveal={1} />
     ) : null,
     overdue > 0 ? (
-      <StatTile key="overdue" label="Overdue" value={overdue} href="/tasks?due=overdue" tone="danger" reveal={2} />
+      <StatTile key="overdue" label="Waiting" value={overdue} href="/tasks?due=overdue" reveal={2} />
     ) : null,
     current?.gpa != null ? (
       <StatTile

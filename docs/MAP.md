@@ -80,11 +80,12 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 **Shell.** `app/(app)/money/layout.tsx` + `components/money-chrome.tsx`: one header (Add transaction, gear menu: Accounts, Categories, Import and export), a tab bar (`TABS`: Overview, Transactions, Recurring, Budgets, Goals, Debts, Reports; add a tab only when its page exists) and the quick-add bar on the tabs. Full-page forms (`/money/new`, `/money/[id]/edit`) get no chrome.
 
 **Routes.**
-- `/money`: quick add, total + account cards (7-day sparklines), safe to spend + 30-day forecast, upcoming bills, budgets closest to the limit, month overview, spending by category, recent. `?month=YYYY-MM`, `?quick=` prefills the bar.
+- `/money`: quick add, 4 zones — Hero (total + safe to spend/day + Sync balances + Add), account cards (7-day sparklines + inline tap-to-set balance), Needs attention (upcoming bills & budgets, hidden when quiet), and recent transactions. `?quick=` prefills the bar.
+- `/money/sync` (also `@modal/(.)money/sync` sheet): one-screen silent balance sync across all active accounts (`sync_account_balances` RPC).
 - `/money/transactions`: pill filters `?q&account&category&kind&month` (`category=none` = uncategorised), `?limit=` for Load more.
 - `/money/new` (`?kind=&account=&to=`), `/money/[id]/edit` (also sheets).
 - `/money/recurring` (bills by Overdue / This week / Later this month, Mark paid), `/money/recurring/new?template=` (subscription, kos, ukt, data, service, allowance, sinking), `/money/recurring/[id]` (edit, pause, delete).
-- `/money/budgets?month=`, `/money/goals`, `/money/debts` (balances per person, Mark settled, split a bill), `/money/reports`.
+- `/money/budgets?month=`, `/money/goals`, `/money/debts` (balances per person, Mark settled, split a bill), `/money/reports?month=` (selected-month In/Out/Net merged into 12-month history, category share + trends merged, net worth, top payees).
 - Manage: `/money/accounts` (+ `/new`, `/[id]` with `#reconcile`), `/money/categories` (+ `/[id]`; `/settings/categories` redirects), `/money/import` (CSV import with undo, exports, delete all).
 - `/money/export.csv`, `/money/export.json`, `/api/cron/reminders` (Vercel Cron, `CRON_SECRET`).
 
@@ -94,7 +95,7 @@ Route `/` (`?edit=1` = layout editor). `widget-ids.ts` (ids in default order), `
 - `queries/`: `index.ts` (defaults, accounts, categories, transactions, filters), `planning.ts` (rules + lazy generation, bills, budgets, goals, course spending; bills never touch tasks), `people.ts`, `budget-progress.ts`, `safe-to-spend.ts`, `imports.ts` (+ JSON backup), `today.ts`.
 - `actions/`: `transactions.ts` (save, quick add, delete/restore), `accounts.ts`, `categories.ts`, `planning.ts` (rules, mark paid, budgets, goals), `debts.ts` (people, settle, split), `data.ts` (CSV import, undo, delete all).
 - `reminders-job.ts` (the cron's work); `src/lib/email.ts` (Resend / Mailpit), `src/lib/supabase/admin.ts` (secret key, cron only).
-- Components: `money-chrome`, `quick-add-bar`, `money-overview`, `planning-cards`, `bills`, `budget-list`, `spending-by-category`, `transaction-list` (shared row), `transaction-form`, `transaction-filters`, `rule-form`, `import-form`, `toast-form` (one-click actions with a toast), `money-icon`, `appearance-fields`, `course-spending` (on the course page). Today widget: `features/dashboard/widgets/money-widget.tsx`.
+- Components: `money-chrome`, `quick-add-bar`, `money-overview`, `account-balance-inline`, `sync-balances-form`, `sync-balances-screen`, `planning-cards`, `bills`, `budget-list`, `transaction-list` (shared row), `transaction-form`, `transaction-filters`, `rule-form`, `import-form`, `toast-form` (one-click actions with a toast), `money-icon`, `appearance-fields`, `course-spending` (on the course page). Today widget: `features/dashboard/widgets/money-widget.tsx`.
 
 **Database.** `supabase/migrations/*_finance*.sql` (1a ledger; recurring; budgets, goals, spendable; debts + `person_balances`; import batches, task/course links, `notification_log`). Tests: `supabase/tests/database/finance.test.sql`, `finance_phase2.test.sql`. Demo money (dev only, not in `db reset` or CI): `bun run db:seed && bun run db:seed:finance`.
 

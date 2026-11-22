@@ -3,13 +3,14 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
-import { type FormState, fieldErrorsFrom, formValues } from "@/lib/action-result";
+import { type ActionResult, type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/action-result";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../../auth/queries";
+import { markBalancesChecked } from "../../settings/actions";
 import { getSettings } from "../../settings/queries";
 import { formatIdr } from "../lib/format-idr";
 import { localDateFor } from "../lib/local-date";
-import { accountFormSchema, realBalanceSchema } from "../schemas";
+import { accountFormSchema, realBalanceSchema, signedAmount } from "../schemas";
 
 function refresh() {
   revalidatePath("/money", "layout");
@@ -137,4 +138,112 @@ export async function adjustToRealBalance(_prev: FormState, formData: FormData):
   }
   refresh();
   redirect(`/money/accounts/${parsed.data.accountId}?matched=1`);
+}
+
+/**
+ * Batch balance sync (/money/sync): client sends real_balance per filled
+ * account (never the diff), SQL locks in sorted account_id order and inserts
+ * silent adjustments only for non-zero diffs. Also stamps balancesCheckedOn.
+ */
+export async function syncBalances(_prev: FormState, formData: FormData): Promise<FormState> {
+  await requireUser();
+  const values = formValues(formData);
+  const rawIds = formData.getAll("accountId").filter((v): v is string => typeof v === "string");
+  const uniqueIds = [...new Set(rawIds)].filter((id) => z.uuid().safeParse(id).success);
+
+  const items: { account_id: string; real_balance: number; note?: string }[] = [];
+  const fieldErrors: Record<string, string> = {};
+
+  for (const id of uniqueIds) {
+    const rawReal = String(formData.get(`real:${id}`) ?? "").trim();
+    if (!rawReal) continue;
+    const parsedReal = signedAmount.safeParse(rawReal);
+    if (!parsedReal.success) {
+      fieldErrors[`real:${id}`] = parsedReal.error.issues[0]?.message ?? "Enter an amount like 25.000, 25k or 1,5jt.";
+      continue;
+    }
+    const rawNote = String(formData.get(`note:${id}`) ?? "")
+      .trim()
+      .slice(0, 200);
+    items.push({
+      account_id: id,
+      real_balance: Number(parsedReal.data),
+      note: rawNote || undefined,
+    });
+  }
+
+  if (Object.keys(fieldErrors).length > 0) {
+    return { ok: false, error: "Check the highlighted fields.", fieldErrors, values };
+  }
+
+  const { preferences } = await getSettings();
+  const today = localDateFor(new Date(), preferences.timeZone);
+  let insertedIds: string[] = [];
+
+  if (items.length > 0) {
+    const supabase = await createClient();
+    const { data, error } = await supabase.rpc("sync_account_balances", {
+      p_items: items,
+      p_occurred_on: today,
+    });
+    if (error) {
+      if (error.code === "P0002") return { ok: false, error: "One of those accounts no longer exists.", values };
+      console.error("[finance] sync balances", error.code, error.message);
+      return { ok: false, error: "Couldn't sync balances. Please try again.", values };
+    }
+    insertedIds = (data ?? []).filter((id): id is string => typeof id === "string");
+  }
+
+  await markBalancesChecked();
+  refresh();
+  if (fromSheet(formData)) {
+    return {
+      ok: true,
+      result: {
+        ids: insertedIds.join(","),
+        count: String(insertedIds.length),
+      },
+    };
+  }
+  redirect("/money");
+}
+
+/** Inline set-balance on an account card: 1-item sync_account_balances with Undo id. */
+export async function setAccountBalanceInline(input: {
+  accountId: string;
+  real: string;
+}): Promise<ActionResult<{ id: string | null; balance: string }>> {
+  await requireUser();
+  const parsed = realBalanceSchema.safeParse(input);
+  if (!parsed.success) {
+    return { ok: false, error: parsed.error.issues[0]?.message ?? "Enter an amount like 25.000, 25k or 1,5jt." };
+  }
+  const { preferences } = await getSettings();
+  const today = localDateFor(new Date(), preferences.timeZone);
+  const supabase = await createClient();
+  const { data, error } = await supabase.rpc("sync_account_balances", {
+    p_items: [{ account_id: parsed.data.accountId, real_balance: Number(parsed.data.real) }],
+    p_occurred_on: today,
+  });
+  if (error) {
+    if (error.code === "P0002") return { ok: false, error: "That account no longer exists." };
+    console.error("[finance] inline balance", error.code, error.message);
+    return { ok: false, error: "Couldn't update the balance. Please try again." };
+  }
+  const id = (data ?? []).find((v): v is string => typeof v === "string") ?? null;
+  await markBalancesChecked();
+  refresh();
+  return { ok: true, data: { id, balance: parsed.data.real.toString() } };
+}
+
+/** Undo for syncBalances: remove the adjustment transactions created by that sync. */
+export async function undoSyncedBalances(ids: string[]): Promise<ActionResult> {
+  await requireUser();
+  const parsed = z.array(z.uuid()).min(1).max(100).safeParse(ids);
+  if (!parsed.success) return { ok: false, error: "Couldn't undo." };
+  const supabase = await createClient();
+  const { error } = await supabase.from("transactions").delete().in("id", parsed.data).eq("kind", "adjustment");
+  if (error) return { ok: false, error: "Couldn't undo." };
+  refresh();
+  return { ok: true };
 }

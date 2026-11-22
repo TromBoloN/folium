@@ -89,4 +89,8 @@ export const tasks = {
   "Move waiting tasks to next week": "Pindahkan tugas yang menunggu ke minggu depan",
   "Couldn't move those tasks. Please try again.": "Tidak dapat memindahkan tugas tersebut. Coba lagi.",
   "Couldn't move all of those tasks. Please try again.": "Tidak dapat memindahkan semua tugas tersebut. Coba lagi.",
+  Waiting: "Menunggu",
+  "Waiting:": "Menunggu:",
+  "1 waiting": "1 menunggu",
+  "{n} waiting": "{n} menunggu",
 };

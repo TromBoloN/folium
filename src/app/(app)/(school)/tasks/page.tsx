@@ -75,7 +75,7 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
         className="flex flex-col gap-5 xl:sticky xl:top-8 xl:col-start-2 xl:row-span-2 xl:row-start-1"
       >
         <div className="grid grid-cols-3 gap-3">
-          <StatTile label="Overdue" value={summary.overdue} href="/tasks?due=overdue" tone="danger" reveal={0} />
+          <StatTile label="Waiting" value={summary.overdue} href="/tasks?due=overdue" reveal={0} />
           <StatTile label="Due today" value={summary.today} href="/tasks?due=today" tone="warning" reveal={1} />
           <StatTile label="This week" value={summary.week} href="/tasks?due=week" reveal={2} />
         </div>

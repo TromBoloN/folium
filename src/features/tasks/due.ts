@@ -13,6 +13,15 @@ export type Due = { dueAt: string | null; dueHasTime: boolean };
 
 /** How many days after today still count as "due soon". */
 export const SOON_DAYS = 2;
+/** Timed tasks due within this window get urgent (danger) emphasis. */
+export const URGENT_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+/** True when a task has an explicit time and is due within the next 3 hours. */
+export function isUrgentToday(task: Due, now: Date): boolean {
+  if (!task.dueAt || !task.dueHasTime) return false;
+  const remaining = new Date(task.dueAt).getTime() - now.getTime();
+  return remaining >= 0 && remaining <= URGENT_WINDOW_MS;
+}
 
 function parts(date: CivilDate) {
   const [y, m, d] = date.split("-").map(Number);

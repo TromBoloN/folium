@@ -85,7 +85,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Status.** Accepted.
 
-**Decision.** Multi-step mutations that leave broken or duplicated data on partial failure (`delete_all_finance_data`, `rollover_semester`, `split_timetable_slot`) and read-then-write money actions vulnerable to double-clicks or concurrent edits (`generate_recurring_transactions`, `settle_person`, `adjust_account_balance`, `match_account_balance`) run inside small `SECURITY INVOKER` PL/pgSQL functions with row locks (`FOR UPDATE`) or per-entity `pg_advisory_xact_lock`, and unbounded PostgREST reads paginate in 1,000-row pages via `fetchAllPages` (`src/lib/supabase/paginate.ts`).
+**Decision.** Multi-step mutations that leave broken or duplicated data on partial failure (`delete_all_finance_data`, `rollover_semester`, `split_timetable_slot`, `mark_attendance_batch`) and read-then-write money actions vulnerable to double-clicks or concurrent edits (`generate_recurring_transactions`, `settle_person`, `adjust_account_balance`, `match_account_balance`, `sync_account_balances`) run inside small `SECURITY INVOKER` PL/pgSQL functions with row locks (`FOR UPDATE`) or per-entity `pg_advisory_xact_lock` (acquired in sorted entity-id order for batches so concurrent calls cannot deadlock), and unbounded PostgREST reads paginate in 1,000-row pages via `fetchAllPages` (`src/lib/supabase/paginate.ts`).
 
 **Why.** PostgREST has no multi-request transactions and silently caps reads at `max_rows = 1000`. Running the compound writes inside Postgres gives atomic rollback and serialisation while keeping RLS intact through `SECURITY INVOKER`.
 

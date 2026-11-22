@@ -40,7 +40,7 @@ export function widgetHasData(id: WidgetId, f: DashboardFacts): boolean {
     case "week":
       return f.weekItems > 0;
     case "due-soon":
-      return f.dueSoon > 0;
+      return f.dueSoon > 0 || f.overdue > 0;
     case "overdue":
       return f.overdue > 0;
     case "grades":

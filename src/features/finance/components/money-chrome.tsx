@@ -11,7 +11,8 @@ import { isMoneyManagePath, MONEY_TABS } from "@/lib/sections";
 import { cn } from "@/lib/utils";
 
 /** Full-page forms (no-JS fallback for the sheets) get no chrome: they have their own header and back link. */
-const isFormPage = (path: string) => path === "/money/new" || /^\/money\/[^/]+\/edit$/.test(path);
+const isFormPage = (path: string) =>
+  path === "/money/new" || path === "/money/sync" || /^\/money\/[^/]+\/edit$/.test(path);
 const isTab = (path: string) => MONEY_TABS.some((t) => t.href === path.replace(/\/+$/, ""));
 
 /**

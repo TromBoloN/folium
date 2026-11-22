@@ -21,6 +21,7 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Today dashboard**
 
+- [2026-11-22: Calmer defaults: 3 Today widgets, 4-zone Money Overview, neutral overdue](#2026-11-22-calmer-defaults-3-today-widgets-4-zone-money-overview-neutral-overdue)
 - [2026-11-22: Welcome back is backlog-driven, never gated on last activity](#2026-11-22-welcome-back-is-backlog-driven-never-gated-on-last-activity)
 - [2026-11-17: Today shows a widget only when it has something to show](#2026-11-17-today-shows-a-widget-only-when-it-has-something-to-show)
 - [2026-11-15: Today is a bento grid with fixed size hints per widget](#2026-11-15-today-is-a-bento-grid-with-fixed-size-hints-per-widget)
@@ -44,6 +45,18 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 - [2026-11-16: Forms share primitives and only enhance a real form](#2026-11-16-forms-share-primitives-and-only-enhance-a-real-form)
 - [2026-11-15: Settings apply instantly; the action is called directly](#2026-11-15-settings-apply-instantly-the-action-is-called-directly)
 - [2026-11-15: Forms echo submitted values back on error](#2026-11-15-forms-echo-submitted-values-back-on-error)
+
+## 2026-11-22: Calmer defaults: 3 Today widgets, 4-zone Money Overview, neutral overdue
+
+**Status:** active.
+
+**Decision.** New and reset Today layouts (`LAYOUT_VERSION = 2`) show only `next-up`, `classes`, and `due-soon` by default (with a quiet `"N waiting →"` link inside `due-soon` so overdue tasks stay visible; existing v1 layouts stay unchanged). Overdue labels use neutral `Waiting` copy instead of alarming red; `Due today` stays amber (`warning`) and red (`danger`) is reserved for timed tasks due within 3 hours. Money Overview drops to 4 zones (Hero + Safe-to-Spend + Sync/Add, Accounts with inline set-balance, conditional Needs attention, Recent) while month-by-month In/Out and category share bars merge into existing cards on `/money/reports`.
+
+**Why.** After a few days away, opening a wall of 7 Money cards, 9 Today widgets, and red overdue badges discourages daily use. Cutting default volume and replacing alarm colours with neutral catch-up links keeps everyday screens calm while preserving every power view one tap away.
+
+**Cost.** Users who want Stats, Week, Money, or Quick add on Today turn them on once in Customize.
+
+---
 
 ## 2026-11-22: Welcome back is backlog-driven, never gated on last activity
 

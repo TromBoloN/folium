@@ -27,7 +27,7 @@ describe("dashboard presence", () => {
 
   it("a widget appears with its first data point", () => {
     const shown = widgetsToShow(WIDGET_IDS, { ...none, courses: 1, overdue: 1 });
-    expect(shown).toEqual(["stats", "overdue", "quick-add"]);
+    expect(shown).toEqual(["stats", "due-soon", "overdue", "quick-add"]);
     expect(widgetsToShow(WIDGET_IDS, { ...none, money: true })).toEqual(["money"]);
   });
 

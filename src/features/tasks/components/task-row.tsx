@@ -12,7 +12,7 @@ import { DueLabel } from "./due-label";
 import { TaskCheckbox } from "./task-checkbox";
 import { TaskRowFrame } from "./task-row-frame";
 
-type Props = { task: Task; dueLabel: string | null; dueState: DueState };
+type Props = { task: Task; dueLabel: string | null; dueState: DueState; urgent?: boolean };
 
 /**
  * One task: course stripe on the left, a checkbox ringed in the course colour,
@@ -20,7 +20,7 @@ type Props = { task: Task; dueLabel: string | null; dueState: DueState };
  * high/urgent, steps progress). The interactive parts (checkbox, menu, swipe,
  * rename, quick reschedule) live in TaskRowFrame.
  */
-export function TaskRow({ task, dueLabel, dueState }: Props) {
+export function TaskRow({ task, dueLabel, dueState, urgent }: Props) {
   const done = task.status === "done";
   const stepsDone = task.subtasks.filter((s) => s.done).length;
   const steps = task.subtasks.length;
@@ -63,7 +63,7 @@ export function TaskRow({ task, dueLabel, dueState }: Props) {
                 {task.course.code ?? task.course.name}
               </Pill>
             ) : null}
-            {done ? null : <DueLabel label={dueLabel} state={dueState} />}
+            {done ? null : <DueLabel label={dueLabel} state={dueState} urgent={urgent} />}
             {task.priority === "high" || task.priority === "urgent" ? (
               <Pill tone={task.priority === "urgent" ? "danger" : "neutral"}>
                 <Flag aria-hidden />

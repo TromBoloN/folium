@@ -185,8 +185,7 @@ export function WelcomeBackCard({ summary }: { summary: CatchUpSummary }) {
               <span>{t("Balances may be off")}</span>
             </span>
             <span className="flex flex-wrap items-center gap-1.5">
-              {/* Step 2 switches this to /money/sync once the Sync sheet exists. */}
-              <Link href="/money/accounts" className={primaryChip}>
+              <Link href="/money/sync" className={primaryChip}>
                 {t("Sync")}
               </Link>
               <form

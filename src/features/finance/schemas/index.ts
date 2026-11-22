@@ -182,7 +182,7 @@ export function transactionRow(t: TransactionInput) {
  * A balance: may be 0 or negative (an overdrawn account), so a leading "-" is
  * allowed here, unlike transaction amounts.
  */
-const signedAmount = z.string().transform((text, ctx) => {
+export const signedAmount = z.string().transform((text, ctx) => {
   const trimmed = text.trim();
   const negative = trimmed.startsWith("-");
   const body = negative ? trimmed.slice(1) : trimmed;

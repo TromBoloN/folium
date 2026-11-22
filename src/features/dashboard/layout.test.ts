@@ -41,22 +41,30 @@ describe("resolveLayout", () => {
       hidden: [],
     });
   });
+  it("applies defaultHidden on fresh/v2 layouts, while keeping v1 layouts visible", () => {
+    expect(resolveLayout(null, KNOWN, ["overdue", "quick-add"]).hidden).toEqual(["overdue", "quick-add"]);
+    expect(resolveLayout({ version: 2 }, KNOWN, ["overdue"]).hidden).toEqual(["overdue"]);
+    expect(resolveLayout({ version: 1 }, KNOWN, ["overdue"]).hidden).toEqual([]);
+    expect(resolveLayout({ version: 2, hidden: [] }, KNOWN, ["overdue"]).hidden).toEqual([]);
+  });
 });
 
 describe("layoutOverrides", () => {
   it("stores nothing but the version for the default layout", () => {
-    expect(layoutOverrides({ order: KNOWN, hidden: [] }, KNOWN)).toEqual({ version: 1 });
+    expect(layoutOverrides({ order: KNOWN, hidden: [] }, KNOWN)).toEqual({ version: 2 });
+    expect(layoutOverrides({ order: KNOWN, hidden: ["overdue"] }, KNOWN, ["overdue"])).toEqual({ version: 2 });
   });
 
   it("stores only what changed", () => {
-    expect(layoutOverrides({ order: KNOWN, hidden: ["overdue"] }, KNOWN)).toEqual({ version: 1, hidden: ["overdue"] });
+    expect(layoutOverrides({ order: KNOWN, hidden: ["overdue"] }, KNOWN)).toEqual({ version: 2, hidden: ["overdue"] });
+    expect(layoutOverrides({ order: KNOWN, hidden: [] }, KNOWN, ["overdue"])).toEqual({ version: 2, hidden: [] });
     const order = ["quick-add", ...KNOWN.slice(0, 3)];
-    expect(layoutOverrides({ order, hidden: [] }, KNOWN)).toEqual({ version: 1, order });
+    expect(layoutOverrides({ order, hidden: [] }, KNOWN)).toEqual({ version: 2, order });
   });
 
   it("cleans what it stores and round-trips", () => {
     const stored = layoutOverrides({ order: ["nope", "overdue"], hidden: ["nope"] }, KNOWN);
-    expect(stored).toEqual({ version: 1, order: ["overdue", "classes", "due-soon", "quick-add"] });
+    expect(stored).toEqual({ version: 2, order: ["overdue", "classes", "due-soon", "quick-add"] });
     expect(resolveLayout(stored, KNOWN).order).toEqual(stored.order);
   });
 });

@@ -25,7 +25,7 @@ test("quick add, deadlines grouped by due state, complete a task", async ({ page
   }
 
   await page.goto("/tasks");
-  await expect(page.getByRole("region", { name: /Overdue/ })).toContainText("Essay draft");
+  await expect(page.getByRole("region", { name: /Waiting/ })).toContainText("Essay draft");
   await expect(page.getByRole("region", { name: /Today/ })).toContainText("Quiz prep");
   await expect(page.getByRole("region", { name: /No deadline/ })).toContainText("Read chapter 4");
 

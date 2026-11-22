@@ -2,8 +2,8 @@ import { expect, type Page, test } from "@playwright/test";
 import { localDate, signUp, waitForContent, waitForHydration } from "./helpers";
 
 const TZ = "Asia/Makassar";
-/** The default order, showing only widgets that have something (a task due today) to show. */
-const WITH_DATA = ["Next up", "At a glance", "This week", "Due soon", "Quick add"];
+/** The default order, showing only default-on widgets that have something (a task due today) to show. */
+const WITH_DATA = ["Next up", "Due soon"];
 
 /** Current local time in the default zone, shifted by some minutes, as "HH:MM". */
 function localTime(offsetMinutes: number) {
@@ -39,19 +39,9 @@ test("sign up, add a task due today, see it on the dashboard", async ({ page }) 
   await page.goto("/");
   await expect(widget(page, "Due soon")).toContainText("Hand in essay");
   await expect(widget(page, "Due soon")).toContainText("Today");
-  // Cards come with their first data point; the ones with nothing to show stay away.
+  // Cards come with their first data point; the ones with nothing to show (or off by default) stay away.
   await expect(widget(page, "Overdue")).toHaveCount(0);
   await expect(widget(page, "Today's classes")).toHaveCount(0);
-
-  // Quick add from the dashboard; a task with no deadline doesn't belong in "Due soon".
-  // Wait for hydration: before it, Enter submits the plain form, which keeps the typed text.
-  await waitForHydration(page);
-  const quickAdd = widget(page, "Quick add").getByLabel("New task title");
-  await quickAdd.fill("Buy lab coat");
-  await quickAdd.press("Enter");
-  await expect(quickAdd).toHaveValue("");
-  await page.goto("/tasks");
-  await expect(page.getByRole("link", { name: "Buy lab coat" })).toBeVisible();
 });
 
 test("today's classes highlight what's on now and next", async ({ page }) => {
@@ -107,8 +97,8 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
   // The editor is a client component; wait until it has hydrated before clicking.
   await page.locator("form[data-ready]").waitFor();
 
-  // Hide "Overdue", move "Quick add" to the top with the buttons.
-  await page.getByLabel("Show Overdue").uncheck();
+  // Enable "Quick add" (off by default) and move it to the top with the buttons.
+  await page.getByLabel("Show Quick add").check();
   for (let i = 0; i < 8; i++) await page.getByRole("button", { name: "Move Quick add up" }).click();
   await expect(page.getByRole("button", { name: "Move Quick add up" })).toBeDisabled();
 
@@ -127,8 +117,7 @@ test("customize: hide and reorder widgets, saved across reloads", async ({ page 
 
   await page.getByRole("button", { name: "Save layout" }).click();
   await expect(page).toHaveURL(/\/$/);
-  // The saved order, minus widgets with nothing to show (Today's classes, Grades, Money).
-  const expected = ["Quick add", "Next up", "At a glance", "Due soon", "This week"];
+  const expected = ["Quick add", "Next up", "Due soon"];
   await expect.poll(() => widgetTitles(page)).toEqual(expected);
 
   await page.reload();

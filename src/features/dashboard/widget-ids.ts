@@ -18,6 +18,25 @@ export const WIDGET_IDS = [
 export type WidgetId = (typeof WIDGET_IDS)[number];
 
 /**
+ * Off by default on new or reset layouts so Today stays calm (Next up, Today's
+ * classes and Due soon are on; the rest stay one checkbox away in Customize).
+ */
+export const DEFAULT_HIDDEN_WIDGETS: readonly WidgetId[] = ["stats", "week", "overdue", "grades", "money", "quick-add"];
+
+/**
+ * Off by default on new or reset layouts so Today stays calm (Next up, Today's
+ * classes and Due soon are on; the rest stay one checkbox away in Customize).
+ */
+export const DEFAULT_HIDDEN_WIDGETS: readonly WidgetId[] = [
+  "stats",
+  "week",
+  "overdue",
+  "grades",
+  "money",
+  "quick-add",
+];
+
+/**
  * Fixed size hint per widget, which decides its footprint in the bento grid
  * (not user-resizable). In the 12-column layout: hero and wide take 8 columns,
  * small takes 4, tall takes 4 columns and two rows.

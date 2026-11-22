@@ -8,6 +8,7 @@ import {
   dueSummary,
   dueWindowRange,
   formatDue,
+  isUrgentToday,
   movedDue,
   rescheduleDate,
 } from "./due";
@@ -208,5 +209,17 @@ describe("rescheduling", () => {
       dueAt: dueAtFrom("2026-11-19", null, TZ),
       dueHasTime: false,
     });
+  });
+});
+
+describe("isUrgentToday", () => {
+  const TZ = "Asia/Makassar";
+  const now = new Date("2026-11-18T06:00:00Z"); // 14:00 WITA
+
+  it("is true only for timed tasks due within the next 3 hours", () => {
+    expect(isUrgentToday({ dueAt: dueAtFrom("2026-11-18", "16:30", TZ), dueHasTime: true }, now)).toBe(true);
+    expect(isUrgentToday({ dueAt: dueAtFrom("2026-11-18", "18:00", TZ), dueHasTime: true }, now)).toBe(false);
+    expect(isUrgentToday({ dueAt: dueAtFrom("2026-11-18", "13:00", TZ), dueHasTime: true }, now)).toBe(false);
+    expect(isUrgentToday({ dueAt: dueAtFrom("2026-11-18", null, TZ), dueHasTime: false }, now)).toBe(false);
   });
 });
