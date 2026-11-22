@@ -458,12 +458,7 @@ async function insertBreak(b: { label: string; startsOn: string; endsOn: string 
 }
 
 /** For typed commands ("no classes 23–27 nov"): same rules as the form. */
-export async function addBreak(input: {
-  label: string;
-  startsOn: string;
-  endsOn: string;
-}): Promise<ActionResult<BreakRow>> {
-  await requireUser();
+async function addBreak(input: { label: string; startsOn: string; endsOn: string }): Promise<ActionResult<BreakRow>> {
   const parsed = breakSchema.safeParse(input);
   if (!parsed.success) return { ok: false, error: parsed.error.issues[0]?.message ?? "Check the dates." };
   return insertBreak(parsed.data);

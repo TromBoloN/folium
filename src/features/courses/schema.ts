@@ -24,7 +24,7 @@ export function nextCourseColor(used: readonly string[]): string {
 }
 
 /** Empty form inputs become null; anything else is trimmed and length-checked. */
-function optionalText(max: number, label: string) {
+export function optionalText(max: number, label: string) {
   return z
     .string()
     .trim()

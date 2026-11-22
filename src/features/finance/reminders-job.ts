@@ -28,14 +28,17 @@ export async function runReminders(now: Date) {
     (from, to) => admin.from("user_settings").select("user_id, preferences").order("user_id").range(from, to),
     "settings",
   );
-  let sent = 0;
-  let failed = 0;
+  const optedIn = settings.filter((row) => {
+    const prefs = (row.preferences ?? {}) as Record<string, unknown>;
+    return prefs.billReminderEmails === true || prefs.weeklySummaryEmail === true;
+  });
 
-  for (const row of settings) {
+  const processUser = async (row: { user_id: string; preferences: unknown }) => {
+    let sent = 0;
+    let failed = 0;
     const prefs = (row.preferences ?? {}) as Record<string, unknown>;
     const bills = prefs.billReminderEmails === true;
     const weekly = prefs.weeklySummaryEmail === true;
-    if (!bills && !weekly) continue;
     const timeZone = isValidTimeZone(prefs.timeZone) ? prefs.timeZone : DEFAULT_TIME_ZONE;
     // Emails go out in the user's language too.
     const t = makeT(prefs.language === "id" ? "id" : "en");
@@ -43,11 +46,10 @@ export async function runReminders(now: Date) {
     const { data: user, error: userError } = await admin.auth.admin.getUserById(row.user_id);
     if (userError) {
       console.error("[reminders] getUserById", row.user_id, userError.message);
-      failed++;
-      continue;
+      return { sent, failed: 1 };
     }
     const to = user.user?.email;
-    if (!to) continue;
+    if (!to) return { sent, failed };
 
     type PlannedRow = {
       id: string;
@@ -88,8 +90,7 @@ export async function runReminders(now: Date) {
       ]);
     } catch (err) {
       console.error("[reminders] load bills", row.user_id, err);
-      failed++;
-      continue;
+      return { sent, failed: 1 };
     }
     const ruleById = new Map(rules.map((r) => [r.id, r]));
     const billRows = planned
@@ -195,7 +196,7 @@ export async function runReminders(now: Date) {
           console.error("[reminders] load spent", row.user_id, err);
           failed++;
           await release("weekly_summary", claimed);
-          continue;
+          return { sent, failed };
         }
         const spent = spentRows.reduce((s, r) => s + BigInt(r.amount), 0n);
         const week = billRows.filter((b) => b.dueOn >= today && b.dueOn <= addDays(today, 7));
@@ -223,6 +224,18 @@ export async function runReminders(now: Date) {
           await release("weekly_summary", claimed);
         }
       }
+    }
+    return { sent, failed };
+  };
+
+  let sent = 0;
+  let failed = 0;
+  const CONCURRENCY = 5;
+  for (let i = 0; i < optedIn.length; i += CONCURRENCY) {
+    const results = await Promise.all(optedIn.slice(i, i + CONCURRENCY).map(processUser));
+    for (const r of results) {
+      sent += r.sent;
+      failed += r.failed;
     }
   }
   return { sent, failed };

@@ -21,7 +21,6 @@ export const isDebtKind = (kind: string): kind is DebtKind => (DEBT_KINDS as rea
 export const TRANSACTION_STATUSES = ["posted", "planned"] as const;
 export const ACCOUNT_TYPES = ["bank", "ewallet", "cash", "savings"] as const;
 export const CATEGORY_KINDS = ["expense", "income"] as const;
-export const DIRECTIONS = ["in", "out"] as const;
 
 export type TransactionKind = (typeof TRANSACTION_KINDS)[number];
 export type AccountType = (typeof ACCOUNT_TYPES)[number];
@@ -53,7 +52,7 @@ const AMOUNT_MESSAGES: Record<string, string> = {
 };
 
 /** A typed amount ("25k", "25.000") → bigint rupiah, within what JSON numbers carry exactly. */
-const amount = z.string().transform((text, ctx) => {
+export const amountField = z.string().transform((text, ctx) => {
   const parsed = parseAmount(text);
   if (!parsed.ok) {
     ctx.addIssue({ code: "custom", message: AMOUNT_MESSAGES[parsed.reason] });
@@ -69,7 +68,7 @@ const amount = z.string().transform((text, ctx) => {
 /** Blank → 0, else an amount (fees, opening balances). */
 const optionalAmount = z.string().transform((text, ctx) => {
   if (text.trim() === "" || /^0+$/.test(text.trim())) return 0n;
-  const parsed = amount.safeParse(text);
+  const parsed = amountField.safeParse(text);
   if (!parsed.success) {
     ctx.addIssue({ code: "custom", message: parsed.error.issues[0]?.message ?? "Invalid amount." });
     return z.NEVER;
@@ -85,7 +84,7 @@ function optionalText(max: number, label: string) {
     .transform((v) => (v === "" ? null : v));
 }
 
-const optionalId = z
+export const optionalId = z
   .string()
   .transform((v) => (v === "" ? null : v))
   .refine((v) => v === null || z.uuid().safeParse(v).success, "Choose from the list.");
@@ -107,7 +106,7 @@ export const transactionFormSchema = z
   .object({
     kind: z.enum(TRANSACTION_KINDS, "Choose a kind."),
     status: z.enum(TRANSACTION_STATUSES).default("posted"),
-    amount,
+    amount: amountField,
     accountId: z.uuid("Choose an account."),
     toAccountId: optionalId,
     feeAmount: optionalAmount,
@@ -188,7 +187,7 @@ const signedAmount = z.string().transform((text, ctx) => {
   const negative = trimmed.startsWith("-");
   const body = negative ? trimmed.slice(1) : trimmed;
   if (body.trim() === "" || /^(rp\.?\s*)?0+$/i.test(body.trim())) return 0n;
-  const parsed = amount.safeParse(body);
+  const parsed = amountField.safeParse(body);
   if (!parsed.success) {
     ctx.addIssue({ code: "custom", message: parsed.error.issues[0]?.message ?? "Invalid amount." });
     return z.NEVER;

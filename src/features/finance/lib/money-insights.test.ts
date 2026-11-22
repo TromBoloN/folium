@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { balanceSeries, effectOn, type SeriesRow, seriesChange } from "./balance-series";
+import { balanceSeries, effectOn, type SeriesRow } from "./balance-series";
 import { compareMonths } from "./compare-months";
 import { largestRemainder, OTHER, rollupByCategory, type SpendRow, UNCATEGORISED } from "./rollup-by-category";
 
@@ -114,7 +114,6 @@ describe("balanceSeries", () => {
     expect(series).toHaveLength(7);
     expect(series[0]).toEqual({ date: "2026-11-10", balance: 50_000n });
     expect(series.every((p) => p.balance === 50_000n)).toBe(true);
-    expect(seriesChange(series)).toBe(0n);
   });
 
   it("works backwards from the current balance", () => {
@@ -126,7 +125,6 @@ describe("balanceSeries", () => {
     expect(series.at(-1)?.balance).toBe(68_000n); // today
     expect(series.at(-2)?.balance).toBe(100_000n); // before the expense
     expect(series.find((p) => p.date === "2026-11-13")?.balance).toBe(0n); // before the income
-    expect(seriesChange(series)).toBe(68_000n);
   });
 
   it("ignores planned rows and undoes future-dated posted rows", () => {

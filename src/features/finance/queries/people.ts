@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 
 export type Person = { id: string; name: string; archived: boolean; balance: bigint };
@@ -23,3 +24,25 @@ export const listPeople = cache(async (): Promise<Person[]> => {
     balance: balanceOf.get(p.id) ?? 0n,
   }));
 });
+
+const personNameSchema = z.string().trim().min(1, "Enter a name.").max(60, "A name can be at most 60 characters.");
+
+/** The person called `name` (case-insensitive), created if new. Server-only helper (callers must `requireUser()`). */
+export async function personIdFor(name: string): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
+  const parsed = personNameSchema.safeParse(name);
+  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
+  const existing = (await listPeople()).find((p) => p.name.toLowerCase() === parsed.data.toLowerCase());
+  if (existing) return { ok: true, id: existing.id };
+  const supabase = await createClient();
+  const { data, error } = await supabase.from("people").insert({ name: parsed.data }).select("id").single();
+  if (error) {
+    // A concurrent insert of the same name: read it back.
+    if (error.code === "23505") {
+      const escaped = parsed.data.replace(/[\\%_]/g, (c) => `\\${c}`);
+      const { data: row } = await supabase.from("people").select("id").ilike("name", escaped).maybeSingle();
+      if (row) return { ok: true, id: row.id };
+    }
+    return { ok: false, error: "Couldn't save that person." };
+  }
+  return { ok: true, id: data.id };
+}

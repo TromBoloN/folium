@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { isCivilDate } from "@/lib/dates";
+import { optionalText } from "../courses/schema";
 import { toMinutes } from "../timetable/logic";
 import { parseOccurrenceKey } from "./occurrences";
 
@@ -13,16 +14,6 @@ const time = z
   .string()
   .regex(/^([01]\d|2[0-3]):[0-5]\d(:00)?$/, "Enter a time like 10:00.")
   .transform((v) => v.slice(0, 5));
-
-function optionalText(max: number, label: string) {
-  return z
-    .string()
-    .trim()
-    .max(max, `${label} can be at most ${max} characters.`)
-    .transform((v) => (v === "" ? null : v))
-    .nullable()
-    .default(null);
-}
 
 export const SCOPES = ["once", "forward"] as const;
 export type Scope = (typeof SCOPES)[number];

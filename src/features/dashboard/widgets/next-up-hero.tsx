@@ -27,6 +27,7 @@ export type HeroClass = SlotTiming & {
   color: string;
   location: string | null;
   cancelled: boolean;
+  postponed?: boolean;
   chips: Chip[];
   note: string | null;
   meetingUrl: string | null;

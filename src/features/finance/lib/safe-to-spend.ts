@@ -50,10 +50,14 @@ function lastOfMonth(date: IsoDate): IsoDate {
   return new Date(Date.UTC(y, m, 0)).toISOString().slice(0, 10);
 }
 
-/** Next planned income on or after today, else month end. */
-export function nextPayday(planned: readonly PlannedRow[], today: IsoDate): { date: IsoDate; fromIncome: boolean } {
+/** Next planned income into a spendable account on or after today, else month end. */
+export function nextPayday(
+  planned: readonly PlannedRow[],
+  today: IsoDate,
+  spendable?: ReadonlySet<string>,
+): { date: IsoDate; fromIncome: boolean } {
   const income = planned
-    .filter((r) => r.kind === "income" && r.occurredOn >= today)
+    .filter((r) => r.kind === "income" && r.occurredOn >= today && (!spendable || spendable.has(r.accountId)))
     .map((r) => r.occurredOn)
     .sort()[0];
   return income ? { date: income, fromIncome: true } : { date: lastOfMonth(today), fromIncome: false };
@@ -81,10 +85,11 @@ export function safeToSpend(input: {
   spendable: ReadonlySet<string>;
   today: IsoDate;
 }): SafeToSpend {
-  const payday = nextPayday(input.planned, input.today);
+  const payday = nextPayday(input.planned, input.today, input.spendable);
   let outflows = 0n;
   for (const r of input.planned) {
-    if (r.occurredOn >= payday.date) continue;
+    // With a payday, bills on payday itself are paid from the new money; on month-end fallback, include month-end bills.
+    if (payday.fromIncome ? r.occurredOn >= payday.date : r.occurredOn > payday.date) continue;
     const effect = spendableEffect(r, input.spendable);
     if (effect < 0n) outflows += -effect;
   }

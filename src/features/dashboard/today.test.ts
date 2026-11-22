@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { minutesNowIn } from "@/lib/dates";
 import type { SlotTiming } from "../timetable/logic";
-import { classMoment, greeting, selectTodaysClasses } from "./today";
+import { classMoment, greeting } from "./today";
 
 const slot = (id: string, weekday: number, startTime: string, endTime: string, range: Partial<SlotTiming> = {}) => ({
   id,
@@ -11,31 +11,6 @@ const slot = (id: string, weekday: number, startTime: string, endTime: string, r
   startsOn: null,
   endsOn: null,
   ...range,
-});
-
-// Monday 16 Nov 2026
-const MONDAY = "2026-11-16";
-
-describe("selectTodaysClasses", () => {
-  it("keeps today's weekday only, sorted by time", () => {
-    const todays = selectTodaysClasses(
-      [slot("late", 1, "13:00", "14:00"), slot("tue", 2, "08:00", "09:00"), slot("early", 1, "08:00", "09:40")],
-      MONDAY,
-    );
-    expect(todays.map((s) => s.id)).toEqual(["early", "late"]);
-  });
-
-  it("respects date ranges", () => {
-    const todays = selectTodaysClasses(
-      [
-        slot("ended", 1, "08:00", "09:00", { endsOn: "2026-11-09" }),
-        slot("future", 1, "10:00", "11:00", { startsOn: "2026-11-23" }),
-        slot("running", 1, "12:00", "13:00", { startsOn: "2026-09-01", endsOn: "2026-12-20" }),
-      ],
-      MONDAY,
-    );
-    expect(todays.map((s) => s.id)).toEqual(["running"]);
-  });
 });
 
 describe("classMoment", () => {

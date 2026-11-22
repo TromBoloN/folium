@@ -40,12 +40,14 @@ export async function financeBackup() {
     ["people", "*"],
     ["import_batches", "*"],
   ] as const;
-  const out: Record<string, unknown> = { format: "folium-money-backup", version: 1 };
-  for (const [table, columns] of tables) {
-    out[table] = await fetchAllPages(
-      (from, to) => supabase.from(table).select(columns).order("id").range(from, to),
-      `Couldn't read ${table}`,
-    );
-  }
-  return out;
+  const entries = await Promise.all(
+    tables.map(async ([table, columns]) => [
+      table,
+      await fetchAllPages(
+        (from, to) => supabase.from(table).select(columns).order("id").range(from, to),
+        `Couldn't read ${table}`,
+      ),
+    ]),
+  );
+  return { format: "folium-money-backup", version: 1, ...Object.fromEntries(entries) };
 }

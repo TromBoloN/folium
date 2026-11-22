@@ -12,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { requireUser } from "@/features/auth/queries";
 import { adjustToRealBalance, matchRealBalance } from "@/features/finance/actions/accounts";
 import { AccountForm } from "@/features/finance/components/account-form";
-import { formatIdr } from "@/features/finance/lib/format-idr";
+import { formatIdr, groupDigits } from "@/features/finance/lib/format-idr";
 import { type Account, ensureFinanceDefaults, listAccounts } from "@/features/finance/queries";
 import { realBalanceSchema } from "@/features/finance/schemas";
 import { adjustmentFor, reconciledOpening } from "@/features/finance/schemas/money-math";
@@ -35,8 +35,6 @@ export default function AccountPage({ params, searchParams }: Props) {
   );
 }
 
-const grouped = (n: bigint) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-
 async function AccountDetail({ params, searchParams }: Props) {
   await requireUser();
   await ensureFinanceDefaults();
@@ -56,8 +54,7 @@ async function AccountDetail({ params, searchParams }: Props) {
             color: account.color,
             icon: account.icon ?? "",
             isSpendable: account.isSpendable,
-            openingBalance:
-              account.openingBalance < 0n ? `-${grouped(-account.openingBalance)}` : grouped(account.openingBalance),
+            openingBalance: groupDigits(account.openingBalance),
           }}
         />
       </div>

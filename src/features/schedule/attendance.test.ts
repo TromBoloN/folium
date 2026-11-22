@@ -1,99 +1,80 @@
 import { describe, expect, it } from "vitest";
-import { attendanceStats, meetingStats } from "./attendance";
-import { meetingProgress } from "./meetings";
-import { buildSchedule, type ClassChange, occurrenceKey, type ScheduleSlot } from "./occurrences";
+import { meetingStats } from "./attendance";
+import { type MeetingRow, meetingProgress } from "./meetings";
 
-const COURSE = { id: "c", name: "Physics I", code: "FIS101", color: "#e8590c", room: null };
-const mon: ScheduleSlot = {
-  id: "s",
+const row = (number: number, status: MeetingRow["status"], date: string | null = null): MeetingRow => ({
   courseId: "c",
-  course: COURSE,
-  weekday: 1,
-  startTime: "09:00",
-  endTime: "10:40",
-  startsOn: "2026-11-02",
-  endsOn: "2026-12-28",
-  location: null,
-};
-// Mondays 2, 9, 16, 23, 30 Nov and 7, 14, 21, 28 Dec: 9 classes.
-const cancel9: ClassChange = {
-  id: "x",
-  kind: "cancelled",
-  courseId: "c",
-  slotId: "s",
-  originalDate: "2026-11-09",
-  newDate: null,
-  startTime: null,
-  endTime: null,
-  location: null,
-  label: null,
-  note: null,
-};
-const term = buildSchedule({ slots: [mon], changes: [cancel9], breaks: [] }, { from: "2026-11-02", to: "2026-12-28" });
-const now = { date: "2026-11-16", minute: 12 * 60 }; // after the 16 Nov class
-const k = (d: string) => occurrenceKey("s", d);
+  number,
+  status,
+  key: date ? `s.slot.${date}` : null,
+  date,
+});
 
-describe("attendanceStats", () => {
-  it("counts held classes only, and never cancelled ones", () => {
-    const stats = attendanceStats(term, new Map(), now, 75, true);
-    expect(stats).toMatchObject({ held: 2, attended: 0, missed: 0, unmarked: 2, percent: null, planned: 8 });
+describe("meetingStats", () => {
+  it("reports null percent until at least one class is attended or missed", () => {
+    const empty = meetingProgress([], 16);
+    expect(meetingStats(empty, 2, 75, null)).toMatchObject({
+      held: 2,
+      attended: 0,
+      missed: 0,
+      unmarked: 2,
+      percent: null,
+      planned: 16,
+      canMiss: 4,
+      belowTarget: false,
+      unknown: 0,
+    });
+
+    const onlyUnknown = meetingProgress([row(1, "unknown"), row(2, "unknown")], 16);
+    expect(meetingStats(onlyUnknown, 1, 75, null)).toMatchObject({
+      held: 3,
+      percent: null,
+      unknown: 2,
+      canMiss: 4,
+      belowTarget: false,
+    });
   });
 
-  it("percent is attended over marked", () => {
-    const marks = new Map([
-      [k("2026-11-02"), "attended" as const],
-      [k("2026-11-16"), "missed" as const],
-    ]);
-    expect(attendanceStats(term, marks, now, 75, true)).toMatchObject({
+  it("computes percent over real marks (excluding unknown) and flags below-target attendance", () => {
+    const progress = meetingProgress(
+      [row(1, "unknown"), row(2, "attended", "2026-11-02"), row(3, "missed", "2026-11-09")],
+      8,
+    );
+    // 1/2 = 50% (< 75%), allowed misses = floor(8 * 0.25) = 2, canMiss = 1
+    expect(meetingStats(progress, 0, 75, null)).toMatchObject({
+      held: 3,
       attended: 1,
       missed: 1,
-      unmarked: 0,
+      unknown: 1,
       percent: 50,
+      planned: 8,
+      canMiss: 1,
       belowTarget: true,
     });
   });
 
-  it("knows how many more can be missed against the target", () => {
-    // 8 classes, 75% target: 2 misses allowed.
-    const marks = new Map([[k("2026-11-16"), "missed" as const]]);
-    expect(attendanceStats(term, marks, now, 75, true).canMiss).toBe(1);
-    expect(attendanceStats(term, new Map(), now, 75, true).canMiss).toBe(2);
-    expect(attendanceStats(term, new Map(), now, 75, false)).toMatchObject({ planned: null, canMiss: null });
+  it("flags belowTarget when skips exceed the term budget even if current percent is above target", () => {
+    // 4 meetings, 75% target -> 1 miss allowed; 2 misses -> canMiss = -1 -> belowTarget even if percent were high.
+    const progress = meetingProgress(
+      [
+        row(1, "attended", "2026-11-02"),
+        row(2, "attended", "2026-11-09"),
+        row(3, "missed", "2026-11-16"),
+        row(4, "missed", "2026-11-23"),
+      ],
+      4,
+    );
+    expect(meetingStats(progress, 0, 75, null)).toMatchObject({ canMiss: -1, belowTarget: true });
   });
 
-  it("counts a planned absence ahead of time", () => {
-    const marks = new Map([
-      [k("2026-11-02"), "attended" as const],
-      [k("2026-12-07"), "missed" as const],
-    ]);
-    const stats = attendanceStats(term, marks, now, 75, true);
-    expect(stats).toMatchObject({ missed: 1, canMiss: 1 });
+  it("falls back to plannedFallback for open-ended courses (or null when unknown)", () => {
+    const open = meetingProgress([row(1, "attended", "2026-11-02")], null);
+    expect(meetingStats(open, 0, 75, 12)).toMatchObject({ planned: 12, canMiss: 3, belowTarget: false });
+    expect(meetingStats(open, 0, 75, null)).toMatchObject({ planned: null, canMiss: null, belowTarget: false });
   });
 
-  it("flags falling below the target by too many misses", () => {
-    const marks = new Map(["2026-11-02", "2026-11-16", "2026-11-23"].map((d) => [k(d), "missed" as const] as const));
-    const stats = attendanceStats(term, marks, { date: "2026-11-30", minute: 0 }, 75, true);
-    expect(stats).toMatchObject({ canMiss: -1, belowTarget: true, percent: 0 });
-  });
-
-  it("a class on now isn't held yet", () => {
-    const during = attendanceStats(term, new Map(), { date: "2026-11-16", minute: 9 * 60 + 30 }, 75, true);
-    expect(during.held).toBe(1);
-  });
-});
-
-describe("meetingStats", () => {
   it("computes held from logged rows plus unmarked, even with out-of-order meeting numbers", () => {
-    const rows = [
-      ...Array.from({ length: 14 }, (_, i) => ({
-        courseId: "c",
-        number: i + 1,
-        status: "unknown" as const,
-        key: null,
-        date: null,
-      })),
-      { courseId: "c", number: 16, status: "attended" as const, key: k("2026-11-23"), date: "2026-11-23" },
-    ];
+    const rows = [...Array.from({ length: 14 }, (_, i) => row(i + 1, "unknown")), row(16, "attended", "2026-11-23")];
     const progress = meetingProgress(rows, 16);
     expect(meetingStats(progress, 1, 75, null)).toMatchObject({
       held: 16,

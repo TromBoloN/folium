@@ -5,9 +5,11 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useI18n } from "@/lib/i18n/client";
-import type { ClassType } from "../schema";
+import { type ClassType, DEFAULT_CLASS_TYPES } from "../schema";
 
 type Row = { id: string; name: string; meetings: string };
+
+const defaultNameById = new Map(DEFAULT_CLASS_TYPES.map((d) => [d.id, d.name]));
 
 const toRows = (types: readonly ClassType[]): Row[] =>
   types.map((t) => ({ id: t.id, name: t.name, meetings: String(t.meetings) }));
@@ -47,7 +49,21 @@ export function ClassTypesEditor({ initial, onEdit }: { initial: readonly ClassT
       <p className="text-muted-foreground text-xs">
         {t("Campus courses pick a type and start from its number of meetings. You can change it per course.")}
       </p>
-      <input type="hidden" name="classTypes" value={JSON.stringify(rows)} />
+      {/* Keep canonical English keys for untouched default types so saving in Indonesian doesn't bake translations in. */}
+      <input
+        type="hidden"
+        name="classTypes"
+        value={JSON.stringify(
+          rows.map((r) => {
+            const canonical = defaultNameById.get(r.id);
+            return {
+              id: r.id,
+              name: canonical && r.name.trim() === tl(canonical) ? canonical : r.name,
+              meetings: r.meetings,
+            };
+          }),
+        )}
+      />
       {rows.length > 0 ? (
         <ul className="flex flex-col gap-2">
           {rows.map((row, i) => (

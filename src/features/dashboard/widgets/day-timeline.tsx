@@ -32,8 +32,8 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
   const { minute } = useNow(initialNow, timeZone);
   const range = timelineRange(classes);
   if (!range) return null;
-  // Cancelled classes stay on the axis (dimmed) but are never "now" or "next".
-  const live = classes.filter((c) => !c.cancelled);
+  // Cancelled and postponed classes stay on the axis (dimmed) but are never "now" or "next".
+  const live = classes.filter((c) => !c.cancelled && !c.postponed);
   const moment = classMoment(live, minute);
   const offset = nowOffset(minute, range);
   const hours = (range.end - range.start) / 60;
@@ -75,7 +75,7 @@ export function DayTimeline({ initialNow, timeZone, timeFormat, classes, tomorro
             const isNow = moment.current.includes(slot.id);
             const isNext = moment.next === slot.id;
             const isPast = toMinutes(slot.endTime) <= minute;
-            const dim = isPast || slot.cancelled;
+            const dim = isPast || slot.cancelled || Boolean(slot.postponed);
             return (
               <li
                 key={slot.id}

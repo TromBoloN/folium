@@ -1,11 +1,5 @@
-import type { CivilDate } from "@/lib/dates";
 import type { MessageKey } from "@/lib/i18n/core";
-import { appliesOn, type SlotTiming, sortSlots, toMinutes } from "../timetable/logic";
-
-/** The classes that actually happen on this date (weekday and date range), in time order. */
-export function selectTodaysClasses<T extends SlotTiming>(slots: readonly T[], date: CivilDate): T[] {
-  return sortSlots(slots.filter((s) => appliesOn(s, date)));
-}
+import { type SlotTiming, sortSlots, toMinutes } from "../timetable/logic";
 
 export type ClassMoment = { current: string[]; next: string | null };
 

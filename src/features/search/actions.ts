@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import type { ActionResult } from "@/lib/action-result";
+import { likePattern, quotedFilter } from "@/lib/supabase/filter";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
 
@@ -17,16 +18,6 @@ export type SearchResults = {
 
 const querySchema = z.string().trim().min(1).max(100);
 const LIMIT = 6;
-
-/** Escape LIKE wildcards so "100%" searches for a literal percent sign. */
-function likePattern(q: string) {
-  return `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-}
-
-/** A PostgREST filter value in double quotes (backslash and quote escaped). */
-function quoted(value: string) {
-  return `"${value.replace(/["\\]/g, (c) => `\\${c}`)}"`;
-}
 
 /** Tasks (top-level, open first) and courses whose title, name or code contains the query. RLS limits rows to the owner. */
 export async function searchEverything(query: string): Promise<ActionResult<SearchResults>> {
@@ -48,7 +39,7 @@ export async function searchEverything(query: string): Promise<ActionResult<Sear
       .from("courses")
       .select("id, name, code, color, archived_at")
       // Quoted, so commas or parentheses in the query can't break PostgREST's or= syntax.
-      .or(`name.ilike.${quoted(pattern)},code.ilike.${quoted(pattern)}`)
+      .or(`name.ilike.${quotedFilter(pattern)},code.ilike.${quotedFilter(pattern)}`)
       .order("archived_at", { ascending: true, nullsFirst: true })
       .order("name")
       .limit(LIMIT),

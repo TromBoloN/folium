@@ -6,7 +6,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listActiveSlots, listCourses } from "../courses/queries";
 import { getSettings } from "../settings/queries";
 import { trimSeconds } from "../timetable/logic";
-import { type MeetingProgress, type MeetingRow, type MeetingStatus, progressByCourse, projectedEnd } from "./meetings";
+import { type MeetingProgress, type MeetingRow, type MeetingStatus, progressByCourse } from "./meetings";
 import {
   buildSchedule,
   type ChangeKind,
@@ -14,10 +14,10 @@ import {
   type ClassChange,
   type DateRange,
   findOccurrence,
-  isLive,
   type Occurrence,
   occurrenceKey,
   parseOccurrenceKey,
+  projectCourseEnd,
   type ScheduleCourse,
   type ScheduleInput,
 } from "./occurrences";
@@ -125,16 +125,45 @@ const getCourseEnds = cache(async (): Promise<Map<string, CivilDate>> => {
   const earliest = open.map((c) => log.progress.get(c.id)?.countFrom?.date ?? floor).sort()[0];
   // "YYYY-MM-DD" strings sort as dates: the later of the two.
   const start = [earliest, floor].sort()[1];
-  const span = { from: start, to: addDays(start, 790) };
-  const live = buildSchedule(await loadInput(span.from, span.to), span).filter(isLive);
+  const endLimit = addDays(start, 790);
+  const openIds = open.map((c) => c.id);
+  const supabase = await createClient();
+  const [slots, changesRes, breaksRes] = await Promise.all([
+    listActiveSlots(),
+    supabase
+      .from("class_changes")
+      .select(CHANGE_COLUMNS)
+      .in("course_id", openIds)
+      .or(
+        `and(original_date.gte.${start},original_date.lte.${endLimit}),and(new_date.gte.${start},new_date.lte.${endLimit})`,
+      ),
+    supabase
+      .from("class_breaks")
+      .select("id, label, starts_on, ends_on")
+      .lte("starts_on", endLimit)
+      .gte("ends_on", start),
+  ]);
+  if (changesRes.error) throw new Error(`Couldn't load schedule changes: ${changesRes.error.message}`);
+  if (breaksRes.error) throw new Error(`Couldn't load breaks: ${breaksRes.error.message}`);
+  const allChanges = (changesRes.data as unknown as ChangeRow[]).map(toChange);
+  const breaks: ClassBreak[] = breaksRes.data.map((b) => ({
+    id: b.id,
+    label: b.label,
+    startsOn: b.starts_on,
+    endsOn: b.ends_on,
+  }));
   const marked = new Set(log.marks.keys());
   for (const c of open) {
     const progress = log.progress.get(c.id);
     if (!progress) continue;
-    const end = projectedEnd(
-      live.filter((o) => o.courseId === c.id),
+    const courseStart = [progress.countFrom?.date ?? floor, floor].sort()[1];
+    const end = projectCourseEnd(
+      slots.filter((s) => s.courseId === c.id),
+      allChanges.filter((ch) => ch.courseId === c.id),
+      breaks,
       progress,
       marked,
+      courseStart,
     );
     if (end) ends.set(c.id, end);
   }
@@ -223,11 +252,6 @@ export async function listUpcomingBreaks(today: CivilDate): Promise<ClassBreak[]
     .order("starts_on");
   if (error) throw new Error(`Couldn't load breaks: ${error.message}`);
   return data.map((b) => ({ id: b.id, label: b.label, startsOn: b.starts_on, endsOn: b.ends_on }));
-}
-
-/** Today and the next `days` days. */
-export function rangeFrom(today: CivilDate, days: number): DateRange {
-  return { from: today, to: addDays(today, days) };
 }
 
 export type MeetingLog = {

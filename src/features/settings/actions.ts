@@ -23,6 +23,13 @@ type JsonObject = { [key: string]: Json | undefined };
 
 export async function updateSettings(_prev: FormState, formData: FormData): Promise<FormState> {
   const values = formValues(formData);
+  const rawTarget = formData.get("attendanceTarget");
+  const attendanceTarget =
+    rawTarget === null
+      ? DEFAULT_PREFERENCES.attendanceTarget
+      : typeof rawTarget === "string" && rawTarget.trim() === ""
+        ? Number.NaN
+        : Number(rawTarget);
   const parsed = settingsFormSchema.safeParse({
     theme: {
       mode: formData.get("mode"),
@@ -39,7 +46,7 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
       language: formData.get("language"),
       timeZone: formData.get("timeZone"),
       gradeScale: parseGradeScaleField(formData.get("gradeScale")),
-      attendanceTarget: Number(formData.get("attendanceTarget") ?? DEFAULT_PREFERENCES.attendanceTarget),
+      attendanceTarget,
       classTypes: parseClassTypesField(formData.get("classTypes")),
       billReminderEmails: formData.get("billReminderEmails") === "on",
       weeklySummaryEmail: formData.get("weeklySummaryEmail") === "on",

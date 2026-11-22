@@ -1,8 +1,9 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
 import { EN, type I18n } from "@/lib/i18n/core";
+import { formatTimeRange } from "../timetable/format";
 import { formatTime, toMinutes } from "../timetable/logic";
 import type { RescheduleTarget } from "./components/reschedule-dialog";
-import { isLive, type Occurrence, type Placement } from "./occurrences";
+import { isPast, type Occurrence, type Placement } from "./occurrences";
 import type { AttendanceStatus } from "./schema";
 
 export type TimeFormat = "24h" | "12h";
@@ -23,10 +24,6 @@ export function placementLabel(
 ) {
   const time = formatTime(p.startTime, format);
   return p.date === sameDay ? time : `${formatDate(p.date, { weekday: "short" }, intl)} ${time}`;
-}
-
-export function timeRange(o: { startTime: string; endTime: string }, format: TimeFormat) {
-  return `${formatTime(o.startTime, format)}–${formatTime(o.endTime, format)}`;
 }
 
 type ChipSource = Pick<Occurrence, "status" | "date" | "from" | "room" | "label" | "online" | "breakLabel">;
@@ -55,20 +52,6 @@ export function occurrenceChips(o: ChipSource, format: TimeFormat, i18n: I18n = 
   }
   if (o.online && held) chips.push({ kind: "online", text: t("Online") });
   return chips;
-}
-
-/** One sentence for screen readers and titles, e.g. "Calculus I, Wed 07:30–09:10, B2.04, cancelled: Dr. Siti unwell". */
-export function describeOccurrence(o: Occurrence, format: TimeFormat, i18n: I18n = EN): string {
-  const parts = [
-    o.course.name,
-    `${formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, i18n.intl)} ${timeRange(o, format)}`,
-  ];
-  if (o.location) parts.push(o.location);
-  const chips = occurrenceChips(o, format, i18n).map((c) => c.text.toLowerCase());
-  let text = parts.join(", ");
-  if (chips.length) text += `, ${chips.join(", ")}`;
-  if (o.note && o.status !== "ghost") text += `: ${o.note}`;
-  return text;
 }
 
 /** For "Next: …" lines: "On now, until 09:10", "Today 10:00", "Tomorrow 07:30", "Wed 10:00", "Wed 2 Dec 10:00". */
@@ -142,13 +125,13 @@ export function toRowItem(
     lecturer: o.course.lecturer ?? null,
     durationLabel: durationLabel(o, i18n),
     color: o.course.color,
-    timeLabel: timeRange(o, format),
+    timeLabel: formatTimeRange(o, format),
     dateLabel: formatDate(o.date, { weekday: "short", day: "numeric", month: "short" }, i18n.intl),
     location: o.location,
     status: o.status,
     chips: occurrenceChips(o, format, i18n),
     note: o.note,
-    past: o.date < now.date || (o.date === now.date && toMinutes(o.endTime) <= now.minute),
+    past: isPast(o, now),
     overlapsWith: [],
   };
 }
@@ -158,14 +141,4 @@ export function durationLabel(o: { startTime: string; endTime: string }, { t }: 
   const m = toMinutes(o.endTime) - toMinutes(o.startTime);
   if (m < 60) return t("{m} min", { m });
   return m % 60 === 0 ? t("{h} h", { h: m / 60 }) : t("{h} h {m} min", { h: Math.floor(m / 60), m: m % 60 });
-}
-
-/** Attendance fields for a row: markable once a live class is over. */
-export function withAttendance<T extends RowItem>(
-  item: T,
-  o: Pick<Occurrence, "status" | "key">,
-  marks: ReadonlyMap<string, AttendanceStatus> | undefined,
-): T {
-  const canMark = item.past && isLive(o as Occurrence);
-  return { ...item, canMark, attendance: canMark ? (marks?.get(o.key) ?? null) : null };
 }

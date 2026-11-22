@@ -1,5 +1,6 @@
 import { addDays, type CivilDate, isCivilDate, isoWeekday } from "@/lib/dates";
 import { appliesOn, compareSlots, type SlotTiming, toMinutes } from "../timetable/logic";
+import { isCounted, type MeetingProgress } from "./meetings";
 
 /**
  * THE schedule. Weekly slots are the default timetable; changes touch one date;
@@ -316,12 +317,92 @@ export function changesByCourse(occurrences: readonly Occurrence[]): Map<string,
   return counts;
 }
 
-export function onDate(occurrences: readonly Occurrence[], date: CivilDate): Occurrence[] {
-  return occurrences.filter((o) => o.date === date);
-}
-
 export function liveOn(occurrences: readonly Occurrence[], date: CivilDate): Occurrence[] {
   return occurrences.filter((o) => o.date === date && isLive(o));
+}
+
+/**
+ * Lazy end-date projection for ONE open counted course: walks dates from `start`
+ * day by day (up to `maxDays`) and stops as soon as the remaining meetings are filled.
+ */
+export function projectCourseEnd(
+  slots: readonly ScheduleSlot[],
+  changes: readonly ClassChange[],
+  breaks: readonly ClassBreak[],
+  progress: MeetingProgress,
+  marked: ReadonlySet<string>,
+  start: CivilDate,
+  maxDays = 790,
+): CivilDate | null {
+  if (progress.total === null) return null;
+  if (progress.finished) return progress.endedOn;
+  let remaining = progress.total - (progress.attended + progress.missed + progress.unknown);
+  if (remaining <= 0) return progress.lastDate;
+
+  const endLimit = addDays(start, maxDays);
+  const slotById = new Map(slots.map((s) => [s.id, s]));
+  const changeFor = new Map<string, ClassChange>();
+  const movedByDate = new Map<CivilDate, { key: string; date: CivilDate; endTime: string }[]>();
+  const extrasByDate = new Map<CivilDate, { key: string; date: CivilDate; endTime: string }[]>();
+
+  for (const c of changes) {
+    if (c.kind === "extra") {
+      if (c.newDate && c.startTime && c.endTime && c.newDate >= start && c.newDate <= endLimit) {
+        const list = extrasByDate.get(c.newDate) ?? [];
+        list.push({ key: `x.${c.id}`, date: c.newDate, endTime: c.endTime });
+        extrasByDate.set(c.newDate, list);
+      }
+      continue;
+    }
+    if (!c.slotId || !c.originalDate) continue;
+    const key = occurrenceKey(c.slotId, c.originalDate);
+    changeFor.set(key, c);
+    if (c.kind === "moved") {
+      const slot = slotById.get(c.slotId);
+      if (!slot || !appliesOn(slot, c.originalDate)) continue;
+      const to = placeMove(base(slot, c.originalDate), c);
+      if (to.timeChanged && to.date >= start && to.date <= endLimit) {
+        const list = movedByDate.get(to.date) ?? [];
+        list.push({ key, date: to.date, endTime: to.endTime });
+        movedByDate.set(to.date, list);
+      }
+    }
+  }
+
+  const inBreak = (date: CivilDate) => breaks.some((b) => date >= b.startsOn && date <= b.endsOn);
+  const countClass = (c: { key: string; date: CivilDate; endTime: string }): CivilDate | null => {
+    if (marked.has(c.key) || !isCounted(c, progress.countFrom)) return null;
+    remaining--;
+    if (remaining > 0) return null;
+    return progress.lastDate && progress.lastDate > c.date ? progress.lastDate : c.date;
+  };
+
+  for (let d = start, i = 0; i <= maxDays; d = addDays(d, 1), i++) {
+    const brk = inBreak(d);
+    for (const slot of slots) {
+      if (!appliesOn(slot, d)) continue;
+      const key = occurrenceKey(slot.id, d);
+      const change = changeFor.get(key);
+      if (change?.kind === "cancelled" || change?.kind === "postponed") continue;
+      if (change?.kind === "moved") {
+        const to = placeMove(base(slot, d), change);
+        if (to.timeChanged || brk) continue;
+      } else if (brk) {
+        continue;
+      }
+      const done = countClass({ key, date: d, endTime: slot.endTime });
+      if (done) return done;
+    }
+    for (const m of movedByDate.get(d) ?? []) {
+      const done = countClass(m);
+      if (done) return done;
+    }
+    for (const x of extrasByDate.get(d) ?? []) {
+      const done = countClass(x);
+      if (done) return done;
+    }
+  }
+  return null;
 }
 
 /** The first live occurrence that hasn't ended yet, optionally for one course. */

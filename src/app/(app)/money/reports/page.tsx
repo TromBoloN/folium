@@ -292,21 +292,24 @@ async function Reports() {
           <h2 id="payees-h" className="font-medium">
             {t("Top payees this month")}
           </h2>
-          {topPayees(monthRows).length === 0 ? (
-            <p className="text-muted-foreground text-sm">{t("No payees this month yet.")}</p>
-          ) : (
-            <ol className="flex flex-col divide-y divide-border-soft text-sm">
-              {topPayees(monthRows).map((p) => (
-                <li key={p.payee} className="flex items-center gap-3 py-2">
-                  <span className="min-w-0 flex-1 truncate">{p.payee}</span>
-                  <span className="text-muted-foreground text-xs">
-                    {t(plural(p.count, "1 time", "{n} times"), { n: p.count })}
-                  </span>
-                  <span className="tabular-nums">{formatIdr(p.total)}</span>
-                </li>
-              ))}
-            </ol>
-          )}
+          {(() => {
+            const payees = topPayees(monthRows);
+            return payees.length === 0 ? (
+              <p className="text-muted-foreground text-sm">{t("No payees this month yet.")}</p>
+            ) : (
+              <ol className="flex flex-col divide-y divide-border-soft text-sm">
+                {payees.map((p) => (
+                  <li key={p.payee} className="flex items-center gap-3 py-2">
+                    <span className="min-w-0 flex-1 truncate">{p.payee}</span>
+                    <span className="text-muted-foreground text-xs">
+                      {t(plural(p.count, "1 time", "{n} times"), { n: p.count })}
+                    </span>
+                    <span className="tabular-nums">{formatIdr(p.total)}</span>
+                  </li>
+                ))}
+              </ol>
+            );
+          })()}
         </section>
       </div>
     </div>

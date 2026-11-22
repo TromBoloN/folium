@@ -5,6 +5,7 @@ import { PageHeader } from "@/components/page-header";
 import { requireUser } from "@/features/auth/queries";
 import { listCourseOptions } from "@/features/courses/queries";
 import { getSettings } from "@/features/settings/queries";
+import { groupDigits } from "../lib/format-idr";
 import { localDateFor } from "../lib/local-date";
 import {
   ensureFinanceDefaults,
@@ -19,9 +20,6 @@ import { TRANSACTION_KINDS, type TransactionKind } from "../schemas";
 import { type TransactionDefaults, TransactionForm } from "./transaction-form";
 
 type Variant = { variant: "page" | "sheet" };
-
-/** "25000" → "25.000" for an editable amount field (parseAmount reads it back). */
-const grouped = (n: bigint) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
 async function formData(keepIds: (string | null)[] = []) {
   await ensureFinanceDefaults();
@@ -123,10 +121,10 @@ export async function EditTransactionScreen({ id, variant }: { id: string } & Va
   const defaults: TransactionDefaults = {
     kind: transaction.kind,
     status: transaction.status,
-    amount: grouped(transaction.amount),
+    amount: groupDigits(transaction.amount),
     accountId: transaction.accountId,
     toAccountId: transaction.toAccountId ?? "",
-    feeAmount: transaction.feeAmount > 0n ? grouped(transaction.feeAmount) : "",
+    feeAmount: transaction.feeAmount > 0n ? groupDigits(transaction.feeAmount) : "",
     categoryId: transaction.categoryId ?? "",
     payee: transaction.payee ?? "",
     note: transaction.note ?? "",

@@ -43,7 +43,6 @@ export const SCHOOL_TABS: readonly SectionTab[] = [
   { label: "Grades", href: "/grades", matchPrefix: true },
 ];
 export const SCHOOL_PATHS = SCHOOL_TABS.map((t) => t.href);
-export const isSchoolPath = (path: string) => SCHOOL_PATHS.some((p) => isUnder(path, p));
 
 /** Money: tabs appear only once their page exists. Overview is exact; the rest cover their sub-pages. */
 export const MONEY_TABS: readonly SectionTab[] = [

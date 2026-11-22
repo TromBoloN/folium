@@ -20,8 +20,8 @@ export async function ClassesWidget() {
   const todays = schedule.filter((o) => o.date === today && isListed(o)).map((o) => toHeroClass(o, fmt, i18n));
   const next = liveOn(schedule, tomorrow).map((o) => toHeroClass(o, fmt, i18n));
 
-  if (todays.every((c) => c.cancelled)) {
-    return <DaySummary past={[]} cancelled={todays} tomorrow={next} timeFormat={fmt} />;
+  if (todays.every((c) => c.cancelled || c.postponed)) {
+    return <DaySummary past={[]} cancelled={todays.filter((c) => c.cancelled)} tomorrow={next} timeFormat={fmt} />;
   }
 
   return (

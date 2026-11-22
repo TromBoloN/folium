@@ -4,7 +4,7 @@ import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, type IsoDate } from "../lib/local-date";
 import { type Cadence, occurrencesBetween } from "../lib/recurrence";
-import { listCategories, type Transaction, TX_COLUMNS, type TxRow, toTransaction } from "./index";
+import { type Transaction, TX_COLUMNS, type TxRow, toTransaction } from "./index";
 
 /**
  * Recurring rules, budgets and goals. Planned transactions are generated from
@@ -109,21 +109,23 @@ export async function getRule(id: string): Promise<Rule | null> {
 export const ensureRecurringGenerated = cache(async (today: IsoDate): Promise<void> => {
   const rules = (await listRules()).filter((r) => r.active);
   const to = addDays(today, HORIZON_DAYS);
+  const floor = addDays(today, -BACKFILL_DAYS);
   const supabase = await createClient();
-  for (const rule of rules) {
-    if (rule.generatedThrough && rule.generatedThrough >= to) continue;
-    const start = rule.generatedThrough ? addDays(rule.generatedThrough, 1) : rule.startsOn;
-    const floor = addDays(today, -BACKFILL_DAYS);
-    // biome-ignore lint/complexity/useMathMinMax: ISO date strings, not numbers.
-    const dates = occurrencesBetween(rule, start > floor ? start : floor, to);
-    const { error } = await supabase.rpc("generate_recurring_transactions", {
-      p_rule_id: rule.id,
-      p_expected_updated_at: rule.updatedAt,
-      p_to: to,
-      p_dates: dates,
-    });
-    if (error) console.error("[finance] generate", rule.id, error.code, error.message);
-  }
+  const due = rules.filter((rule) => !rule.generatedThrough || rule.generatedThrough < to);
+  await Promise.all(
+    due.map(async (rule) => {
+      const start = rule.generatedThrough ? addDays(rule.generatedThrough, 1) : rule.startsOn;
+      // biome-ignore lint/complexity/useMathMinMax: ISO date strings, not numbers.
+      const dates = occurrencesBetween(rule, start > floor ? start : floor, to);
+      const { error } = await supabase.rpc("generate_recurring_transactions", {
+        p_rule_id: rule.id,
+        p_expected_updated_at: rule.updatedAt,
+        p_to: to,
+        p_dates: dates,
+      });
+      if (error) console.error("[finance] generate", rule.id, error.code, error.message);
+    }),
+  );
 });
 
 export type Bill = Transaction & { rule: Rule | null };
@@ -266,11 +268,6 @@ export const listGoals = cache(async (): Promise<Goal[]> => {
     createdOn: g.created_at.slice(0, 10),
   }));
 });
-
-/** Expense categories in a flat, parent-first list (budget pickers). */
-export async function expenseCategories() {
-  return (await listCategories()).filter((c) => c.kind === "expense" && !c.archived);
-}
 
 /** Posted expenses tagged to a course: count and total. */
 export async function courseSpending(courseId: string): Promise<{ count: number; total: bigint }> {

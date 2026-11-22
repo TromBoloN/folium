@@ -17,12 +17,6 @@ export function adjustmentFor(balance: bigint, real: bigint): { direction: "in" 
   return diff > 0n ? { direction: "in", amount: diff } : { direction: "out", amount: -diff };
 }
 
-/** The month of a local date: "2026-11" and its first and last day ("2026-11-01" … "2026-11-30"). */
-export function monthRange(localDate: string): { month: string; from: string; to: string } {
-  const month = localDate.slice(0, 7);
-  return { month, ...monthBounds(month) };
-}
-
 /** "2026-02" → first and last day, leap years included. */
 export function monthBounds(month: string): { from: string; to: string } {
   const [y, m] = month.split("-").map(Number);

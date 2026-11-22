@@ -42,23 +42,33 @@ type Row = {
 
 type Supabase = Awaited<ReturnType<typeof createClient>>;
 
+const SUBTASK_CHUNK = 100;
+
 /** Subtasks for these parents, in checklist order. (PostgREST can't embed the composite self-reference.) */
 async function loadSubtasks(supabase: Supabase, parentIds: string[]): Promise<Map<string, Subtask[]>> {
   const byParent = new Map<string, Subtask[]>();
   if (parentIds.length === 0) return byParent;
-  const { data, error } = await supabase
-    .from("tasks")
-    .select("id, title, status, parent_id")
-    .in("parent_id", parentIds)
-    .order("position")
-    .order("created_at");
-  if (error) throw new Error(`Couldn't load subtasks: ${error.message}`);
-  for (const s of data) {
-    if (!s.parent_id) continue;
-    byParent.set(s.parent_id, [
-      ...(byParent.get(s.parent_id) ?? []),
-      { id: s.id, title: s.title, done: s.status === "done" },
-    ]);
+  const chunks: string[][] = [];
+  for (let i = 0; i < parentIds.length; i += SUBTASK_CHUNK) chunks.push(parentIds.slice(i, i + SUBTASK_CHUNK));
+  const results = await Promise.all(
+    chunks.map((ids) =>
+      supabase
+        .from("tasks")
+        .select("id, title, status, parent_id")
+        .in("parent_id", ids)
+        .order("position")
+        .order("created_at"),
+    ),
+  );
+  for (const { data, error } of results) {
+    if (error) throw new Error(`Couldn't load subtasks: ${error.message}`);
+    for (const s of data) {
+      if (!s.parent_id) continue;
+      byParent.set(s.parent_id, [
+        ...(byParent.get(s.parent_id) ?? []),
+        { id: s.id, title: s.title, done: s.status === "done" },
+      ]);
+    }
   }
   return byParent;
 }
@@ -85,7 +95,7 @@ export type ListContext = { now: Date; timeZone: string; weekStart: WeekStart };
 /** Top-level tasks matching the filters. RLS limits rows to the owner. */
 export async function listTasks(filters: TaskFilters, ctx: ListContext): Promise<Task[]> {
   const supabase = await createClient();
-  let query = supabase.from("tasks").select(TASK_COLUMNS).is("parent_id", null).limit(500);
+  let query = supabase.from("tasks").select(TASK_COLUMNS).is("parent_id", null);
 
   if (filters.status === "open") query = query.neq("status", "done");
   if (filters.status === "done") query = query.eq("status", "done");
@@ -97,7 +107,12 @@ export async function listTasks(filters: TaskFilters, ctx: ListContext): Promise
     if (range.before) query = query.lt("due_at", range.before).neq("status", "done");
   }
 
-  const { data, error } = await query;
+  query =
+    filters.status === "done"
+      ? query.order("completed_at", { ascending: false, nullsFirst: false }).order("created_at", { ascending: false })
+      : query.order("due_at", { ascending: true, nullsFirst: false }).order("created_at", { ascending: false });
+
+  const { data, error } = await query.limit(500);
   if (error) throw new Error(`Couldn't load tasks: ${error.message}`);
   const rows = data as Row[];
   const subtasks = await loadSubtasks(

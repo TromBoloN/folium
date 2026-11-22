@@ -1,22 +1,8 @@
 import { z } from "zod";
 import { isCivilDate } from "@/lib/dates";
-import { parseAmount } from "../lib/parse-amount";
+import { amountField, optionalId } from "./index";
 
 /** Form schemas for recurring rules, budgets and goals (form strings in, typed values out). */
-
-const amount = z.string().transform((text, ctx) => {
-  const parsed = parseAmount(text);
-  if (!parsed.ok || parsed.value > BigInt(Number.MAX_SAFE_INTEGER)) {
-    ctx.addIssue({ code: "custom", message: "Enter an amount like 25.000, 25k or 1,5jt." });
-    return z.NEVER;
-  }
-  return parsed.value;
-});
-
-const optionalId = z
-  .string()
-  .transform((v) => (v === "" ? null : v))
-  .refine((v) => v === null || z.uuid().safeParse(v).success, "Choose from the list.");
 
 const optionalDate = z
   .string()
@@ -36,7 +22,7 @@ export const ruleFormSchema = z
   .object({
     name: z.string().trim().min(1, "Give it a name.").max(80, "A name can be at most 80 characters."),
     kind: z.enum(RULE_KINDS, "Choose a kind."),
-    amount,
+    amount: amountField,
     isEstimate: z.boolean(),
     accountId: z.uuid("Choose an account."),
     toAccountId: optionalId,
@@ -77,13 +63,13 @@ export type RuleInput = z.infer<typeof ruleFormSchema>;
 export const budgetFormSchema = z.object({
   categoryId: z.uuid("Choose a category."),
   month: z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, "Choose a month."),
-  amount,
+  amount: amountField,
   rollover: z.boolean(),
 });
 
 export const goalFormSchema = z.object({
   name: z.string().trim().min(1, "Give the goal a name.").max(80, "A name can be at most 80 characters."),
-  targetAmount: amount,
+  targetAmount: amountField,
   targetOn: optionalDate,
   accountId: z.uuid("Choose a savings account."),
 });

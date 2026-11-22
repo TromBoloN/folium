@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeTabHref, isMoneyManagePath, isSchoolPath, isUnder, MONEY_TABS, SCHOOL_TABS } from "./sections";
+import { activeTabHref, isMoneyManagePath, isUnder, MONEY_TABS, SCHOOL_PATHS, SCHOOL_TABS } from "./sections";
 
 describe("isUnder", () => {
   it("matches the prefix, nested routes and trailing slashes", () => {
@@ -15,14 +15,15 @@ describe("isUnder", () => {
 });
 
 describe("School", () => {
+  const inSchool = (path: string) => SCHOOL_PATHS.some((p) => isUnder(path, p));
   it("covers Courses, Tasks and Grades with their nested routes", () => {
     for (const path of ["/courses", "/courses/123", "/tasks/new", "/grades/abc/assessments/new", "/tasks/"]) {
-      expect(isSchoolPath(path)).toBe(true);
+      expect(inSchool(path)).toBe(true);
     }
   });
   it("leaves out everything else", () => {
     for (const path of ["/", "/money", "/settings", "/courses-archive", "/task", "/gradesheet"]) {
-      expect(isSchoolPath(path)).toBe(false);
+      expect(inSchool(path)).toBe(false);
     }
   });
   it("picks the tab for nested routes", () => {

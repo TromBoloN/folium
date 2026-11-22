@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { findConflicts, layoutDay } from "../timetable/logic";
+import { meetingProgress } from "./meetings";
 import {
   buildSchedule,
   type ClassBreak,
@@ -12,6 +13,7 @@ import {
   nextOccurrence,
   occurrenceKey,
   parseOccurrenceKey,
+  projectCourseEnd,
   type ScheduleCourse,
   type ScheduleSlot,
 } from "./occurrences";
@@ -503,5 +505,34 @@ describe("buildSchedule: finished courses (meeting log)", () => {
       WEEK,
     );
     expect(out.map((o) => `${o.course.code} ${o.date}`)).toEqual(["MAT101 2026-11-16", "FIS101 2026-11-16"]);
+  });
+
+  it("projects a course's end date lazily across cancellations, breaks, moves and extras", () => {
+    const progress = meetingProgress([], 3);
+    // Mondays: Nov 16, Nov 23 (cancelled), Nov 30 (break), Dec 7, Dec 14 -> 3rd live meeting lands on Dec 14.
+    const cancel = change("c1", { kind: "cancelled", courseId: CALC.id, slotId: calcMon.id, originalDate: NEXT_MON });
+    const brk: ClassBreak = { id: "b1", label: "Break", startsOn: "2026-11-30", endsOn: "2026-11-30" };
+    expect(projectCourseEnd([calcMon], [cancel], [brk], progress, new Set(), MON)).toBe("2026-12-14");
+
+    // Moving Dec 14 to Dec 16 moves the projected end to Dec 16.
+    const move = change("m1", {
+      kind: "moved",
+      courseId: CALC.id,
+      slotId: calcMon.id,
+      originalDate: "2026-12-14",
+      newDate: "2026-12-16",
+    });
+    expect(projectCourseEnd([calcMon], [cancel, move], [brk], progress, new Set(), MON)).toBe("2026-12-16");
+
+    // An extra session on Nov 20 fills one meeting early -> ends on Dec 7.
+    const extra = change("x1", {
+      kind: "extra",
+      courseId: CALC.id,
+      course: CALC,
+      newDate: FRI,
+      startTime: "10:00",
+      endTime: "11:00",
+    });
+    expect(projectCourseEnd([calcMon], [cancel, extra], [brk], progress, new Set(), MON)).toBe("2026-12-07");
   });
 });

@@ -80,9 +80,3 @@ export function balanceSeries(
   }
   return points.reverse();
 }
-
-/** First to last point of a series ("up Rp X this week"); 0 for a flat or empty series. */
-export function seriesChange(points: readonly SeriesPoint[]): bigint {
-  if (points.length < 2) return 0n;
-  return points[points.length - 1].balance - points[0].balance;
-}

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { realBalanceSchema, transactionFiltersSchema, transactionFormSchema, transactionRow } from "./index";
-import { adjustmentFor, groupByDay, monthBounds, monthRange, monthTotals, reconciledOpening } from "./money-math";
+import { adjustmentFor, groupByDay, monthBounds, monthTotals, reconciledOpening } from "./money-math";
 
 const A = "0b9f4b8e-1c2d-4e5f-8a9b-0c1d2e3f4a5b";
 const B = "1b9f4b8e-1c2d-4e5f-8a9b-0c1d2e3f4a5b";
@@ -139,8 +139,8 @@ describe("money math", () => {
     expect(adjustmentFor(70_000n, 70_000n)).toBeNull();
   });
 
-  it("month ranges, leap years and December", () => {
-    expect(monthRange("2026-11-16")).toEqual({ month: "2026-11", from: "2026-11-01", to: "2026-11-30" });
+  it("month bounds, leap years and December", () => {
+    expect(monthBounds("2026-11")).toEqual({ from: "2026-11-01", to: "2026-11-30" });
     expect(monthBounds("2028-02")).toEqual({ from: "2028-02-01", to: "2028-02-29" });
     expect(monthBounds("2026-12")).toEqual({ from: "2026-12-01", to: "2026-12-31" });
   });

@@ -1,17 +1,19 @@
 import { addDays, type CivilDate, formatDate } from "@/lib/dates";
 import { EN, type I18n } from "@/lib/i18n/core";
 import type { RescheduleTarget } from "../schedule/components/reschedule-dialog";
-import { type Chip, changeTarget, durationLabel, occurrenceChips, placementLabel, timeRange } from "../schedule/format";
+import { type Chip, changeTarget, durationLabel, occurrenceChips, placementLabel } from "../schedule/format";
 import {
   buildSchedule,
   type DateRange,
   isListed,
   isLive,
+  isPast,
   type Occurrence,
   type OccurrenceStatus,
   type ScheduleInput,
 } from "../schedule/occurrences";
 import type { AttendanceStatus } from "../schedule/schema";
+import { formatTimeRange } from "./format";
 import { findConflicts, formatTime, layoutDay, toMinutes, type WeekStart, weekDates } from "./logic";
 
 export type WeekItem = {
@@ -138,7 +140,7 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
     }
     const items = layoutDay(listed).map(({ slot: o, lane, lanes }): WeekItem => {
       const others = conflicts.get(o.key) ?? [];
-      const past = date < options.today || (date === options.today && toMinutes(o.endTime) <= nowMinute);
+      const past = isPast(o, { date: options.today, minute: nowMinute });
       const canMark = past && isLive(o);
       return {
         code: o.course.code,
@@ -157,7 +159,7 @@ export function buildWeek(input: ScheduleInput, options: WeekOptions): Week {
         title: courseTitle(o),
         courseName: o.course.name,
         color: o.course.color,
-        timeLabel: timeRange(o, options.timeFormat),
+        timeLabel: formatTimeRange(o, options.timeFormat),
         location: o.location,
         startMinute: toMinutes(o.startTime),
         endMinute: toMinutes(o.endTime),

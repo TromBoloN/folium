@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { describeOccurrence, durationLabel, nextLabel, occurrenceChips, placementLabel } from "./format";
+import { durationLabel, nextLabel, occurrenceChips, placementLabel } from "./format";
 import { buildSchedule, type ClassChange, type ScheduleSlot } from "./occurrences";
 
 const COURSE = { id: "c", name: "Calculus I", code: "MAT101", color: "#1c7ed6", room: "B2.04" };
@@ -90,12 +90,9 @@ describe("labels", () => {
       "Wed 25 Nov 10:00",
     );
   });
-  it("placementLabel and describeOccurrence", () => {
+  it("placementLabel", () => {
     expect(placementLabel({ date: "2026-11-20", startTime: "13:30" }, "24h")).toBe("Fri 13:30");
     expect(placementLabel({ date: "2026-11-20", startTime: "13:30" }, "24h", "2026-11-20")).toBe("13:30");
-    expect(describeOccurrence(one({ ...base, kind: "cancelled", note: "Dr. Siti unwell" }), "24h")).toBe(
-      "Calculus I, Wed 18 Nov 07:30–09:10, B2.04, cancelled: Dr. Siti unwell",
-    );
   });
 });
 

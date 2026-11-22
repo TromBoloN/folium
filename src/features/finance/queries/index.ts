@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { z } from "zod";
+import { quotedLike } from "@/lib/supabase/filter";
 import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import type { AccountType, CategoryKind, TransactionFilters, TransactionKind } from "../schemas";
@@ -178,12 +179,6 @@ export function toTransaction(r: TxRow): Transaction {
     courseId: r.course_id,
     createdAt: r.created_at,
   };
-}
-
-/** Escape LIKE wildcards, then quote for a PostgREST `or` filter. */
-function quotedLike(q: string) {
-  const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-  return `"${pattern.replace(/["\\]/g, (c) => `\\${c}`)}"`;
 }
 
 /** The few filter methods used here (PostgREST's builder types are too generic to name). */

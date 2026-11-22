@@ -19,6 +19,7 @@ export function toHeroClass(o: Occurrence, format: TimeFormat, i18n: I18n = EN):
     color: o.course.color,
     location: o.location,
     cancelled: o.status === "cancelled",
+    postponed: o.status === "postponed",
     // Cancelled classes are shown struck through; their red chip would repeat that.
     chips: occurrenceChips(o, format, i18n).filter((c) => c.kind !== "cancelled"),
     note: o.note,

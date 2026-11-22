@@ -57,13 +57,15 @@ async function Tasks({ searchParams }: Pick<PageProps<"/tasks">, "searchParams">
   const filters = taskFiltersSchema.parse(params);
   await io(); // "now" must be read per request
   const now = new Date();
-  const [tasks, open] = await Promise.all([
-    listTasks(filters, { now, timeZone: preferences.timeZone, weekStart: preferences.weekStart }),
-    listOpenTasks(),
-  ]);
+  const filtered = filters.status !== "open" || filters.due !== "any" || Boolean(filters.course);
+  const [tasks, open] = filtered
+    ? await Promise.all([
+        listTasks(filters, { now, timeZone: preferences.timeZone, weekStart: preferences.weekStart }),
+        listOpenTasks(),
+      ])
+    : await listOpenTasks().then((list) => [list, list] as const);
   const summary = dueSummary(open, now, preferences.timeZone, preferences.weekStart);
   const course = courses.find((c) => c.id === filters.course);
-  const filtered = filters.status !== "open" || filters.due !== "any" || filters.course;
 
   return (
     // Wide screens: the list on the left, summary and filters in a rail on the right.

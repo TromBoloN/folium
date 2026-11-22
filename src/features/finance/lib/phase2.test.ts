@@ -149,16 +149,21 @@ describe("safe to spend", () => {
     expect(result).toMatchObject({ payday: "2026-11-26", days: 10, outflows: 300_000n, perDay: 70_000n, over: null });
   });
 
-  it("falls back to month end without income, and counts overdue bills", () => {
+  it("falls back to month end without income, counts overdue and month-end bills, and ignores non-spendable income", () => {
     const result = safeToSpend({
       liquid: 100_000n,
       today: "2026-11-16",
       spendable,
-      planned: [planned({ amount: 40_000n, occurredOn: "2026-11-10" })],
+      planned: [
+        planned({ amount: 40_000n, occurredOn: "2026-11-10" }),
+        planned({ amount: 25_000n, occurredOn: "2026-11-30" }),
+        // Income into non-spendable savings is NOT payday for spendable accounts.
+        planned({ kind: "income", accountId: "savings", amount: 500_000n, occurredOn: "2026-11-20" }),
+      ],
     });
     expect(result.payday).toBe("2026-11-30");
     expect(result.paydayFromIncome).toBe(false);
-    expect(result.outflows).toBe(40_000n);
+    expect(result.outflows).toBe(65_000n);
   });
 
   it("is 'over by' instead of a negative per day, and payday today counts as one day", () => {

@@ -2,7 +2,7 @@
 -- import batches, task/course links, notification log. Shapes, composite FKs,
 -- balances and cross-user isolation.
 begin;
-select plan(32);
+select plan(57);
 
 insert into auth.users (id, email) values
   ('e1000000-0000-4000-8000-000000000001', 'p2-a@test.local'),
@@ -11,6 +11,7 @@ insert into auth.users (id, email) values
 insert into public.accounts (id, user_id, name, type, opening_balance) values
   ('ea000000-0000-4000-8000-0000000000a1', 'e1000000-0000-4000-8000-000000000001', 'Livin', 'bank', 100000),
   ('ea000000-0000-4000-8000-0000000000a2', 'e1000000-0000-4000-8000-000000000001', 'Tabungan', 'savings', 0),
+  ('ea000000-0000-4000-8000-0000000000a3', 'e1000000-0000-4000-8000-000000000001', 'Darurat', 'savings', 0),
   ('eb000000-0000-4000-8000-0000000000b1', 'e2000000-0000-4000-8000-000000000002', 'B bank', 'bank', 0);
 
 insert into public.categories (id, user_id, name, kind) values
@@ -167,7 +168,34 @@ select is(
   (select task_id from public.transactions where id = 'ef000000-0000-4000-8000-000000000001'), null,
   'the transaction''s link is cleared, the transaction stays');
 
--- ---------------------------------------------------------------- isolation as B (7)
+-- Keep an active recurring rule and import batch for user A so isolation tests verify non-empty tables.
+insert into public.recurring_rules (id, user_id, name, kind, amount, account_id, category_id, cadence, due_day, starts_on) values
+  ('ee000000-0000-4000-8000-0000000000f2', 'e1000000-0000-4000-8000-000000000001', 'Internet', 'expense', 150000,
+   'ea000000-0000-4000-8000-0000000000a1', 'ec000000-0000-4000-8000-0000000000e1', 'monthly', 15, '2026-11-01');
+insert into public.import_batches (id, user_id, account_id, filename, row_count) values
+  ('e9000000-0000-4000-8000-000000000002', 'e1000000-0000-4000-8000-000000000001', 'ea000000-0000-4000-8000-0000000000a1', 'active.csv', 0);
+
+-- ---------------------------------------------------------------- grants (18)
+select table_privs_are('public', 'recurring_rules',  'anon',          array[]::text[], 'anon has no privileges on recurring_rules');
+select table_privs_are('public', 'recurring_rules',  'authenticated', array['SELECT','INSERT','UPDATE','DELETE'], 'authenticated CRUD on recurring_rules');
+select table_privs_are('public', 'budgets',          'anon',          array[]::text[], 'anon has no privileges on budgets');
+select table_privs_are('public', 'budgets',          'authenticated', array['SELECT','INSERT','UPDATE','DELETE'], 'authenticated CRUD on budgets');
+select table_privs_are('public', 'goals',            'anon',          array[]::text[], 'anon has no privileges on goals');
+select table_privs_are('public', 'goals',            'authenticated', array['SELECT','INSERT','UPDATE','DELETE'], 'authenticated CRUD on goals');
+select table_privs_are('public', 'people',           'anon',          array[]::text[], 'anon has no privileges on people');
+select table_privs_are('public', 'people',           'authenticated', array['SELECT','INSERT','UPDATE','DELETE'], 'authenticated CRUD on people');
+select table_privs_are('public', 'import_batches',   'anon',          array[]::text[], 'anon has no privileges on import_batches');
+select table_privs_are('public', 'import_batches',   'authenticated', array['SELECT','INSERT','UPDATE','DELETE'], 'authenticated CRUD on import_batches');
+select table_privs_are('public', 'notification_log', 'anon',          array[]::text[], 'anon has no privileges on notification_log');
+select table_privs_are('public', 'notification_log', 'authenticated', array['SELECT'], 'authenticated read-only on notification_log');
+select table_privs_are('public', 'person_balances',  'anon',          array[]::text[], 'anon has no privileges on person_balances');
+select table_privs_are('public', 'person_balances',  'authenticated', array['SELECT'], 'authenticated read-only on person_balances');
+select is(has_function_privilege('anon', 'public.cleanup_bill_tasks()', 'execute'), false, 'anon cannot run cleanup_bill_tasks');
+select is(has_function_privilege('authenticated', 'public.cleanup_bill_tasks()', 'execute'), false, 'authenticated cannot run cleanup_bill_tasks');
+select is(has_function_privilege('anon', 'public.set_current_meeting(uuid, smallint)', 'execute'), false, 'anon cannot run set_current_meeting');
+select is(has_function_privilege('authenticated', 'public.set_current_meeting(uuid, smallint)', 'execute'), true, 'authenticated can run set_current_meeting');
+
+-- ---------------------------------------------------------------- isolation as B (14)
 set local role authenticated;
 select set_config('request.jwt.claims', '{"sub":"e2000000-0000-4000-8000-000000000002","role":"authenticated"}', true);
 
@@ -176,11 +204,32 @@ select is((select count(*)::int from public.budgets), 0, 'B sees no budgets of A
 select is((select count(*)::int from public.goals), 0, 'B sees no goals of A');
 select is((select count(*)::int from public.people), 1, 'B sees only their own people');
 select is((select count(*)::int from public.person_balances), 1, 'B sees only their own person balances');
+select is((select count(*)::int from public.import_batches), 0, 'B sees no import batches of A');
 select is((select count(*)::int from public.notification_log), 0, 'B sees no notification log of A');
 select throws_ok(
   $$ insert into public.notification_log (user_id, kind, ref_key) values ('e2000000-0000-4000-8000-000000000002', 'bill_due', 'x') $$,
   '42501', null, 'users can''t write the notification log (only the server''s cron does)');
+select throws_ok(
+  $$ insert into public.budgets (user_id, category_id, month, amount)
+     values ('e1000000-0000-4000-8000-000000000001', 'ec000000-0000-4000-8000-0000000000e1', '2026-12-01', 100) $$,
+  '42501', null, 'B cannot forge a budget owned by A');
+select throws_ok(
+  $$ insert into public.import_batches (account_id, filename, row_count)
+     values ('ea000000-0000-4000-8000-0000000000a1', 'hack.csv', 0) $$,
+  '23503', null, 'B cannot create an import batch for A''s account');
+select throws_ok(
+  $$ insert into public.goals (name, target_amount, account_id)
+     values ('Steal', 100, 'ea000000-0000-4000-8000-0000000000a3') $$,
+  '23503', null, 'B cannot create a goal on A''s savings account');
+
+update public.goals set name = 'hacked' where user_id = 'e1000000-0000-4000-8000-000000000001';
+delete from public.recurring_rules where id = 'ee000000-0000-4000-8000-0000000000f2';
+delete from public.import_batches where id = 'e9000000-0000-4000-8000-000000000002';
 
 reset role;
+select is((select name from public.goals where user_id = 'e1000000-0000-4000-8000-000000000001'), 'Laptop', 'A''s goal was not renamed by B');
+select is((select count(*)::int from public.recurring_rules where id = 'ee000000-0000-4000-8000-0000000000f2'), 1, 'A''s recurring rule was not deleted by B');
+select is((select count(*)::int from public.import_batches where id = 'e9000000-0000-4000-8000-000000000002'), 1, 'A''s import batch was not deleted by B');
+
 select * from finish();
 rollback;

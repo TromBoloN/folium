@@ -11,32 +11,11 @@ import { splitBill } from "../lib/goals-debts";
 import { localDateFor } from "../lib/local-date";
 import { parseAmount } from "../lib/parse-amount";
 import { listAccounts } from "../queries";
-import { listPeople } from "../queries/people";
+import { personIdFor } from "../queries/people";
 
 function refresh() {
   revalidatePath("/money", "layout");
   revalidatePath("/");
-}
-
-const nameSchema = z.string().trim().min(1, "Enter a name.").max(60, "A name can be at most 60 characters.");
-
-/** The person called `name` (case-insensitive), created if new. Also used by saveTransaction. */
-export async function personIdFor(name: string): Promise<{ ok: true; id: string } | { ok: false; error: string }> {
-  const parsed = nameSchema.safeParse(name);
-  if (!parsed.success) return { ok: false, error: parsed.error.issues[0].message };
-  const existing = (await listPeople()).find((p) => p.name.toLowerCase() === parsed.data.toLowerCase());
-  if (existing) return { ok: true, id: existing.id };
-  const supabase = await createClient();
-  const { data, error } = await supabase.from("people").insert({ name: parsed.data }).select("id").single();
-  if (error) {
-    // A concurrent insert of the same name: read it back.
-    if (error.code === "23505") {
-      const { data: row } = await supabase.from("people").select("id").ilike("name", parsed.data).maybeSingle();
-      if (row) return { ok: true, id: row.id };
-    }
-    return { ok: false, error: "Couldn't save that person." };
-  }
-  return { ok: true, id: data.id };
 }
 
 export async function addPerson(_prev: FormState, formData: FormData): Promise<FormState> {

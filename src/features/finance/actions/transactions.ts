@@ -12,8 +12,8 @@ import { getSettings } from "../../settings/queries";
 import { formatIdr } from "../lib/format-idr";
 import { parseQuickTransaction } from "../lib/parse-quick-transaction";
 import { LAST_ACCOUNT_COOKIE, lastUsedAccountId, listAccounts, listCategories } from "../queries";
+import { personIdFor } from "../queries/people";
 import { transactionFormSchema, transactionRow } from "../schemas";
-import { personIdFor } from "./debts";
 
 export type TransactionSnapshot = Tables<"transactions">;
 

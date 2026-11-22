@@ -27,8 +27,9 @@ import { formatDate, minutesNowIn, todayIn } from "@/lib/dates";
 import { getI18n } from "@/lib/i18n/server";
 import { safeHttpsUrl } from "@/lib/safe-links";
 import { cn } from "@/lib/utils";
+import { formatTimeRange } from "../../timetable/format";
 import { formatTime } from "../../timetable/logic";
-import { occurrenceChips, placementLabel, timeRange } from "../format";
+import { occurrenceChips, placementLabel } from "../format";
 import { isLive, isPast } from "../occurrences";
 import { getOccurrence, listAttendanceMarks } from "../queries";
 import { ChangeChips } from "./change-chips";
@@ -82,7 +83,7 @@ export async function ClassScreen({ occurrenceKey, variant }: { occurrenceKey: s
             <CalendarClock aria-hidden className="size-4 text-muted-foreground" />
             <span className={cn("font-medium", cancelled && "line-through")}>
               {formatDate(occurrence.date, { weekday: "long", day: "numeric", month: "long" }, intl)},{" "}
-              <span className="tabular-nums">{timeRange(occurrence, fmt)}</span>
+              <span className="tabular-nums">{formatTimeRange(occurrence, fmt)}</span>
             </span>
           </span>
           {occurrence.location ? (
