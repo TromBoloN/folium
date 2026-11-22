@@ -147,7 +147,15 @@ export async function changeTaskStatus(
   const parsedStatus = z.enum(STATUSES).safeParse(status);
   if (!parsedId.success || !parsedStatus.success) return { ok: false, error: GONE };
   const supabase = await createClient();
-  const { data: before } = await supabase.from("tasks").select("status").eq("id", parsedId.data).maybeSingle();
+  const { data: before, error: readError } = await supabase
+    .from("tasks")
+    .select("status")
+    .eq("id", parsedId.data)
+    .maybeSingle();
+  if (readError) {
+    console.error("[tasks] status read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't update the task. Please try again." };
+  }
   if (!before) return { ok: false, error: GONE };
   const { error } = await supabase.from("tasks").update({ status: parsedStatus.data }).eq("id", parsedId.data);
   if (error) {
@@ -200,12 +208,16 @@ export async function patchTask(
   const p = parsed.data;
 
   const supabase = await createClient();
-  const { data: row } = await supabase
+  const { data: row, error: readError } = await supabase
     .from("tasks")
     .select("title, priority, course_id, due_at, due_has_time")
     .eq("id", p.id)
     .is("parent_id", null)
     .maybeSingle();
+  if (readError) {
+    console.error("[tasks] patch read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't save the change. Please try again." };
+  }
   if (!row) return { ok: false, error: GONE };
 
   const update: {
@@ -278,19 +290,27 @@ export async function removeTask(id: string): Promise<ActionResult<{ snapshot: T
   const parsedId = idSchema.safeParse(id);
   if (!parsedId.success) return { ok: false, error: GONE };
   const supabase = await createClient();
-  const { data: row } = await supabase
+  const { data: row, error: readError } = await supabase
     .from("tasks")
     .select("id, title, notes, course_id, due_at, due_has_time, priority, status, created_at")
     .eq("id", parsedId.data)
     .is("parent_id", null)
     .maybeSingle();
+  if (readError) {
+    console.error("[tasks] remove read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't delete the task. Please try again." };
+  }
   if (!row) return { ok: false, error: GONE };
-  const { data: steps } = await supabase
+  const { data: steps, error: stepsError } = await supabase
     .from("tasks")
     .select("id, title, status")
     .eq("parent_id", parsedId.data)
     .order("position")
     .order("created_at");
+  if (stepsError) {
+    console.error("[tasks] remove steps", stepsError.code, stepsError.message);
+    return { ok: false, error: "Couldn't delete the task. Please try again." };
+  }
 
   const { error } = await supabase.from("tasks").delete().eq("id", parsedId.data);
   if (error) {
@@ -361,7 +381,11 @@ export async function restoreTask(snapshot: TaskSnapshot): Promise<ActionResult>
         position: i + 1,
       })),
     );
-    if (stepsError) console.error("[tasks] restore steps", stepsError.code, stepsError.message);
+    if (stepsError) {
+      console.error("[tasks] restore steps", stepsError.code, stepsError.message);
+      done();
+      return { ok: false, error: "Couldn't restore the task." };
+    }
   }
   done();
   return { ok: true };

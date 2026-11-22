@@ -37,7 +37,7 @@ export type MeetingRow = {
 };
 
 export type MeetingProgress = {
-  /** The next meeting to log (1-based). */
+  /** The next meeting to log (1-based, lowest free number). */
   next: number;
   /** Null = open-ended. */
   total: number | null;
@@ -46,10 +46,14 @@ export type MeetingProgress = {
   unknown: number;
   /** Every meeting is logged. */
   finished: boolean;
-  /** Finished: the day of the last meeting (classes after it drop out). Null if unknown. */
+  /** Finished: the latest day among logged meetings (classes after it drop out). Null if unknown. */
   endedOn: CivilDate | null;
   /** When counting started; null = count every class. */
   countFrom: ClockPoint | null;
+  /** Meeting numbers already taken. */
+  taken: ReadonlySet<number>;
+  /** Latest dated meeting logged so far. */
+  lastDate: CivilDate | null;
 };
 
 export function meetingProgress(
@@ -57,18 +61,22 @@ export function meetingProgress(
   total: number | null,
   countFrom: ClockPoint | null = null,
 ): MeetingProgress {
-  let last: MeetingRow | null = null;
   let attended = 0;
   let missed = 0;
   let unknown = 0;
+  let lastDate: CivilDate | null = null;
+  const taken = new Set<number>();
   for (const r of rows) {
     if (r.status === "attended") attended++;
     else if (r.status === "missed") missed++;
     else unknown++;
-    if (r.number !== null && (last === null || r.number > (last.number ?? 0))) last = r;
+    if (r.number !== null) taken.add(r.number);
+    if (r.date !== null && (lastDate === null || r.date > lastDate)) lastDate = r.date;
   }
-  const next = (last?.number ?? 0) + 1;
-  const finished = total !== null && next > total;
+  let next = 1;
+  while (taken.has(next)) next++;
+  const logged = attended + missed + unknown;
+  const finished = total !== null && logged >= total;
   return {
     next,
     total,
@@ -76,8 +84,10 @@ export function meetingProgress(
     missed,
     unknown,
     finished,
-    endedOn: finished ? (last?.date ?? null) : null,
+    endedOn: finished ? lastDate : null,
     countFrom,
+    taken,
+    lastDate,
   };
 }
 
@@ -114,16 +124,17 @@ export function upcomingNumbers(
   progress: ReadonlyMap<string, MeetingProgress>,
   marked: ReadonlySet<string>,
 ): Map<string, number> {
-  const offset = new Map<string, number>();
+  const cursor = new Map<string, number>();
   const out = new Map<string, number>();
   for (const c of classes) {
     if (marked.has(c.key)) continue;
     const p = progress.get(c.courseId);
-    if (!p || !isCounted(c, p.countFrom)) continue;
-    const n = p.next + (offset.get(c.courseId) ?? 0);
+    if (!p || p.finished || !isCounted(c, p.countFrom)) continue;
+    let n = cursor.get(c.courseId) ?? p.next;
+    while (p.taken.has(n)) n++;
     if (p.total !== null && n > p.total) continue;
     out.set(c.key, n);
-    offset.set(c.courseId, (offset.get(c.courseId) ?? 0) + 1);
+    cursor.set(c.courseId, n + 1);
   }
   return out;
 }
@@ -144,11 +155,14 @@ export function projectedEnd(
 ): CivilDate | null {
   if (progress.total === null) return null;
   if (progress.finished) return progress.endedOn;
-  let n = progress.next;
+  let remaining = progress.total - (progress.attended + progress.missed + progress.unknown);
+  if (remaining <= 0) return progress.lastDate;
   for (const c of classes) {
     if (marked.has(c.key) || !isCounted(c, progress.countFrom)) continue;
-    if (n === progress.total) return c.date;
-    n++;
+    remaining--;
+    if (remaining === 0) {
+      return progress.lastDate && progress.lastDate > c.date ? progress.lastDate : c.date;
+    }
   }
   return null;
 }

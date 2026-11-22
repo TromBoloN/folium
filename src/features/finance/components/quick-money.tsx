@@ -16,12 +16,13 @@ import { type Chip, parseQuickTransaction, type QuickTransaction } from "../lib/
  * what the user sees.
  */
 export function useQuickMoney(text: string, active: boolean, initial?: QuickMoneyContext) {
-  const [context, setContext] = useState<QuickMoneyContext | null>(initial ?? null);
+  const [fetched, setFetched] = useState<QuickMoneyContext | null>(null);
+  const context = initial ?? fetched;
   useEffect(() => {
     if (!active || context) return;
     let current = true;
     getQuickMoneyContext().then((result) => {
-      if (current && result.ok) setContext(result.data);
+      if (current && result.ok) setFetched(result.data);
     });
     return () => {
       current = false;

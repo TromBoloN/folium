@@ -118,12 +118,12 @@ export function matchDate(words: string[], i: number, ctx: ParseContext): Match 
   if (w === "today" || w === "tonight" || w === "tod") return { length: 1, value: ctx.today };
   if (w === "tomorrow" || w === "tmr" || w === "tmrw") return { length: 1, value: addDays(ctx.today, 1) };
   if (w === "next" && next === "week") return { length: 2, value: addDays(weekDates(ctx.today, ctx.weekStart)[0], 7) };
-  if (w === "next" && next in WEEKDAY_NAMES) {
+  if (w === "next" && Object.hasOwn(WEEKDAY_NAMES, next)) {
     const nextWeek = weekDates(addDays(weekDates(ctx.today, ctx.weekStart)[0], 7), ctx.weekStart);
     const value = nextWeek.find((d) => isoWeekday(d) === WEEKDAY_NAMES[next]);
     return value ? { length: 2, value } : null;
   }
-  if (w in WEEKDAY_NAMES) return { length: 1, value: nextWeekday(ctx.today, WEEKDAY_NAMES[w]) };
+  if (Object.hasOwn(WEEKDAY_NAMES, w)) return { length: 1, value: nextWeekday(ctx.today, WEEKDAY_NAMES[w]) };
   if (w === "in" && /^\d{1,3}$/.test(next)) {
     const unit = bare(words[i + 2] ?? "");
     const n = Number(next);
@@ -137,11 +137,11 @@ export function matchDate(words: string[], i: number, ctx: ParseContext): Match 
     const value = dayMonth(ctx.today, Number(slash[1]), Number(slash[2]));
     return value ? { length: 1, value } : null;
   }
-  if (/^\d{1,2}$/.test(w) && next in MONTH_NAMES) {
+  if (/^\d{1,2}$/.test(w) && Object.hasOwn(MONTH_NAMES, next)) {
     const value = dayMonth(ctx.today, Number(w), MONTH_NAMES[next]);
     return value ? { length: 2, value } : null;
   }
-  if (w in MONTH_NAMES && /^\d{1,2}(st|nd|rd|th)?$/.test(next)) {
+  if (Object.hasOwn(MONTH_NAMES, w) && /^\d{1,2}(st|nd|rd|th)?$/.test(next)) {
     const value = dayMonth(ctx.today, Number.parseInt(next, 10), MONTH_NAMES[w]);
     return value ? { length: 2, value } : null;
   }
@@ -188,7 +188,7 @@ export function parseQuickAdd(input: string, ctx: ParseContext): ParsedQuickAdd 
       i = from + length;
     };
 
-    if (!priority && w in PRIORITIES) {
+    if (!priority && Object.hasOwn(PRIORITIES, w)) {
       priority = PRIORITIES[w];
       take("priority", i, 1);
       continue;

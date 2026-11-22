@@ -1,4 +1,5 @@
 import "server-only";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 
 export type ImportBatch = {
@@ -41,9 +42,10 @@ export async function financeBackup() {
   ] as const;
   const out: Record<string, unknown> = { format: "folium-money-backup", version: 1 };
   for (const [table, columns] of tables) {
-    const { data, error } = await supabase.from(table).select(columns).limit(100_000);
-    if (error) throw new Error(`Couldn't read ${table}: ${error.message}`);
-    out[table] = data;
+    out[table] = await fetchAllPages(
+      (from, to) => supabase.from(table).select(columns).order("id").range(from, to),
+      `Couldn't read ${table}`,
+    );
   }
   return out;
 }

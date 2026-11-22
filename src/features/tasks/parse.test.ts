@@ -94,6 +94,21 @@ describe("parseQuickAdd", () => {
   it("keeps the whole input as the title when nothing else is left", () => {
     expect(parse("tomorrow")).toMatchObject({ title: "tomorrow", dueDate: null, tokens: [] });
   });
+
+  it("ignores Object.prototype keys like constructor and toString", () => {
+    expect(parse("Fix constructor bug")).toMatchObject({
+      title: "Fix constructor bug",
+      dueDate: null,
+      priority: null,
+      tokens: [],
+    });
+    expect(parse("Next toString 5 valueOf")).toMatchObject({
+      title: "Next toString 5 valueOf",
+      dueDate: null,
+      priority: null,
+      tokens: [],
+    });
+  });
 });
 
 describe("matchCourse", () => {

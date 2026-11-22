@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { attendanceStats } from "./attendance";
+import { attendanceStats, meetingStats } from "./attendance";
+import { meetingProgress } from "./meetings";
 import { buildSchedule, type ClassChange, occurrenceKey, type ScheduleSlot } from "./occurrences";
 
 const COURSE = { id: "c", name: "Physics I", code: "FIS101", color: "#e8590c", room: null };
@@ -78,5 +79,29 @@ describe("attendanceStats", () => {
   it("a class on now isn't held yet", () => {
     const during = attendanceStats(term, new Map(), { date: "2026-11-16", minute: 9 * 60 + 30 }, 75, true);
     expect(during.held).toBe(1);
+  });
+});
+
+describe("meetingStats", () => {
+  it("computes held from logged rows plus unmarked, even with out-of-order meeting numbers", () => {
+    const rows = [
+      ...Array.from({ length: 14 }, (_, i) => ({
+        courseId: "c",
+        number: i + 1,
+        status: "unknown" as const,
+        key: null,
+        date: null,
+      })),
+      { courseId: "c", number: 16, status: "attended" as const, key: k("2026-11-23"), date: "2026-11-23" },
+    ];
+    const progress = meetingProgress(rows, 16);
+    expect(meetingStats(progress, 1, 75, null)).toMatchObject({
+      held: 16,
+      attended: 1,
+      missed: 0,
+      unknown: 14,
+      unmarked: 1,
+      planned: 16,
+    });
   });
 });

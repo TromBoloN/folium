@@ -1,4 +1,4 @@
-import { addDays, type CivilDate, isoWeekday } from "@/lib/dates";
+import { addDays, type CivilDate, isCivilDate, isoWeekday } from "@/lib/dates";
 import { appliesOn, compareSlots, type SlotTiming, toMinutes } from "../timetable/logic";
 
 /**
@@ -356,7 +356,7 @@ export function parseOccurrenceKey(
 ): { kind: "slot"; slotId: string; date: CivilDate } | { kind: "extra"; changeId: string } | null {
   const uuid = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
   const slot = new RegExp(`^s\\.(${uuid})\\.(\\d{4}-\\d{2}-\\d{2})$`).exec(key);
-  if (slot) return { kind: "slot", slotId: slot[1], date: slot[2] };
+  if (slot && isCivilDate(slot[2])) return { kind: "slot", slotId: slot[1], date: slot[2] };
   const extra = new RegExp(`^x\\.(${uuid})$`).exec(key);
   if (extra) return { kind: "extra", changeId: extra[1] };
   return null;

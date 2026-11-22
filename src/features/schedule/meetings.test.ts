@@ -41,7 +41,25 @@ describe("meetingProgress", () => {
   });
 
   it("never finishes when open-ended", () => {
-    expect(meetingProgress([row(40, "attended", "2026-11-10")], null)).toMatchObject({ next: 41, finished: false });
+    const rows = Array.from({ length: 40 }, (_, i) => row(i + 1, "attended", "2026-11-10"));
+    expect(meetingProgress(rows, null)).toMatchObject({ next: 41, finished: false });
+  });
+
+  it("stays open and picks the lowest free number when a later meeting is marked first", () => {
+    const rows = [...Array.from({ length: 14 }, (_, i) => row(i + 1, "unknown")), row(16, "attended", "2026-11-23")];
+    const p = meetingProgress(rows, 16);
+    expect(p).toMatchObject({ next: 15, finished: false, endedOn: null, attended: 1, unknown: 14 });
+
+    const classes = [
+      { key: "nov16", courseId: "c1", date: "2026-11-16", endTime: "10:00" },
+      { key: "nov23", courseId: "c1", date: "2026-11-23", endTime: "10:00" },
+      { key: "nov30", courseId: "c1", date: "2026-11-30", endTime: "10:00" },
+    ];
+    expect(Object.fromEntries(upcomingNumbers(classes, new Map([["c1", p]]), new Set(["nov23"])))).toEqual({
+      nov16: 15,
+    });
+    // Keeps the already-marked Nov 23 class visible while Nov 16 fills #15.
+    expect(projectedEnd(classes, p, new Set(["nov23"]))).toBe("2026-11-23");
   });
 });
 

@@ -104,4 +104,8 @@ describe("parseAmount: big values stay exact", () => {
   it("rejects non-strings without throwing", () => {
     expect(parseAmount(undefined as unknown as string)).toEqual({ ok: false, reason: "invalid" });
   });
+
+  it("rejects absurdly long decimal strings quickly", () => {
+    expect(parseAmount(`1.${"0".repeat(200_000)}k`)).toEqual({ ok: false, reason: "invalid" });
+  });
 });

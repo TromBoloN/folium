@@ -36,6 +36,9 @@ describe("translations", () => {
     expect(translateLoose("id", "3 class times added")).toBe("3 jadwal kelas ditambahkan");
     expect(translateLoose("id", "Something only the user typed")).toBe("Something only the user typed");
     expect(translateLoose("en", "Enter a valid date.")).toBe("Enter a valid date.");
+    expect(translateLoose("id", "toString")).toBe("toString");
+    expect(translateLoose("id", "constructor", { n: 1 })).toBe("constructor");
+    expect(interpolate("Hello {toString}", { name: "A" })).toBe("Hello {toString}");
   });
 
   it("formats dates and weekdays in the user's language", () => {

@@ -450,6 +450,7 @@ describe("parseOccurrenceKey", () => {
     expect(parseOccurrenceKey(`g.${id}.${MON}`)).toBeNull();
     expect(parseOccurrenceKey(`s.${id}.16-11-2026`)).toBeNull();
     expect(parseOccurrenceKey("s.not-a-uuid.2026-11-16")).toBeNull();
+    expect(parseOccurrenceKey(`s.${id}.2026-02-30`)).toBeNull();
     expect(parseOccurrenceKey(`x.${id}/../etc`)).toBeNull();
   });
 });

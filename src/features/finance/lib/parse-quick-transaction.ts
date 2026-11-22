@@ -153,6 +153,9 @@ export function parseQuickTransaction(input: string, ctx: QuickContext): QuickTr
   if (amount === undefined) {
     chips.push({ type: "amount", label: "Amount", state: "missing" });
     errors.push("Add an amount, like 32k or 25.000.");
+  } else if (amount > BigInt(Number.MAX_SAFE_INTEGER)) {
+    chips.push({ type: "amount", label: formatIdr(amount), state: "missing" });
+    errors.push("That amount is too large.");
   } else {
     result.amount = amount;
     chips.push({ type: "amount", label: formatIdr(amount), state: "matched" });
@@ -229,7 +232,10 @@ export function parseQuickTransaction(input: string, ctx: QuickContext): QuickTr
     .filter((_, i) => !used[i])
     .join(" ")
     .trim();
-  if (payee) result.payee = payee;
+  if (payee) {
+    result.payee = payee;
+    if (payee.length > 120) errors.push("Payee can be at most 120 characters.");
+  }
 
   return result;
 }

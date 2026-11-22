@@ -51,7 +51,14 @@ export async function updateSettings(_prev: FormState, formData: FormData): Prom
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { ok: false, error: "Your session has ended. Sign in again.", values };
 
-  const { data: stored } = await supabase.from("user_settings").select("version, theme, preferences").maybeSingle();
+  const { data: stored, error: readError } = await supabase
+    .from("user_settings")
+    .select("version, theme, preferences")
+    .maybeSingle();
+  if (readError) {
+    console.error("[settings] read failed", readError.code, readError.message);
+    return { ok: false, error: "Couldn't save your settings. Please try again.", values };
+  }
   const current = resolveSettings(stored);
   const { coursesView } = current.preferences;
 
@@ -83,7 +90,14 @@ export async function setThemePack(_prev: FormState, formData: FormData): Promis
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return { ok: false, error: "Your session has ended. Sign in again." };
 
-  const { data: stored } = await supabase.from("user_settings").select("version, theme, preferences").maybeSingle();
+  const { data: stored, error: readError } = await supabase
+    .from("user_settings")
+    .select("version, theme, preferences")
+    .maybeSingle();
+  if (readError) {
+    console.error("[settings] theme pack read failed", readError.code, readError.message);
+    return { ok: false, error: "Couldn't change the theme. Please try again." };
+  }
   const theme = { ...resolveSettings(stored).theme, pack: parsed.data.pack };
   const { error } = await supabase
     .from("user_settings")
@@ -132,7 +146,14 @@ export async function rememberCoursesView(view: CoursesView): Promise<void> {
   const supabase = await createClient();
   const { data: auth } = await supabase.auth.getUser();
   if (!auth.user) return;
-  const { data: stored } = await supabase.from("user_settings").select("version, theme, preferences").maybeSingle();
+  const { data: stored, error: readError } = await supabase
+    .from("user_settings")
+    .select("version, theme, preferences")
+    .maybeSingle();
+  if (readError) {
+    console.error("[settings] courses view read", readError.code, readError.message);
+    return;
+  }
   const preferences = { ...resolveSettings(stored).preferences, coursesView: view };
   const { error } = await supabase
     .from("user_settings")

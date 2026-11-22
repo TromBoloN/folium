@@ -49,7 +49,7 @@ async function Budgets({ searchParams }: Pick<PageProps<"/money/budgets">, "sear
   const current = today.slice(0, 7);
   // Budgets may be planned a month ahead.
   const requested = typeof params.month === "string" ? params.month : undefined;
-  const month = resolveMonth(requested, shiftMonth(current, 1));
+  const month = resolveMonth(requested, current, shiftMonth(current, 1));
   const { items, uncategorised } = await loadBudgetProgress(month);
   const label = formatDate(`${month}-01`, { month: "long", year: "numeric" }, intl);
   const parents = categories.filter((c) => c.kind === "expense" && !c.parentId && !c.archived);

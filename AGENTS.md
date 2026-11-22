@@ -4,6 +4,7 @@ Personal student dashboard (courses, timetable, tasks, customizable "Today" view
 Prioritize daily utility, fast workflows, and customization (themes, preferences, widgets).
 
 ## Stack & Commands
+
 Package manager: `bun`. Stack: Next.js App Router, strict TS, Tailwind v4 (CSS-variable tokens), shadcn/ui, dnd-kit, date-fns, Supabase (Postgres, Auth, RLS, pgTAP), Zod, Vitest, Biome.
 
 - `bun dev` — dev server
@@ -14,6 +15,7 @@ Package manager: `bun`. Stack: Next.js App Router, strict TS, Tailwind v4 (CSS-v
 - `bunx supabase gen types typescript --local > src/types/database.ts` — run after every migration
 
 ## Boundaries
+
 - `src/app/` — thin routes/layouts only
 - `src/features/<name>/` — `components/`, `actions/`, `schemas/`, `queries/`
 - `src/features/<name>/` pure logic sits next to its `*.test.ts`; dated class views read `features/schedule` (`buildSchedule`), never slots directly
@@ -23,6 +25,7 @@ Package manager: `bun`. Stack: Next.js App Router, strict TS, Tailwind v4 (CSS-v
 - `supabase/tests/database/` — pgTAP RLS tests
 
 ## Rules
+
 - **Schema & RLS:** New migrations only; never edit applied migrations or Studio schema. Every table needs `user_id`, `created_at`, `updated_at`, RLS + policies in the same migration, and a pgTAP cross-user isolation test.
 - **Data & actions:** Components never import Supabase directly—use feature `queries/` and `actions/`. Server actions validate with Zod and return `{ ok, error }` (never throw).
 - **Auth & secrets:** Server identity via `getUser()` or `getClaims()`, never `getSession()`. Never put secret or `service_role` keys in client code or `NEXT_PUBLIC_*`.
@@ -30,13 +33,15 @@ Package manager: `bun`. Stack: Next.js App Router, strict TS, Tailwind v4 (CSS-v
 - **Domain:** Use `text` + named `CHECK` constraints (not Postgres enums) for statuses/priorities. Merge versioned JSON settings over defaults on read. Store UTC timestamps; display/interpret in `Asia/Makassar`.
 
 ## Current stage
+
 Stages 1–6 of the v1 plan are done (foundation, auth + settings, courses + timetable, tasks, Today dashboard, polish: password reset, error/not-found pages, axe accessibility suite, e2e in CI, security review, demo seed, README screenshots), plus grades (credits, assessments, grade scale, GPA, Grades widget). Since then: sheets, quick add, command palette, undo, PWA; course views (cards / by day / week), one-date schedule changes and breaks, attendance, calendar export, semester rollover; a shared form system. Next: deploy to a hosted Supabase project + Vercel. Read `docs/MAP.md` (where things are) and `docs/architecture.md` (the rules) before exploring the code; `docs/gotchas.md` before debugging.
 
 ## Workflow
+
 - log real decisions in `docs/decisions/` (`backend.md` or `frontend.md`, newest first, with a status line); add new traps to `docs/gotchas.md`; keep `docs/MAP.md` current when files move.
 - Pass before finishing: `bun run typecheck`, `bunx biome check .`, `bun run test`, `bunx supabase test db`.
 - dont commit anything
-- End every message with a 1-line recommended commit message.
+- End every message with a 1-line recommended commit message only if theres a file change.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../../auth/queries";
 import { getSettings } from "../../settings/queries";
 import { formatIdr } from "../lib/format-idr";
-import { settlementFor, splitBill } from "../lib/goals-debts";
+import { splitBill } from "../lib/goals-debts";
 import { localDateFor } from "../lib/local-date";
 import { parseAmount } from "../lib/parse-amount";
 import { listAccounts } from "../queries";
@@ -69,31 +69,28 @@ export async function settlePerson(_prev: FormState, formData: FormData): Promis
   const personId = z.uuid().safeParse(formData.get("personId"));
   const accountId = z.uuid().safeParse(formData.get("accountId"));
   if (!personId.success || !accountId.success) return { ok: false, error: "Choose an account." };
-  const person = (await listPeople()).find((p) => p.id === personId.data);
-  const settle = person ? settlementFor(person.balance) : null;
-  if (!person || !settle) return { ok: false, error: "Nothing to settle." };
   const { preferences } = await getSettings();
   const supabase = await createClient();
-  const { error } = await supabase.from("transactions").insert({
-    kind: settle.kind,
-    amount: Number(settle.amount),
-    account_id: accountId.data,
-    person_id: person.id,
-    occurred_on: localDateFor(new Date(), preferences.timeZone),
-    note: "Settled",
+  const { data, error } = await supabase.rpc("settle_person", {
+    p_person_id: personId.data,
+    p_account_id: accountId.data,
+    p_occurred_on: localDateFor(new Date(), preferences.timeZone),
   });
   if (error) {
     console.error("[finance] settle", error.code, error.message);
     return { ok: false, error: "Couldn't record it. Please try again." };
   }
+  const settled = data?.[0];
+  if (!settled) return { ok: false, error: "Nothing to settle." };
+  const amount = BigInt(settled.amount);
   refresh();
   return {
     ok: true,
     result: {
       message:
-        settle.kind === "repay"
-          ? `${person.name} paid you ${formatIdr(settle.amount)}`
-          : `You paid ${person.name} ${formatIdr(settle.amount)}`,
+        settled.kind === "repay"
+          ? `${settled.person_name} paid you ${formatIdr(amount)}`
+          : `You paid ${settled.person_name} ${formatIdr(amount)}`,
     },
   };
 }

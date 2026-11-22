@@ -10,7 +10,6 @@ import { getSettings } from "../../settings/queries";
 import { formatIdr } from "../lib/format-idr";
 import { localDateFor } from "../lib/local-date";
 import { accountFormSchema, realBalanceSchema } from "../schemas";
-import { adjustmentFor, reconciledOpening } from "../schemas/money-math";
 
 function refresh() {
   revalidatePath("/money", "layout");
@@ -76,19 +75,6 @@ export async function setAccountArchived(_prev: FormState, formData: FormData): 
   return { ok: true };
 }
 
-async function currentBalance(accountId: string) {
-  const supabase = await createClient();
-  const [{ data: account }, { data: balance }] = await Promise.all([
-    supabase.from("accounts").select("opening_balance::text").eq("id", accountId).maybeSingle(),
-    supabase.from("account_balances").select("balance::text").eq("account_id", accountId).maybeSingle(),
-  ]);
-  if (!account || !balance) return null;
-  return {
-    opening: BigInt((account as unknown as { opening_balance: string }).opening_balance),
-    balance: BigInt((balance as unknown as { balance: string }).balance),
-  };
-}
-
 function parseReal(formData: FormData) {
   return realBalanceSchema.safeParse({ accountId: formData.get("accountId"), real: formData.get("real") ?? "" });
 }
@@ -110,18 +96,16 @@ export async function matchRealBalance(_prev: FormState, formData: FormData): Pr
       fieldErrors: { real: parsed.error.issues[0]?.message ?? "" },
       values,
     };
-  const now = await currentBalance(parsed.data.accountId);
-  if (!now) return { ok: false, error: "That account no longer exists.", values };
-  const opening = reconciledOpening(now.balance, now.opening, parsed.data.real);
-  if (opening > BigInt(Number.MAX_SAFE_INTEGER) || opening < -BigInt(Number.MAX_SAFE_INTEGER)) {
-    return { ok: false, error: "That amount is too large.", values };
-  }
   const supabase = await createClient();
-  const { error } = await supabase
-    .from("accounts")
-    .update({ opening_balance: Number(opening) })
-    .eq("id", parsed.data.accountId);
-  if (error) return { ok: false, error: "Couldn't update the balance. Please try again.", values };
+  const { error } = await supabase.rpc("match_account_balance", {
+    p_account_id: parsed.data.accountId,
+    p_real_balance: Number(parsed.data.real),
+  });
+  if (error) {
+    if (error.code === "P0002") return { ok: false, error: "That account no longer exists.", values };
+    console.error("[finance] match balance", error.code, error.message);
+    return { ok: false, error: "Couldn't update the balance. Please try again.", values };
+  }
   refresh();
   redirect(`/money/accounts/${parsed.data.accountId}?matched=1`);
 }
@@ -138,23 +122,19 @@ export async function adjustToRealBalance(_prev: FormState, formData: FormData):
       fieldErrors: { real: parsed.error.issues[0]?.message ?? "" },
       values,
     };
-  const now = await currentBalance(parsed.data.accountId);
-  if (!now) return { ok: false, error: "That account no longer exists.", values };
-  const adjustment = adjustmentFor(now.balance, parsed.data.real);
-  if (!adjustment) redirect(`/money/accounts/${parsed.data.accountId}?matched=1`);
-  if (adjustment.amount > BigInt(Number.MAX_SAFE_INTEGER))
-    return { ok: false, error: "That amount is too large.", values };
   const { preferences } = await getSettings();
   const supabase = await createClient();
-  const { error } = await supabase.from("transactions").insert({
-    kind: "adjustment",
-    amount: Number(adjustment.amount),
-    account_id: parsed.data.accountId,
-    adjustment_direction: adjustment.direction,
-    occurred_on: localDateFor(new Date(), preferences.timeZone),
-    note: `Matched to the real balance (${formatIdr(parsed.data.real)})`,
+  const { error } = await supabase.rpc("adjust_account_balance", {
+    p_account_id: parsed.data.accountId,
+    p_real_balance: Number(parsed.data.real),
+    p_occurred_on: localDateFor(new Date(), preferences.timeZone),
+    p_note: `Matched to the real balance (${formatIdr(parsed.data.real)})`,
   });
-  if (error) return { ok: false, error: "Couldn't add the adjustment. Please try again.", values };
+  if (error) {
+    if (error.code === "P0002") return { ok: false, error: "That account no longer exists.", values };
+    console.error("[finance] adjust balance", error.code, error.message);
+    return { ok: false, error: "Couldn't add the adjustment. Please try again.", values };
+  }
   refresh();
   redirect(`/money/accounts/${parsed.data.accountId}?matched=1`);
 }

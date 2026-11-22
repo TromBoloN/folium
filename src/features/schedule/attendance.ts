@@ -83,7 +83,7 @@ export function meetingStats(
   const planned = progress.total ?? plannedFallback;
   const canMiss = planned === null ? null : Math.floor(planned * (1 - targetPercent / 100) + 1e-9) - missed;
   return {
-    held: progress.next - 1 + unmarked,
+    held: attended + missed + unknown + unmarked,
     attended,
     missed,
     unmarked,

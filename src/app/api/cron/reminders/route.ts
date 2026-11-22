@@ -12,8 +12,9 @@ export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET;
   const header = request.headers.get("authorization") ?? "";
   const expected = `Bearer ${secret ?? ""}`;
-  const ok =
-    Boolean(secret) && header.length === expected.length && timingSafeEqual(Buffer.from(header), Buffer.from(expected));
+  const a = Buffer.from(header);
+  const b = Buffer.from(expected);
+  const ok = Boolean(secret) && a.length === b.length && timingSafeEqual(a, b);
   if (!ok) return new Response("Unauthorized", { status: 401 });
   try {
     const result = await runReminders(new Date());

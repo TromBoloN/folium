@@ -241,14 +241,28 @@ export type MeetingLog = {
 /** The whole meeting log (attendance rows) and each course's progress. Cached per request. */
 export const getMeetingLog = cache(async (): Promise<MeetingLog> => {
   const supabase = await createClient();
-  const [{ data, error }, courses, { preferences }] = await Promise.all([
+  const [{ data, error }, { data: moves, error: movesError }, courses, { preferences }] = await Promise.all([
     supabase
       .from("attendance")
       .select("course_id, slot_id, occurs_on, change_id, status, meeting_number, class_changes(new_date)"),
+    supabase
+      .from("class_changes")
+      .select("slot_id, original_date, new_date")
+      .eq("kind", "moved")
+      .not("slot_id", "is", null)
+      .not("original_date", "is", null)
+      .not("new_date", "is", null),
     listCourses(),
     getSettings(),
   ]);
   if (error) throw new Error(`Couldn't load attendance: ${error.message}`);
+  if (movesError) throw new Error(`Couldn't load moved classes: ${movesError.message}`);
+  const movedDate = new Map<string, CivilDate>();
+  for (const m of moves ?? []) {
+    if (m.slot_id && m.original_date && m.new_date) {
+      movedDate.set(occurrenceKey(m.slot_id, m.original_date), m.new_date);
+    }
+  }
   const rows: MeetingRow[] = [];
   const marks: MeetingLog["marks"] = new Map();
   for (const row of data as unknown as {
@@ -272,7 +286,7 @@ export const getMeetingLog = cache(async (): Promise<MeetingLog> => {
       number: row.meeting_number,
       status,
       key,
-      date: row.occurs_on ?? row.class_changes?.new_date ?? null,
+      date: (key ? movedDate.get(key) : undefined) ?? row.occurs_on ?? row.class_changes?.new_date ?? null,
     });
     if (key && status !== "unknown") marks.set(key, { status, number: row.meeting_number });
   }

@@ -38,7 +38,7 @@ const GROUPED_DOT = /^\d{1,3}(?:\.\d{3})+$/;
 const GROUPED_COMMA = /^\d{1,3}(?:,\d{3})+$/;
 
 export function parseAmount(input: string): ParseAmountResult {
-  if (typeof input !== "string") return { ok: false, reason: "invalid" };
+  if (typeof input !== "string" || input.length > 64) return { ok: false, reason: "invalid" };
   let text = input.trim().toLowerCase();
   if (text === "") return { ok: false, reason: "empty" };
   if (text.startsWith("-") || text.startsWith("−")) return { ok: false, reason: "negative" };
@@ -46,11 +46,15 @@ export function parseAmount(input: string): ParseAmountResult {
   text = text.replace(/^rp\.?\s*/, "");
   if (text.startsWith("-")) return { ok: false, reason: "negative" };
   if (text === "") return { ok: false, reason: "empty" };
+  if (text.length > 40) return { ok: false, reason: "invalid" };
 
   let value: bigint;
   const suffixed = WITH_SUFFIX.exec(text);
   if (suffixed) {
-    const [, whole, fraction = "", suffix] = suffixed;
+    const [, whole, rawFraction = "", suffix] = suffixed;
+    // Largest multiplier is 10^6 (jt/juta); any non-zero digit past 6 places can never be whole rupiah.
+    const fraction = rawFraction.replace(/0+$/, "");
+    if (fraction.length > 6) return { ok: false, reason: "fraction" };
     const scale = 10n ** BigInt(fraction.length);
     const scaled = (BigInt(whole) * scale + BigInt(fraction || "0")) * MULTIPLIERS[suffix];
     if (scaled % scale !== 0n) return { ok: false, reason: "fraction" };

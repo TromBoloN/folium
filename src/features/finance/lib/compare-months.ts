@@ -23,9 +23,7 @@ export function shiftMonth(month: string, n: number): string {
   return `${Math.floor(index / 12)}-${String((index % 12) + 1).padStart(2, "0")}`;
 }
 
-/** The month to show: a valid ?month= no later than the current month, else the current one. */
-export function resolveMonth(param: unknown, currentMonth: string): string {
-  return typeof param === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(param) && param <= currentMonth
-    ? param
-    : currentMonth;
+/** The month to show: a valid ?month= no later than `maxMonth` (default `currentMonth`), else `currentMonth`. */
+export function resolveMonth(param: unknown, currentMonth: string, maxMonth = currentMonth): string {
+  return typeof param === "string" && /^\d{4}-(0[1-9]|1[0-2])$/.test(param) && param <= maxMonth ? param : currentMonth;
 }

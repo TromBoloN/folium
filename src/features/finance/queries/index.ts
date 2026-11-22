@@ -2,6 +2,7 @@ import "server-only";
 import { cookies } from "next/headers";
 import { cache } from "react";
 import { z } from "zod";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import type { AccountType, CategoryKind, TransactionFilters, TransactionKind } from "../schemas";
 import { monthBounds } from "../schemas/money-math";
@@ -231,14 +232,35 @@ export async function listTransactions(
   limit = 200,
 ): Promise<{ rows: Transaction[]; more: boolean }> {
   const [supabase, categoryIds] = await Promise.all([createClient(), categoryWithChildren(filters.category)]);
-  const query = applyFilters(supabase.from("transactions").select(TX_COLUMNS), filters, categoryIds);
-  const { data, error } = await query
-    .order("occurred_on", { ascending: false })
-    .order("created_at", { ascending: false })
-    .limit(limit + 1);
-  if (error) throw new Error(`Couldn't load transactions: ${error.message}`);
-  const rows = (data as unknown as TxRow[]).map(toTransaction);
+  const data = await fetchAllPages<TxRow>(
+    (from, to) =>
+      applyFilters(supabase.from("transactions").select(TX_COLUMNS), filters, categoryIds)
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, to),
+    "Couldn't load transactions",
+    limit + 1,
+  );
+  const rows = data.map(toTransaction);
   return { rows: rows.slice(0, limit), more: rows.length > limit };
+}
+
+/** Every transaction, newest first (for full CSV export). */
+export async function listAllTransactions(): Promise<Transaction[]> {
+  const supabase = await createClient();
+  const data = await fetchAllPages<TxRow>(
+    (from, to) =>
+      supabase
+        .from("transactions")
+        .select(TX_COLUMNS)
+        .order("occurred_on", { ascending: false })
+        .order("created_at", { ascending: false })
+        .order("id", { ascending: false })
+        .range(from, to),
+    "Couldn't load transactions",
+  );
+  return data.map(toTransaction);
 }
 
 /** Count and posted money in/out for everything the filters match (not just the page shown). */
@@ -246,12 +268,15 @@ export async function summarizeTransactions(
   filters: TransactionFilters,
 ): Promise<{ count: number; income: bigint; expense: bigint }> {
   const [supabase, categoryIds] = await Promise.all([createClient(), categoryWithChildren(filters.category)]);
-  const query = applyFilters(supabase.from("transactions").select("kind, status, amount::text"), filters, categoryIds);
-  const { data, error } = await query.limit(10000);
-  if (error) throw new Error(`Couldn't load the summary: ${error.message}`);
+  const rows = await fetchAllPages<{ kind: string; status: string; amount: string }>(
+    (from, to) =>
+      applyFilters(supabase.from("transactions").select("kind, status, amount::text"), filters, categoryIds)
+        .order("id")
+        .range(from, to),
+    "Couldn't load the summary",
+  );
   let income = 0n;
   let expense = 0n;
-  const rows = data as unknown as { kind: string; status: string; amount: string }[];
   for (const r of rows) {
     if (r.status !== "posted") continue;
     if (r.kind === "income") income += BigInt(r.amount);
@@ -270,19 +295,24 @@ export async function getTransaction(id: string): Promise<Transaction | null> {
 
 /** Posted income and expense rows in a date range (month totals and spending by category). */
 export async function listPostedInOut(
-  from: string,
-  to: string,
+  fromDate: string,
+  toDate: string,
 ): Promise<{ kind: string; status: string; categoryId: string | null; amount: bigint }[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("kind, category_id, amount::text")
-    .eq("status", "posted")
-    .in("kind", ["income", "expense"])
-    .gte("occurred_on", from)
-    .lte("occurred_on", to);
-  if (error) throw new Error(`Couldn't load this month: ${error.message}`);
-  return (data as unknown as { kind: string; category_id: string | null; amount: string }[]).map((r) => ({
+  const rows = await fetchAllPages<{ kind: string; category_id: string | null; amount: string }>(
+    (from, to) =>
+      supabase
+        .from("transactions")
+        .select("kind, category_id, amount::text")
+        .eq("status", "posted")
+        .in("kind", ["income", "expense"])
+        .gte("occurred_on", fromDate)
+        .lte("occurred_on", toDate)
+        .order("id")
+        .range(from, to),
+    "Couldn't load this month",
+  );
+  return rows.map((r) => ({
     kind: r.kind,
     status: "posted",
     categoryId: r.category_id,
@@ -296,14 +326,18 @@ export async function listPostedInOut(
  */
 export async function listPostedSince(since: string): Promise<Transaction[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select(TX_COLUMNS)
-    .eq("status", "posted")
-    .gt("occurred_on", since)
-    .limit(5000);
-  if (error) throw new Error(`Couldn't load recent activity: ${error.message}`);
-  return (data as unknown as TxRow[]).map(toTransaction);
+  const rows = await fetchAllPages<TxRow>(
+    (from, to) =>
+      supabase
+        .from("transactions")
+        .select(TX_COLUMNS)
+        .eq("status", "posted")
+        .gt("occurred_on", since)
+        .order("id")
+        .range(from, to),
+    "Couldn't load recent activity",
+  );
+  return rows.map(toTransaction);
 }
 
 /** Recent payee → category pairs, for suggesting a category as you type a payee. */

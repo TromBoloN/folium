@@ -57,6 +57,7 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 
 **Server actions and data flow**
 
+- [2026-11-22: Multi-step writes and balance-dependent money actions run in `SECURITY INVOKER` Postgres functions](#2026-11-22-multi-step-writes-and-balance-dependent-money-actions-run-in-security-invoker-postgres-functions)
 - [2026-11-15: Undo by putting things back, not by delaying the write](#2026-11-15-undo-by-putting-things-back-not-by-delaying-the-write)
 
 **Auth and security**
@@ -79,6 +80,16 @@ Finance, data, domain rules, settings storage, server actions, auth and security
 - [2026-11-15: README screenshots live in `.github/screenshots`](#2026-11-15-readme-screenshots-live-in-githubscreenshots)
 - [2026-11-15: Allow 127.0.0.1 as a dev origin](#2026-11-15-allow-127001-as-a-dev-origin)
 - [2026-11-15: Biome replaces ESLint, Markdown excluded](#2026-11-15-biome-replaces-eslint-markdown-excluded)
+
+## 2026-11-22: Multi-step writes and balance-dependent money actions run in `SECURITY INVOKER` Postgres functions
+
+**Status.** Accepted.
+
+**Decision.** Multi-step mutations that leave broken or duplicated data on partial failure (`delete_all_finance_data`, `rollover_semester`, `split_timetable_slot`) and read-then-write money actions vulnerable to double-clicks or concurrent edits (`generate_recurring_transactions`, `settle_person`, `adjust_account_balance`, `match_account_balance`) run inside small `SECURITY INVOKER` PL/pgSQL functions with row locks (`FOR UPDATE`) or per-entity `pg_advisory_xact_lock`, and unbounded PostgREST reads paginate in 1,000-row pages via `fetchAllPages` (`src/lib/supabase/paginate.ts`).
+
+**Why.** PostgREST has no multi-request transactions and silently caps reads at `max_rows = 1000`. Running the compound writes inside Postgres gives atomic rollback and serialisation while keeping RLS intact through `SECURITY INVOKER`.
+
+**Cost.** Changing those workflows requires a SQL migration and regenerating `src/types/database.ts`.
 
 ## 2026-11-17: Courses count meetings; attendance is the meeting log
 

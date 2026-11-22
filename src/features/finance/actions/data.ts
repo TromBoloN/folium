@@ -173,24 +173,10 @@ export async function deleteAllFinanceData(_prev: FormState, formData: FormData)
     return { ok: false, error: "Type DELETE to confirm." };
   }
   const supabase = await createClient();
-  // Children before parents (foreign keys are RESTRICT).
-  const steps = [
-    () => supabase.from("transactions").delete().not("id", "is", null),
-    () => supabase.from("import_batches").delete().not("id", "is", null),
-    () => supabase.from("recurring_rules").delete().not("id", "is", null),
-    () => supabase.from("budgets").delete().not("id", "is", null),
-    () => supabase.from("goals").delete().not("id", "is", null),
-    () => supabase.from("people").delete().not("id", "is", null),
-    () => supabase.from("categories").delete().not("parent_id", "is", null),
-    () => supabase.from("categories").delete().not("id", "is", null),
-    () => supabase.from("accounts").delete().not("id", "is", null),
-  ];
-  for (const run of steps) {
-    const { error } = await run();
-    if (error) {
-      console.error("[finance] delete all", error.code, error.message);
-      return { ok: false, error: "Couldn't delete everything. Please try again." };
-    }
+  const { error } = await supabase.rpc("delete_all_finance_data");
+  if (error) {
+    console.error("[finance] delete all", error.code, error.message);
+    return { ok: false, error: "Couldn't delete everything. Please try again." };
   }
   refresh();
   return { ok: true, result: { message: "All money data deleted" } };

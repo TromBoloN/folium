@@ -236,6 +236,10 @@ describe("months", () => {
     expect(resolveMonth("2027-01", "2026-11")).toBe("2026-11");
     expect(resolveMonth("junk", "2026-11")).toBe("2026-11");
     expect(resolveMonth(["2026-10"], "2026-11")).toBe("2026-11");
+    // Planning one month ahead: default stays current, next month is allowed, further is rejected.
+    expect(resolveMonth(undefined, "2026-11", "2026-12")).toBe("2026-11");
+    expect(resolveMonth("2026-12", "2026-11", "2026-12")).toBe("2026-12");
+    expect(resolveMonth("2027-01", "2026-11", "2026-12")).toBe("2026-11");
   });
 });
 

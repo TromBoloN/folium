@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type FormState, fieldErrorsFrom, formValues } from "@/lib/action-result";
+import { isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../../auth/queries";
 import { getSettings } from "../../settings/queries";
@@ -30,12 +31,14 @@ async function today() {
 /** Drop a rule's future planned rows, so they're generated again from the rule. (Bills never touch tasks.) */
 async function clearFuturePlanned(ruleId: string, from: string) {
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("transactions")
     .delete()
     .eq("recurring_rule_id", ruleId)
     .eq("status", "planned")
     .gte("due_on", from);
+  if (error) console.error("[finance] clear planned", ruleId, error.code, error.message);
+  return error;
 }
 
 // ---------------------------------------------------------------- recurring
@@ -101,13 +104,17 @@ export async function saveRule(_prev: FormState, formData: FormData): Promise<Fo
   const supabase = await createClient();
   const now = await today();
   if (id.success) {
-    // Editing changes only the future: posted history stays, future planned rows are regenerated.
-    await clearFuturePlanned(id.data, now);
+    // Update the rule first so a validation/DB error never wipes existing planned bills.
     const { error } = await supabase
       .from("recurring_rules")
       .update({ ...row, generated_through: addDays(now, -1) })
       .eq("id", id.data);
     if (error) return ruleError(error, values);
+    const clearError = await clearFuturePlanned(id.data, now);
+    if (clearError) {
+      refresh();
+      return { ok: false, error: "Couldn't save. Please try again.", values };
+    }
   } else {
     const { error } = await supabase.from("recurring_rules").insert(row);
     if (error) return ruleError(error, values);
@@ -135,7 +142,8 @@ export async function deleteRule(_prev: FormState, formData: FormData): Promise<
   await requireUser();
   const id = z.uuid().safeParse(formData.get("id"));
   if (!id.success) return { ok: false, error: "That rule no longer exists." };
-  await clearFuturePlanned(id.data, "0001-01-01");
+  const clearError = await clearFuturePlanned(id.data, "0001-01-01");
+  if (clearError) return { ok: false, error: "Couldn't delete. Please try again." };
   const supabase = await createClient();
   const { error } = await supabase.from("recurring_rules").delete().eq("id", id.data);
   if (error) return { ok: false, error: "Couldn't delete. Please try again." };
@@ -151,14 +159,18 @@ export async function pauseRule(_prev: FormState, formData: FormData): Promise<F
   const until = String(formData.get("until") ?? "");
   const now = await today();
   const pausedUntil = until === "" ? null : until === "month" ? monthBounds(now.slice(0, 7)).to : until;
-  if (pausedUntil !== null && !/^\d{4}-\d{2}-\d{2}$/.test(pausedUntil)) return { ok: false, error: "Pick a date." };
-  await clearFuturePlanned(id.data, now);
+  if (pausedUntil !== null && !isCivilDate(pausedUntil)) return { ok: false, error: "Pick a date." };
   const supabase = await createClient();
   const { error } = await supabase
     .from("recurring_rules")
     .update({ paused_until: pausedUntil, generated_through: addDays(now, -1) })
     .eq("id", id.data);
   if (error) return { ok: false, error: "Couldn't update. Please try again." };
+  const clearError = await clearFuturePlanned(id.data, now);
+  if (clearError) {
+    refresh();
+    return { ok: false, error: "Couldn't update. Please try again." };
+  }
   refresh();
   return { ok: true, result: { message: pausedUntil ? "Paused" : "Resumed" } };
 }
@@ -173,12 +185,13 @@ export async function markPaid(_prev: FormState, formData: FormData): Promise<Fo
   const id = z.uuid().safeParse(formData.get("id"));
   if (!id.success) return { ok: false, error: "That bill no longer exists." };
   const supabase = await createClient();
-  const { data: row } = await supabase
+  const { data: row, error: readError } = await supabase
     .from("transactions")
     .select("amount::text, payee, note, kind")
     .eq("id", id.data)
     .eq("status", "planned")
     .maybeSingle();
+  if (readError) return { ok: false, error: "Couldn't mark it paid. Please try again.", values };
   if (!row) return { ok: false, error: "That bill was already paid or removed." };
   const typed = String(formData.get("amount") ?? "").trim();
   let amount = BigInt((row as unknown as { amount: string }).amount);
@@ -194,11 +207,14 @@ export async function markPaid(_prev: FormState, formData: FormData): Promise<Fo
     }
     amount = parsed.value;
   }
-  const { error } = await supabase
+  const { data: updated, error } = await supabase
     .from("transactions")
     .update({ status: "posted", amount: Number(amount), occurred_on: await today() })
-    .eq("id", id.data);
+    .eq("id", id.data)
+    .eq("status", "planned")
+    .select("id");
   if (error) return { ok: false, error: "Couldn't mark it paid. Please try again.", values };
+  if (updated.length === 0) return { ok: false, error: "That bill was already paid or removed." };
   refresh();
   const what = row.kind === "income" ? "Received" : row.kind === "transfer" ? "Moved" : "Paid";
   return {

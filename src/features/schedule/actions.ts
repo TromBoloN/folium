@@ -4,7 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { type ActionResult, type FormState, fieldErrorsFrom, formValues, fromSheet } from "@/lib/action-result";
-import { addDays, type CivilDate, formatDate, isoWeekday, minutesNowIn, todayIn } from "@/lib/dates";
+import { addDays, type CivilDate, formatDate, isCivilDate, isoWeekday, minutesNowIn, todayIn } from "@/lib/dates";
 import { getI18n } from "@/lib/i18n/server";
 import { createClient } from "@/lib/supabase/server";
 import type { Tables, TablesInsert } from "@/types/database";
@@ -68,15 +68,9 @@ async function loadSlot(slotId: string): Promise<SlotRow | null> {
   return (data as SlotRow | null) ?? null;
 }
 
-async function loadChangeFor(slotId: string, date: CivilDate): Promise<ChangeRow | null> {
+async function loadChangeFor(slotId: string, date: CivilDate) {
   const supabase = await createClient();
-  const { data } = await supabase
-    .from("class_changes")
-    .select("*")
-    .eq("slot_id", slotId)
-    .eq("original_date", date)
-    .maybeSingle();
-  return data;
+  return supabase.from("class_changes").select("*").eq("slot_id", slotId).eq("original_date", date).maybeSingle();
 }
 
 /** Replace whatever change an occurrence has with `next` (null = back to the weekly timetable). */
@@ -86,15 +80,35 @@ async function replaceChange(
   next: Partial<ChangeRow> | null,
 ): Promise<ActionResult<{ previous: ChangeRow | null }>> {
   const supabase = await createClient();
-  const previous = await loadChangeFor(slot.id, date);
-  if (previous) {
+  const { data: previous, error: readError } = await loadChangeFor(slot.id, date);
+  if (readError) {
+    console.error("[schedule] replace/read", readError.code, readError.message);
+    return { ok: false, error: FAILED };
+  }
+  if (previous && next) {
+    const { error } = await supabase
+      .from("class_changes")
+      .update({
+        kind: next.kind ?? "moved",
+        new_date: next.new_date ?? null,
+        start_time: next.start_time ?? null,
+        end_time: next.end_time ?? null,
+        location: next.location ?? null,
+        label: next.label ?? null,
+        note: next.note ?? null,
+      })
+      .eq("id", previous.id);
+    if (error) {
+      console.error("[schedule] replace/update", error.code, error.message);
+      return { ok: false, error: error.code === "23503" ? GONE : FAILED };
+    }
+  } else if (previous) {
     const { error } = await supabase.from("class_changes").delete().eq("id", previous.id);
     if (error) {
       console.error("[schedule] replace/delete", error.code, error.message);
       return { ok: false, error: FAILED };
     }
-  }
-  if (next) {
+  } else if (next) {
     const { error } = await supabase.from("class_changes").insert({
       course_id: slot.course_id,
       slot_id: slot.id,
@@ -105,6 +119,14 @@ async function replaceChange(
     if (error) {
       console.error("[schedule] replace/insert", error.code, error.message);
       return { ok: false, error: error.code === "23503" ? GONE : FAILED };
+    }
+  }
+  if (next?.kind === "cancelled" || next?.kind === "postponed") {
+    const { error: attError } = await supabase.from("attendance").delete().eq("slot_id", slot.id).eq("occurs_on", date);
+    if (attError) {
+      console.error("[schedule] replace/attendance", attError.code, attError.message);
+      refresh();
+      return { ok: false, error: FAILED };
     }
   }
   refresh();
@@ -189,19 +211,46 @@ export async function undoChange(input: { key: string; previous: ChangeRow | nul
   await requireUser();
   const ref = parseOccurrenceKey(occurrenceKeySchema.safeParse(input.key).success ? input.key : "");
   if (!ref) return { ok: false, error: GONE };
+  const prev = input.previous ? changeRowSchema.safeParse(input.previous) : null;
+  if (prev && !prev.success) return { ok: false, error: "Couldn't undo. Please try again." };
   const supabase = await createClient();
 
   if (ref.kind === "slot") {
-    const { error } = await supabase
-      .from("class_changes")
-      .delete()
-      .eq("slot_id", ref.slotId)
-      .eq("original_date", ref.date);
-    if (error) return { ok: false, error: "Couldn't undo. Please try again." };
-  }
-  if (input.previous) {
-    const prev = changeRowSchema.safeParse(input.previous);
-    if (!prev.success) return { ok: false, error: "Couldn't undo. Please try again." };
+    if (!prev) {
+      const { error } = await supabase
+        .from("class_changes")
+        .delete()
+        .eq("slot_id", ref.slotId)
+        .eq("original_date", ref.date);
+      if (error) return { ok: false, error: "Couldn't undo. Please try again." };
+    } else {
+      const { data: updated, error } = await supabase
+        .from("class_changes")
+        .update({
+          kind: prev.data.kind,
+          new_date: prev.data.new_date,
+          start_time: prev.data.start_time,
+          end_time: prev.data.end_time,
+          location: prev.data.location,
+          label: prev.data.label,
+          note: prev.data.note,
+        })
+        .eq("slot_id", ref.slotId)
+        .eq("original_date", ref.date)
+        .select("id");
+      if (error) {
+        console.error("[schedule] undo", error.code, error.message);
+        return { ok: false, error: "Couldn't undo. Please try again." };
+      }
+      if (updated.length === 0) {
+        const { error: insertError } = await supabase.from("class_changes").insert(prev.data);
+        if (insertError) {
+          console.error("[schedule] undo", insertError.code, insertError.message);
+          return { ok: false, error: "Couldn't undo. Please try again." };
+        }
+      }
+    }
+  } else if (prev) {
     const { error } = await supabase.from("class_changes").upsert(prev.data);
     if (error) {
       console.error("[schedule] undo", error.code, error.message);
@@ -254,40 +303,25 @@ export async function updateOccurrence(
   const usualRoom = slot.location ?? slot.courses?.room ?? null;
 
   if (v.scope === "forward") {
-    const previous = await loadChangeFor(slot.id, ref.date);
-    const fields = {
-      weekday: isoWeekday(v.date),
-      start_time: v.startTime,
-      end_time: v.endTime,
-      location: v.location === usualRoom ? slot.location : v.location,
-    };
+    const { data: previous, error: readError } = await loadChangeFor(slot.id, ref.date);
+    if (readError) {
+      console.error("[schedule] forward/read", readError.code, readError.message);
+      return { ok: false, error: FAILED };
+    }
     // The new pattern starts on the earlier of the two dates, so this week's class isn't lost.
     const from = earlier(v.date, ref.date);
-    const hasEarlier = !slot.starts_on || slot.starts_on < from;
-    if (hasEarlier) {
-      const { error: endError } = await supabase
-        .from("timetable_slots")
-        .update({ ends_on: addDays(from, -1) })
-        .eq("id", slot.id);
-      if (endError) return { ok: false, error: FAILED };
-      const { error } = await supabase.from("timetable_slots").insert({
-        course_id: slot.course_id,
-        ...fields,
-        starts_on: from,
-        ends_on: slot.ends_on,
-        is_online: slot.is_online,
-        meeting_url: slot.meeting_url,
-      });
-      if (error) {
-        console.error("[schedule] forward/insert", error.code, error.message);
-        return { ok: false, error: FAILED };
-      }
-    } else {
-      const { error } = await supabase.from("timetable_slots").update(fields).eq("id", slot.id);
-      if (error) return { ok: false, error: FAILED };
+    const { error } = await supabase.rpc("split_timetable_slot", {
+      p_slot_id: slot.id,
+      p_from: from,
+      p_weekday: isoWeekday(v.date),
+      p_start_time: v.startTime,
+      p_end_time: v.endTime,
+      p_location: (v.location === usualRoom ? slot.location : v.location) ?? undefined,
+    });
+    if (error) {
+      console.error("[schedule] forward/split", error.code, error.message);
+      return { ok: false, error: error.code === "P0002" ? GONE : FAILED };
     }
-    // One-off changes on or after the switch belonged to the old pattern.
-    await supabase.from("class_changes").delete().eq("slot_id", slot.id).gte("original_date", from);
     refresh();
     return { ok: true, data: { previous, scope: "forward" } };
   }
@@ -322,7 +356,7 @@ export async function scheduleConflicts(input: {
       excludeKey: z.string().max(100).optional(),
     })
     .safeParse(input);
-  if (!parsed.success || !/^\d{4}-\d{2}-\d{2}$/.test(parsed.data.date)) return { ok: true, data: [] };
+  if (!parsed.success || !isCivilDate(parsed.data.date)) return { ok: true, data: [] };
   const { date, startTime, endTime, excludeKey } = parsed.data;
   if (endTime <= startTime) return { ok: true, data: [] };
   const day = await getSchedule({ from: date, to: date });
@@ -480,10 +514,37 @@ export async function setAttendance(input: {
     })
     .safeParse({ ...input, meeting: input.meeting ?? null });
   if (!parsed.success) return { ok: false, error: GONE };
+  const ref = parseOccurrenceKey(parsed.data.key);
+  if (!ref) return { ok: false, error: GONE };
+  const supabase = await createClient();
+
+  // Clearing a mark always works (even if the class was later cancelled, moved, or ended).
+  if (parsed.data.status === null) {
+    let query = supabase.from("attendance").select("id, status, meeting_number");
+    query =
+      ref.kind === "slot"
+        ? query.eq("slot_id", ref.slotId).eq("occurs_on", ref.date)
+        : query.eq("change_id", ref.changeId);
+    const { data: existing, error: readError } = await query.maybeSingle();
+    if (readError) {
+      console.error("[schedule] attendance read", readError.code, readError.message);
+      return { ok: false, error: "Couldn't save attendance. Please try again." };
+    }
+    const previous = (existing?.status as AttendanceStatus | undefined) ?? null;
+    if (existing) {
+      const { error } = await supabase.from("attendance").delete().eq("id", existing.id);
+      if (error) {
+        console.error("[schedule] attendance delete", error.code, error.message);
+        return { ok: false, error: "Couldn't save attendance. Please try again." };
+      }
+    }
+    refresh();
+    return { ok: true, data: { previous, number: null } };
+  }
+
   const occurrence = await getOccurrence(parsed.data.key);
   if (!occurrence || !isLive(occurrence)) return { ok: false, error: "Only classes that took place can be marked." };
 
-  const supabase = await createClient();
   const target =
     occurrence.slotId && occurrence.originalDate
       ? { slot_id: occurrence.slotId, occurs_on: occurrence.originalDate, change_id: null }
@@ -492,15 +553,16 @@ export async function setAttendance(input: {
   query = target.slot_id
     ? query.eq("slot_id", target.slot_id).eq("occurs_on", target.occurs_on as string)
     : query.eq("change_id", target.change_id as string);
-  const { data: existing } = await query.maybeSingle();
+  const { data: existing, error: readError } = await query.maybeSingle();
+  if (readError) {
+    console.error("[schedule] attendance read", readError.code, readError.message);
+    return { ok: false, error: "Couldn't save attendance. Please try again." };
+  }
   const previous = (existing?.status as AttendanceStatus | undefined) ?? null;
 
   let error: { code: string; message: string } | null = null;
   let number: number | null = existing?.meeting_number ?? null;
-  if (parsed.data.status === null) {
-    if (existing) ({ error } = await supabase.from("attendance").delete().eq("id", existing.id));
-    number = null;
-  } else if (existing) {
+  if (existing) {
     ({ error } = await supabase.from("attendance").update({ status: parsed.data.status }).eq("id", existing.id));
   } else {
     // The number the student saw, if nobody took it meanwhile; otherwise the database numbers it.
@@ -523,8 +585,7 @@ export async function setAttendance(input: {
       error: error.code === "23505" ? "This class is already marked." : "Couldn't save attendance. Please try again.",
     };
   }
-  revalidatePath("/courses", "layout");
-  revalidatePath("/");
+  refresh();
   return { ok: true, data: { previous, number } };
 }
 

@@ -477,14 +477,37 @@ isOneToOne: false
                 }
           }
           Functions: {
-            "cleanup_bill_tasks":
+            "adjust_account_balance":
+{ Args: { "p_account_id": string,"p_note": string,"p_occurred_on": string,"p_real_balance": number }; Returns: boolean
+                           },
+"cleanup_bill_tasks":
 { Args: Record<PropertyKey, never>; Returns: number
+                           },
+"delete_all_finance_data":
+{ Args: Record<PropertyKey, never>; Returns: undefined
                            },
 "ensure_finance_defaults":
 { Args: Record<PropertyKey, never>; Returns: undefined
                            },
+"generate_recurring_transactions":
+{ Args: { "p_dates": (string)[],"p_expected_updated_at": string,"p_rule_id": string,"p_to": string }; Returns: number
+                           },
+"match_account_balance":
+{ Args: { "p_account_id": string,"p_real_balance": number }; Returns: undefined
+                           },
+"rollover_semester":
+{ Args: { "p_archive_old": boolean,"p_copy_slots": boolean,"p_counted_from": string,"p_ends_on"?: string,"p_from"?: string,"p_starts_on"?: string,"p_to": string }; Returns: number
+                           },
 "set_current_meeting":
 { Args: { "p_course_id": string,"p_next": number }; Returns: undefined
+                           },
+"settle_person":
+{ Args: { "p_account_id": string,"p_occurred_on": string,"p_person_id": string }; Returns: {
+              "amount": string,"kind": string,"person_name": string
+            }[]
+                           },
+"split_timetable_slot":
+{ Args: { "p_end_time": string,"p_from": string,"p_location"?: string,"p_slot_id": string,"p_start_time": string,"p_weekday": number }; Returns: undefined
                            }
           }
           Enums: {

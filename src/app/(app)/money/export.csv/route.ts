@@ -1,6 +1,6 @@
 import { requireUser } from "@/features/auth/queries";
 import { toCsv } from "@/features/finance/lib/to-csv";
-import { ensureFinanceDefaults, listAccounts, listCategories, listTransactions } from "@/features/finance/queries";
+import { ensureFinanceDefaults, listAccounts, listAllTransactions, listCategories } from "@/features/finance/queries";
 
 /**
  * All finance data as one CSV download: a `record` column says what each row is
@@ -11,10 +11,10 @@ import { ensureFinanceDefaults, listAccounts, listCategories, listTransactions }
 export async function GET() {
   await requireUser();
   await ensureFinanceDefaults();
-  const [accounts, categories, { rows: transactions }] = await Promise.all([
+  const [accounts, categories, transactions] = await Promise.all([
     listAccounts(),
     listCategories(),
-    listTransactions({}, 100_000),
+    listAllTransactions(),
   ]);
   const account = new Map(accounts.map((a) => [a.id, a.name]));
   const category = new Map(categories.map((c) => [c.id, c.name]));

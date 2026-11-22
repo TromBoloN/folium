@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { fetchAllPages } from "@/lib/supabase/paginate";
 import { createClient } from "@/lib/supabase/server";
 import { addDays, type IsoDate } from "../lib/local-date";
 import { type Cadence, occurrencesBetween } from "../lib/recurrence";
@@ -34,10 +35,11 @@ export type Rule = {
   active: boolean;
   pausedUntil: IsoDate | null;
   generatedThrough: IsoDate | null;
+  updatedAt: string;
 };
 
 const RULE_COLUMNS =
-  "id, name, kind, amount::text, is_estimate, account_id, to_account_id, category_id, payee, cadence, interval_count, due_day, starts_on, ends_on, instalments_total, remind_days_before, active, paused_until, generated_through";
+  "id, name, kind, amount::text, is_estimate, account_id, to_account_id, category_id, payee, cadence, interval_count, due_day, starts_on, ends_on, instalments_total, remind_days_before, active, paused_until, generated_through, updated_at";
 
 type RuleRow = {
   id: string;
@@ -59,6 +61,7 @@ type RuleRow = {
   active: boolean;
   paused_until: string | null;
   generated_through: string | null;
+  updated_at: string;
 };
 
 function toRule(r: RuleRow): Rule {
@@ -82,6 +85,7 @@ function toRule(r: RuleRow): Rule {
     active: r.active,
     pausedUntil: r.paused_until,
     generatedThrough: r.generated_through,
+    updatedAt: r.updated_at,
   };
 }
 
@@ -112,29 +116,13 @@ export const ensureRecurringGenerated = cache(async (today: IsoDate): Promise<vo
     const floor = addDays(today, -BACKFILL_DAYS);
     // biome-ignore lint/complexity/useMathMinMax: ISO date strings, not numbers.
     const dates = occurrencesBetween(rule, start > floor ? start : floor, to);
-    if (dates.length > 0) {
-      const { error } = await supabase.from("transactions").upsert(
-        dates.map((d) => ({
-          kind: rule.kind,
-          status: "planned",
-          amount: Number(rule.amount),
-          account_id: rule.accountId,
-          to_account_id: rule.toAccountId,
-          category_id: rule.categoryId,
-          payee: rule.kind === "transfer" ? null : (rule.payee ?? rule.name),
-          note: rule.kind === "transfer" ? rule.name : null,
-          occurred_on: d,
-          due_on: d,
-          recurring_rule_id: rule.id,
-        })),
-        { onConflict: "recurring_rule_id,due_on", ignoreDuplicates: true },
-      );
-      if (error) {
-        console.error("[finance] generate", rule.id, error.code, error.message);
-        continue;
-      }
-    }
-    await supabase.from("recurring_rules").update({ generated_through: to }).eq("id", rule.id);
+    const { error } = await supabase.rpc("generate_recurring_transactions", {
+      p_rule_id: rule.id,
+      p_expected_updated_at: rule.updatedAt,
+      p_to: to,
+      p_dates: dates,
+    });
+    if (error) console.error("[finance] generate", rule.id, error.code, error.message);
   }
 });
 
@@ -163,14 +151,18 @@ export async function listBills(): Promise<Bill[]> {
 /** Every planned row (for safe to spend and the forecast), any origin. */
 export async function listPlanned(): Promise<Transaction[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select(TX_COLUMNS)
-    .eq("status", "planned")
-    .order("occurred_on")
-    .limit(2000);
-  if (error) throw new Error(`Couldn't load planned transactions: ${error.message}`);
-  return (data as unknown as TxRow[]).map(toTransaction);
+  const rows = await fetchAllPages<TxRow>(
+    (from, to) =>
+      supabase
+        .from("transactions")
+        .select(TX_COLUMNS)
+        .eq("status", "planned")
+        .order("occurred_on")
+        .order("id")
+        .range(from, to),
+    "Couldn't load planned transactions",
+  );
+  return rows.map(toTransaction);
 }
 
 /** Posted rule payments in a date range (paid vs remaining this month). */
@@ -214,21 +206,25 @@ export async function listBudgets(
 
 /** Expense lines (category + amount) for a date range: posted or planned. */
 export async function listExpenseLines(
-  from: IsoDate,
-  to: IsoDate,
+  fromDate: IsoDate,
+  toDate: IsoDate,
   status: "posted" | "planned",
 ): Promise<{ categoryId: string | null; amount: bigint; occurredOn: string }[]> {
   const supabase = await createClient();
-  const { data, error } = await supabase
-    .from("transactions")
-    .select("category_id, amount::text, occurred_on")
-    .eq("kind", "expense")
-    .eq("status", status)
-    .gte("occurred_on", from)
-    .lte("occurred_on", to)
-    .limit(10000);
-  if (error) throw new Error(`Couldn't load spending: ${error.message}`);
-  return (data as unknown as { category_id: string | null; amount: string; occurred_on: string }[]).map((r) => ({
+  const rows = await fetchAllPages<{ category_id: string | null; amount: string; occurred_on: string }>(
+    (from, to) =>
+      supabase
+        .from("transactions")
+        .select("category_id, amount::text, occurred_on")
+        .eq("kind", "expense")
+        .eq("status", status)
+        .gte("occurred_on", fromDate)
+        .lte("occurred_on", toDate)
+        .order("id")
+        .range(from, to),
+    "Couldn't load spending",
+  );
+  return rows.map((r) => ({
     categoryId: r.category_id,
     amount: BigInt(r.amount),
     occurredOn: r.occurred_on,

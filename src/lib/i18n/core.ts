@@ -19,14 +19,14 @@ export function intlLocale(locale: Locale): string {
 
 export function interpolate(text: string, vars?: Vars): string {
   if (!vars) return text;
-  return text.replace(/\{(\w+)\}/g, (match, name: string) => (name in vars ? String(vars[name]) : match));
+  return text.replace(/\{(\w+)\}/g, (match, name: string) => (Object.hasOwn(vars, name) ? String(vars[name]) : match));
 }
 
 const dictionaries: Record<Locale, Partial<Record<string, string>>> = { en: {}, id };
 
 export function makeT(locale: Locale): T {
   const dict = dictionaries[locale];
-  return (key, vars) => interpolate(dict[key] ?? key, vars);
+  return (key, vars) => interpolate(Object.hasOwn(dict, key) ? (dict[key] ?? key) : key, vars);
 }
 
 /**
@@ -34,8 +34,11 @@ export function makeT(locale: Locale): T {
  * from a server action): translated when the dictionary knows it, else as is.
  */
 export function translateLoose(locale: Locale, text: string, vars?: Vars): string {
-  const exact = dictionaries[locale][text];
-  if (exact !== undefined) return interpolate(exact, vars);
+  const dict = dictionaries[locale];
+  if (Object.hasOwn(dict, text)) {
+    const exact = dict[text];
+    if (exact !== undefined) return interpolate(exact, vars);
+  }
   // Messages built with values ("Name can be at most 60 characters."): match a pattern,
   // translating each captured part too (the field name), then fill the template.
   if (locale === "id") {

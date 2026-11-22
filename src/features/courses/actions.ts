@@ -8,6 +8,7 @@ import { isCivilDate } from "@/lib/dates";
 import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "../auth/queries";
 import { getSettings } from "../settings/queries";
+import { dayBounds } from "../tasks/due";
 import {
   type ClassTimeInput,
   type CourseInput,
@@ -243,80 +244,37 @@ export async function startNewSemester(_prev: FormState, formData: FormData): Pr
       values,
     };
   }
-  const supabase = await createClient();
-  const { data: labels } = await supabase.from("courses").select("semester");
+  const [supabase, { preferences }] = await Promise.all([createClient(), getSettings()]);
+  const { data: labels, error: labelsError } = await supabase.from("courses").select("semester");
+  if (labelsError) return { ok: false, error: "Couldn't load last semester's courses.", values };
   // "2026 genap" joins an existing "2026 Genap" instead of starting a second semester.
-  const r = {
-    ...parsed.data,
-    to:
-      canonicalSemester(
-        parsed.data.to,
-        (labels ?? []).map((c) => c.semester),
-      ) ?? parsed.data.to,
-  };
-  let query = supabase
-    .from("courses")
-    .select(
-      "id, name, code, color, lecturer, lecturer_email, lecturer_phone, room, credits, kind, class_type, total_meetings, timetable_slots(weekday, start_time, end_time, location, is_online, meeting_url)",
-    );
-  query = r.from ? query.eq("semester", r.from) : query.is("semester", null);
-  const { data: old, error } = await query;
-  if (error) return { ok: false, error: "Couldn't load last semester's courses.", values };
-  if (old.length === 0) return { ok: false, error: "No courses in that semester.", values };
+  const to =
+    canonicalSemester(
+      parsed.data.to,
+      (labels ?? []).map((c) => c.semester),
+    ) ?? parsed.data.to;
+  // Count meetings from the new term's start (or now when undated) so counted courses don't look finished.
+  const countedFrom = parsed.data.startsOn
+    ? dayBounds(parsed.data.startsOn, preferences.timeZone).start
+    : new Date().toISOString();
 
-  for (const c of old) {
-    const { data: created, error: insertError } = await supabase
-      .from("courses")
-      .insert({
-        name: c.name,
-        code: c.code,
-        color: c.color,
-        lecturer: c.lecturer,
-        lecturer_email: c.lecturer_email,
-        lecturer_phone: c.lecturer_phone,
-        room: c.room,
-        credits: c.credits,
-        kind: c.kind,
-        class_type: c.class_type,
-        total_meetings: c.total_meetings,
-        semester: r.to,
-      })
-      .select("id")
-      .single();
-    if (insertError) {
-      console.error("[courses] rollover", insertError.code, insertError.message);
-      return { ok: false, error: "Couldn't copy every course. Check your courses and try again.", values };
-    }
-    if (r.copySlots && c.timetable_slots.length > 0) {
-      const { error: slotError } = await supabase.from("timetable_slots").insert(
-        c.timetable_slots.map((s) => ({
-          course_id: created.id,
-          weekday: s.weekday,
-          start_time: s.start_time,
-          end_time: s.end_time,
-          location: s.location,
-          is_online: s.is_online,
-          meeting_url: s.meeting_url,
-          starts_on: r.startsOn || null,
-          ends_on: r.endsOn || null,
-        })),
-      );
-      if (slotError) console.error("[courses] rollover slots", slotError.code, slotError.message);
-    }
+  const { data: count, error } = await supabase.rpc("rollover_semester", {
+    p_from: parsed.data.from || undefined,
+    p_to: to,
+    p_copy_slots: parsed.data.copySlots,
+    p_starts_on: parsed.data.startsOn || undefined,
+    p_ends_on: parsed.data.endsOn || undefined,
+    p_archive_old: parsed.data.archiveOld,
+    p_counted_from: countedFrom,
+  });
+  if (error) {
+    console.error("[courses] rollover", error.code, error.message);
+    return { ok: false, error: "Couldn't copy every course. Check your courses and try again.", values };
   }
-  if (r.archiveOld) {
-    await supabase
-      .from("courses")
-      .update({ archived_at: new Date().toISOString() })
-      .in(
-        "id",
-        old.map((c) => c.id),
-      )
-      .is("archived_at", null);
-  }
+  if (!count) return { ok: false, error: "No courses in that semester.", values };
 
   revalidatePath("/courses", "layout");
   revalidatePath("/");
-  if (fromSheet(formData)) return { ok: true, result: { count: String(old.length) } };
+  if (fromSheet(formData)) return { ok: true, result: { count: String(count) } };
   redirect("/courses?view=cards");
 }

@@ -69,6 +69,15 @@ describe("parseQuickTransaction: expenses", () => {
     expect(chip(r, "amount")?.state).toBe("missing");
     expect(r.errors).toContain("Add an amount, like 32k or 25.000.");
   });
+
+  it("rejects amounts above MAX_SAFE_INTEGER and payees over 120 characters", () => {
+    const huge = parse("kopi 9007199254740993");
+    expect(huge.amount).toBeUndefined();
+    expect(huge.errors).toContain("That amount is too large.");
+
+    const longPayee = parse(`${"a".repeat(121)} 10k`);
+    expect(longPayee.errors).toContain("Payee can be at most 120 characters.");
+  });
 });
 
 describe("parseQuickTransaction: income", () => {

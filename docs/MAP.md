@@ -14,7 +14,7 @@ Where to look before you change something. One section per feature: its routes, 
 | Theme tokens, utilities, motion | `app/globals.css` (+ `features/settings/theme.ts`) |
 | Theme packs (whole looks) | `features/themes/` — guide: [themes.md](themes.md) |
 | Dates and time zones | `lib/dates.ts`, `features/tasks/due.ts` |
-| Who's signed in | `requireUser()` in `features/auth/queries.ts`; routing in `lib/supabase/proxy.ts` |
+| Who's signed in | `requireUser()` in `features/auth/queries.ts`; routing in `lib/supabase/proxy.ts`; pagination in `lib/supabase/paginate.ts` |
 | Schema | `supabase/migrations/*.sql` → generated `types/database.ts` |
 | Demo data | `supabase/seed.sql` (`demo@folium.test` / `folium-demo-2026`) |
 | Tests | `*.test.ts`, `supabase/tests/database/*.sql`, `e2e/*.spec.ts` |
