@@ -69,7 +69,6 @@ export const tasks = {
   "e.g. Problem set 3": "mis. Latihan soal 3",
   task: "tugas",
   // Loose strings
-  "Assignments and deadlines, by course or due date.": "Tugas kuliah dan tenggat, per kelas atau tanggal.",
   "Loading tasks": "Memuat tugas",
   "Loading task": "Memuat tugas",
   "Nothing here": "Tidak ada apa-apa",

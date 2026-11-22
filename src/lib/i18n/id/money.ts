@@ -131,8 +131,6 @@ export const money = {
   "Delete the goal {name}": "Hapus target {name}",
   "Difference:": "Selisih:",
   Direction: "Arah",
-  "Down {amount} this week": "Turun {amount} minggu ini",
-  "Up {amount} this week": "Naik {amount} minggu ini",
   "Due this week": "Jatuh tempo minggu ini",
   Estimate: "Perkiraan",
   "Every week": "Setiap minggu",
@@ -151,11 +149,6 @@ export const money = {
   "Filter transactions": "Filter transaksi",
   "Fixed per month": "Tetap per bulan",
   "Folium shows {amount}.": "Folium menampilkan {amount}.",
-  "For 1 day until {until} ({date}), after {bills} of bills. {liquid} in spendable accounts.":
-    "Untuk 1 hari sampai {until} ({date}), setelah tagihan {bills}. {liquid} di rekening yang bisa dipakai.",
-  "For {n} days until {until} ({date}), after {bills} of bills. {liquid} in spendable accounts.":
-    "Untuk {n} hari sampai {until} ({date}), setelah tagihan {bills}. {liquid} di rekening yang bisa dipakai.",
-  "your next income": "pemasukan berikutnya",
   "month end": "akhir bulan",
   "For a course": "Untuk kelas",
   From: "Dari",
@@ -224,24 +217,19 @@ export const money = {
   "New goal": "Target baru",
   "New names are added as people.": "Nama baru ditambahkan sebagai orang.",
   "Next 30 days": "30 hari ke depan",
-  "Next 30 days with planned bills and income: never below zero.":
-    "30 hari ke depan dengan tagihan dan pemasukan terencana: tidak pernah di bawah nol.",
   "Next month": "Bulan depan",
   "Previous month": "Bulan sebelumnya",
   "This month": "Bulan ini",
   "Next, match the account to your real balance so the totals line up.":
     "Selanjutnya, cocokkan rekening dengan saldo aslinya agar totalnya sesuai.",
-  "No budgets this month.": "Tidak ada anggaran bulan ini.",
   "No categorised spending in these two months.": "Tidak ada pengeluaran berkategori dalam dua bulan ini.",
   "No category": "Tanpa kategori",
-  "No change this week": "Tidak berubah minggu ini",
   "No date set": "Tanggal belum diatur",
   "No income this month": "Tidak ada pemasukan bulan ini",
   "No payees this month yet.": "Belum ada penerima bulan ini.",
   "No spending this month yet.": "Belum ada pengeluaran bulan ini.",
   "Not an amount yet": "Belum berupa jumlah",
   "Not in this file": "Tidak ada di file ini",
-  "Nothing due in the next 7 days.": "Tidak ada yang jatuh tempo 7 hari ke depan.",
   "Nothing in or out yet this month.": "Belum ada uang masuk atau keluar bulan ini.",
   "Nothing left to pay this month.": "Tidak ada lagi yang harus dibayar bulan ini.",
   "Open in list": "Buka di daftar",
@@ -282,7 +270,6 @@ export const money = {
   "Set aside (transfer)": "Sisihkan (transfer)",
   "Set aside monthly": "Sisihkan tiap bulan",
   "Set date to {day}": "Atur tanggal ke {day}",
-  "Set one": "Atur satu",
   Settled: "Lunas",
   "Show the numbers": "Tampilkan angkanya",
   "Showing the newest {n}. Narrow the filters to see older ones.":
@@ -309,11 +296,8 @@ export const money = {
   "Top level": "Tingkat atas",
   "Top payees this month": "Penerima teratas bulan ini",
   Total: "Total",
-  "Total across accounts": "Total semua rekening",
   "Transaction added": "Transaksi ditambahkan",
   "Transaction saved": "Transaksi disimpan",
-  "Transfers and adjustments aren't counted as in or out.":
-    "Transfer dan penyesuaian tidak dihitung sebagai masuk atau keluar.",
   "Try “{example}”": "Coba “{example}”",
   "Type DELETE to confirm": "Ketik DELETE untuk konfirmasi",
   "Type what your bank or e-wallet app shows right now.":
@@ -383,4 +367,6 @@ export const money = {
   ", {type}, balance {amount} ": ", {type}, saldo {amount} ",
   "One of those accounts no longer exists.": "Salah satu rekening tersebut sudah tidak ada.",
   "Couldn't sync balances. Please try again.": "Tidak dapat menyesuaikan saldo. Coba lagi.",
+  "/day · {days}d": "/hari · {days} hr",
+  "Transfers, adjustments and debts aren't counted.": "Transfer, penyesuaian, dan utang tidak dihitung.",
 };

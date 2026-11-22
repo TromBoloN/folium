@@ -1,11 +1,10 @@
 "use client";
 
-import { CheckCircle2, MapPin, Moon } from "lucide-react";
+import { CheckCircle2, MapPin } from "lucide-react";
 import Link from "next/link";
 import { ChangeChip } from "@/features/schedule/components/change-chips";
 import { formatTime } from "@/features/timetable/logic";
 import { useT } from "@/lib/i18n/client";
-import { plural } from "@/lib/i18n/core";
 import type { HeroClass } from "./next-up-hero";
 
 type Props = {
@@ -18,42 +17,26 @@ type Props = {
 };
 
 /**
- * What the classes tile shows once today has no more classes: a short note on
- * today, then tomorrow's classes, so the space looks ahead instead of at an
- * empty time axis. No hooks, so both the server widget and the live timeline use it.
+ * Shown when today's classes are over (just "Done for today") or when today has
+ * no classes at all (then shows Tomorrow's classes, if any).
  */
 export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props) {
   const t = useT();
   const time = (value: string) => formatTime(value, timeFormat);
+  const showTomorrow = past.length === 0 && tomorrow.length > 0;
+
   return (
     <div className="flex flex-1 flex-col gap-4">
-      <p className="flex items-center gap-2 text-sm">
-        {past.length > 0 ? (
-          <>
-            <CheckCircle2 aria-hidden className="size-4 text-primary" />
-            {t(plural(past.length, "Done for today: 1 class.", "Done for today: {n} classes."), { n: past.length })}
-          </>
-        ) : (
-          <>
-            <Moon aria-hidden className="size-4 text-muted-foreground" />
-            {cancelled.length > 0
-              ? t(
-                  plural(
-                    cancelled.length,
-                    "No classes today: 1 was cancelled.",
-                    "No classes today: {n} were cancelled.",
-                  ),
-                  {
-                    n: cancelled.length,
-                  },
-                )
-              : t("No classes today.")}
-          </>
-        )}
-      </p>
-      {past.length + cancelled.length > 0 ? (
+      {past.length > 0 ? (
+        <p className="flex items-center gap-2 text-muted-foreground text-sm">
+          <CheckCircle2 aria-hidden className="size-4 text-primary" />
+          {t("Done for today")}
+        </p>
+      ) : null}
+
+      {cancelled.length > 0 ? (
         <ul className="flex flex-wrap gap-1.5">
-          {[...past, ...cancelled].map((c) => (
+          {cancelled.map((c) => (
             <li
               key={c.id}
               className="inline-flex items-center gap-1.5 rounded-pill bg-muted px-2 py-0.5 text-muted-foreground text-xs"
@@ -63,22 +46,20 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
                 className="size-1.5 rounded-full bg-(--tint)"
                 style={{ "--tint": c.color } as React.CSSProperties}
               />
-              <span className={c.cancelled ? "line-through" : undefined}>
+              <span className="line-through">
                 {c.code ?? c.name} · {time(c.startTime)}
               </span>
-              {c.cancelled ? <span className="sr-only">{t(" (cancelled)")}</span> : null}
+              <span className="sr-only">{t(" (cancelled)")}</span>
             </li>
           ))}
         </ul>
       ) : null}
 
-      <section aria-labelledby="tomorrow-classes" className="flex flex-col gap-2">
-        <h3 id="tomorrow-classes" className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-          {t("Tomorrow")}
-        </h3>
-        {tomorrow.length === 0 ? (
-          <p className="text-muted-foreground text-sm">{t("No classes tomorrow either.")}</p>
-        ) : (
+      {showTomorrow ? (
+        <section aria-labelledby="tomorrow-classes" className="flex flex-col gap-2">
+          <h3 id="tomorrow-classes" className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+            {t("Tomorrow")}
+          </h3>
           <ul className="flex flex-col gap-1.5">
             {tomorrow.map((c) => (
               <li key={c.id}>
@@ -92,7 +73,6 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
                     {time(c.startTime)}–{time(c.endTime)}
                   </span>
                   <span className="min-w-0 flex-1 truncate font-medium">{c.code ?? c.name}</span>
-                  {/* The location already shows a changed room; other changes get their chip. */}
                   {c.chips.find((chip) => chip.kind !== "room") ? (
                     <ChangeChip chip={c.chips.find((chip) => chip.kind !== "room") ?? c.chips[0]} compact />
                   ) : null}
@@ -106,14 +86,8 @@ export function DaySummary({ past, cancelled = [], tomorrow, timeFormat }: Props
               </li>
             ))}
           </ul>
-        )}
-      </section>
-      <Link
-        href="/courses?view=day"
-        className="mt-auto w-fit text-muted-foreground text-sm underline-offset-4 hover:text-foreground hover:underline"
-      >
-        {t("See the week")}
-      </Link>
+        </section>
+      ) : null}
     </div>
   );
 }

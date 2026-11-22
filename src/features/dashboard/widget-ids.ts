@@ -21,14 +21,7 @@ export type WidgetId = (typeof WIDGET_IDS)[number];
  * Off by default on new or reset layouts so Today stays calm (Next up, Today's
  * classes and Due soon are on; the rest stay one checkbox away in Customize).
  */
-export const DEFAULT_HIDDEN_WIDGETS: readonly WidgetId[] = [
-  "stats",
-  "week",
-  "overdue",
-  "grades",
-  "money",
-  "quick-add",
-];
+export const DEFAULT_HIDDEN_WIDGETS: readonly WidgetId[] = ["stats", "week", "overdue", "grades", "money", "quick-add"];
 
 /**
  * Fixed size hint per widget, which decides its footprint in the bento grid

@@ -57,8 +57,6 @@ export const grades = {
   "{n} SKS counted": "{n} SKS dihitung",
   "{n}% of grade": "{n}% dari nilai",
   // Loose strings
-  "Course grades from your assessments, and your GPA by semester.":
-    "Nilai kelas dari penilaianmu, dan IPK per semester.",
   "Loading grades": "Memuat nilai",
   "Loading course grades": "Memuat nilai kelas",
   "Add your courses with their credits, then record assessments to see grades and your GPA.":

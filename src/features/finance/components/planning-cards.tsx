@@ -10,7 +10,7 @@ import { BudgetList } from "./budget-list";
 
 const head = "flex items-center justify-between gap-3";
 
-/** Overdue and this week's bills with "Mark paid". */
+/** Overdue and this week's bills with "Mark paid". Hidden when nothing is due. */
 export async function UpcomingBillsCard({
   overdue,
   soon,
@@ -22,8 +22,9 @@ export async function UpcomingBillsCard({
   today: string;
   categories: Category[];
 }) {
-  const t = await getT();
   const bills = [...overdue, ...soon].slice(0, 5);
+  if (bills.length === 0) return null;
+  const t = await getT();
   return (
     <section
       aria-labelledby="bills-h"
@@ -39,21 +40,18 @@ export async function UpcomingBillsCard({
           {t("All recurring")}
         </Link>
       </div>
-      {bills.length === 0 ? (
-        <p className="px-5 pb-5 text-muted-foreground text-sm">{t("Nothing due in the next 7 days.")}</p>
-      ) : (
-        <ul className="flex flex-col divide-y divide-border-soft">
-          {bills.map((b) => (
-            <BillRow key={b.id} bill={b} today={today} categories={categories} compact />
-          ))}
-        </ul>
-      )}
+      <ul className="flex flex-col divide-y divide-border-soft">
+        {bills.map((b) => (
+          <BillRow key={b.id} bill={b} today={today} categories={categories} compact />
+        ))}
+      </ul>
     </section>
   );
 }
 
-/** The three budgets closest to their limit. */
+/** Budgets near or over their limit. Hidden when none need attention. */
 export async function BudgetWatchCard({ items, month }: { items: BudgetProgress[]; month: string }) {
+  if (items.length === 0) return null;
   const t = await getT();
   return (
     <section
@@ -73,16 +71,7 @@ export async function BudgetWatchCard({ items, month }: { items: BudgetProgress[
           {t("All budgets")}
         </Link>
       </div>
-      {items.length === 0 ? (
-        <p className="text-muted-foreground text-sm">
-          {t("No budgets this month.")}{" "}
-          <Link href="/money/budgets" className="font-medium text-primary underline underline-offset-2">
-            {t("Set one")}
-          </Link>
-        </p>
-      ) : (
-        <BudgetList items={items.slice(0, 3)} month={month} />
-      )}
+      <BudgetList items={items.slice(0, 3)} month={month} />
     </section>
   );
 }

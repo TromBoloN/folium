@@ -22,7 +22,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function SettingsPage() {
   return (
     <>
-      <PageHeader title="Settings" description="Make Folium look and work the way you like." />
+      <PageHeader title="Settings" />
       <Suspense fallback={<SettingsSkeleton />}>
         <SettingsContent />
       </Suspense>
@@ -40,23 +40,18 @@ async function SettingsContent() {
         <CardHeader>
           <CardTitle>{t("Money")}</CardTitle>
         </CardHeader>
-        <CardContent className="flex flex-wrap items-center justify-between gap-3">
-          <p className="text-muted-foreground text-sm">
-            {t("Categories for spending and income, your accounts, and a CSV of everything.")}
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button asChild variant="outline" size="sm">
-              <Link href="/money/categories">{t("Categories")}</Link>
-            </Button>
-            <Button asChild variant="outline" size="sm">
-              <Link href="/money/accounts">{t("Accounts")}</Link>
-            </Button>
-            <Button asChild variant="ghost" size="sm">
-              <a href="/money/export.csv" download>
-                {t("Export CSV")}
-              </a>
-            </Button>
-          </div>
+        <CardContent className="flex flex-wrap items-center gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link href="/money/categories">{t("Categories")}</Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link href="/money/accounts">{t("Accounts")}</Link>
+          </Button>
+          <Button asChild variant="ghost" size="sm">
+            <a href="/money/export.csv" download>
+              {t("Export CSV")}
+            </a>
+          </Button>
         </CardContent>
       </Card>
       <Card>

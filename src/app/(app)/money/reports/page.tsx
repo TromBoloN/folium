@@ -1,4 +1,4 @@
-import { ArrowDownLeft, ArrowUpRight, BarChart3, Lightbulb } from "lucide-react";
+import { ArrowDownLeft, ArrowUpRight, BarChart3, Info, Lightbulb } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -304,9 +304,15 @@ async function Reports({ searchParams }: Pick<PageProps<"/money/reports">, "sear
         </section>
 
         <section aria-labelledby="year-h" className="tile flex flex-col gap-3 p-5">
-          <h2 id="year-h" className="font-medium">
-            {t("{year} so far", { year })}
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 id="year-h" className="font-medium">
+              {t("{year} so far", { year })}
+            </h2>
+            <span title={t("Transfers, adjustments and debts aren't counted.")} className="text-muted-foreground">
+              <Info aria-hidden className="size-4" />
+              <span className="sr-only">{t("Transfers, adjustments and debts aren't counted.")}</span>
+            </span>
+          </div>
           <dl className="grid grid-cols-3 gap-3 text-sm">
             <div>
               <dt className="text-muted-foreground text-xs">{t("In")}</dt>
@@ -323,9 +329,6 @@ async function Reports({ searchParams }: Pick<PageProps<"/money/reports">, "sear
               </dd>
             </div>
           </dl>
-          <p className="text-muted-foreground text-xs">
-            In: {formatIdr(yearIncome)}. Out: {formatIdr(yearExpense)}. Transfers, adjustments and debts aren't counted.
-          </p>
         </section>
       </div>
 

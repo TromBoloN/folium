@@ -12,8 +12,6 @@ import { type CourseCardStats, CourseList } from "@/features/courses/components/
 import { SemesterSwitch } from "@/features/courses/components/semester-switch";
 import { listCourses } from "@/features/courses/queries";
 import { semesterLabels } from "@/features/courses/schema";
-import { courseResult, formatPercent } from "@/features/grades/logic";
-import { listGradebook } from "@/features/grades/queries";
 import { ByDayView } from "@/features/schedule/components/by-day-view";
 import { ViewSwitch } from "@/features/schedule/components/view-switch";
 import { WeekRail } from "@/features/schedule/components/week-rail";
@@ -24,7 +22,6 @@ import { buildSchedule, changesByCourse, nextOccurrence } from "@/features/sched
 import { getMeetingLog, getScheduleInput, listAttendanceMarks, listUpcomingBreaks } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
 import { COURSES_VIEWS, type CoursesView, type Preferences } from "@/features/settings/schema";
-import { listOpenTasks } from "@/features/tasks/queries";
 import { WeekView } from "@/features/timetable/components/week-view";
 import { buildWeek, weekRange } from "@/features/timetable/week";
 import { addDays, type CivilDate, isCivilDate, minutesNowIn, todayIn } from "@/lib/dates";
@@ -40,7 +37,6 @@ export default function CoursesPage({ searchParams }: PageProps<"/courses">) {
     <>
       <PageHeader
         title="Courses"
-        description="Your courses, and when they really meet."
         action={
           <div className="flex items-center gap-2">
             <Button asChild size="sm" variant="outline">
@@ -165,7 +161,7 @@ async function Courses({ searchParams }: Pick<PageProps<"/courses">, "searchPara
   );
 }
 
-/** Next class, weekdays, open tasks, grade and this week's changes for every course card. */
+/** Next class, meeting progress and this week's changes for every course card. */
 async function cardStats(
   today: CivilDate,
   nowMinute: number,
@@ -174,10 +170,8 @@ async function cardStats(
   const i18n = await getI18n();
   const thisWeek = weekRange(today, preferences.weekStart);
   const range = { from: thisWeek.from, to: addDays(today, 13) };
-  const [input, tasks, gradebook, courses, log] = await Promise.all([
+  const [input, courses, log] = await Promise.all([
     getScheduleInput(range.from, range.to),
-    listOpenTasks(),
-    listGradebook(),
     listCourses(),
     getMeetingLog(),
   ]);
@@ -187,10 +181,7 @@ async function cardStats(
   const stats: Record<string, CourseCardStats> = {};
   for (const course of courses) {
     const next = nextOccurrence(schedule, now, course.id);
-    const book = gradebook.find((g) => g.id === course.id);
     const progress = log.progress.get(course.id) ?? null;
-    const type = course.classType ? preferences.classTypes.find((c) => c.id === course.classType) : undefined;
-    const result = book ? courseResult(book.assessments, preferences.gradeScale) : null;
     stats[course.id] = {
       next: next
         ? {
@@ -199,16 +190,9 @@ async function cardStats(
             chips: occurrenceChips(next, preferences.timeFormat, i18n),
           }
         : null,
-      weekdays: [...new Set(course.slots.filter((s) => !s.endsOn || s.endsOn >= today).map((s) => s.weekday))],
-      openTasks: tasks.filter((t) => t.courseId === course.id).length,
-      grade:
-        result?.percent != null && result.band
-          ? { letter: result.band.letter, percent: `${formatPercent(result.percent)}%` }
-          : null,
       changesThisWeek: changes.get(course.id) ?? 0,
       meeting: progress ? { next: progress.next, total: progress.total, finished: progress.finished } : null,
       skipsLeft: progress && course.kind === "campus" ? skipsLeft(progress, preferences.attendanceTarget) : null,
-      typeName: type ? i18n.tl(type.name) : null,
     };
   }
   return stats;

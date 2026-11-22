@@ -4,7 +4,7 @@ import { Check } from "lucide-react";
 import { startTransition, useActionState, useEffect, useRef, useState } from "react";
 import { useToast } from "@/components/toast/toaster";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ChoiceGroup } from "@/components/ui/choice-group";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -162,7 +162,6 @@ function SettingsFields({
         <Card>
           <CardHeader>
             <CardTitle>{t("Appearance")}</CardTitle>
-            <CardDescription>{t("How Folium looks on this account, on every device.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <ChoiceGroup
@@ -227,9 +226,6 @@ function SettingsFields({
                       disabled={!useAccent}
                       className="h-9 w-14 cursor-pointer rounded-md border bg-transparent p-1 disabled:cursor-not-allowed disabled:opacity-50"
                     />
-                    <p className="text-muted-foreground text-xs">
-                      {t("Replaces the colour above for buttons and highlights.")}
-                    </p>
                   </div>
                 </div>
               </>
@@ -299,7 +295,6 @@ function SettingsFields({
         <Card>
           <CardHeader>
             <CardTitle>{t("Preferences")}</CardTitle>
-            <CardDescription>{t("Calendar, time and language defaults.")}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-6">
             <div className="grid gap-4 sm:grid-cols-2">
@@ -400,9 +395,6 @@ function SettingsFields({
                   {t(label)}
                 </label>
               ))}
-              <p className="text-muted-foreground text-xs">
-                {t("Off unless you turn them on. Bills always show on Today and in Money.")}
-              </p>
             </fieldset>
           </CardContent>
         </Card>

@@ -3,16 +3,14 @@ import { upcomingNumbers } from "@/features/schedule/meetings";
 import { isLive, liveOn } from "@/features/schedule/occurrences";
 import { getMeetingLog, getSchedule } from "@/features/schedule/queries";
 import { getSettings } from "@/features/settings/queries";
-import { dueState, formatDue } from "@/features/tasks/due";
-import { listOpenTasks } from "@/features/tasks/queries";
 import { addDays, todayIn } from "@/lib/dates";
 import { getI18n } from "@/lib/i18n/server";
 import { toHeroClass } from "./hero-class";
 import { NextUpHero } from "./next-up-hero";
 
-/** The hero: what's on now or next, with a live countdown. Falls back to tomorrow, then the next deadline. */
+/** The hero: only the class on now or next (or tomorrow when today has none); otherwise "Done for today". */
 export async function NextUpWidget() {
-  const [tasks, { preferences }, i18n] = await Promise.all([listOpenTasks(), getSettings(), getI18n()]);
+  const [{ preferences }, i18n] = await Promise.all([getSettings(), getI18n()]);
   await io();
   const now = new Date();
   const today = todayIn(preferences.timeZone, now);
@@ -27,8 +25,6 @@ export async function NextUpWidget() {
     const total = log.progress.get(o.courseId)?.total ?? null;
     return { ...toHeroClass(o, fmt, i18n), mark, meeting: number === null ? null : { number, total } };
   };
-  // Open tasks come sorted by deadline; the first not yet overdue is the next one.
-  const next = tasks.find((t) => t.dueAt && dueState(t, now, preferences.timeZone) !== "overdue");
 
   return (
     <NextUpHero
@@ -38,18 +34,6 @@ export async function NextUpWidget() {
       timeFormat={fmt}
       today={liveOn(schedule, today).map(hero)}
       tomorrow={liveOn(schedule, tomorrow).map(hero)}
-      cancelled={schedule.filter((o) => o.date === today && !isLive(o) && o.status === "cancelled").map(hero)}
-      deadline={
-        next
-          ? {
-              id: next.id,
-              title: next.title,
-              due: formatDue(next, now, preferences.timeZone, preferences.timeFormat, i18n) ?? "",
-              color: next.course?.color ?? null,
-              course: next.course ? (next.course.code ?? next.course.name) : null,
-            }
-          : null
-      }
     />
   );
 }

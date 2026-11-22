@@ -29,7 +29,6 @@ export default function TasksPage({ searchParams }: PageProps<"/tasks">) {
     <>
       <PageHeader
         title="Tasks"
-        description="Assignments and deadlines, by course or due date."
         action={
           <Button asChild size="sm" variant="outline">
             <Link href="/tasks/new">

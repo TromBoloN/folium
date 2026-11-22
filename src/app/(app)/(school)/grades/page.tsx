@@ -21,7 +21,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default function GradesPage() {
   return (
     <>
-      <PageHeader title="Grades" description="Course grades from your assessments, and your GPA by semester." />
+      <PageHeader title="Grades" />
       <Suspense fallback={<ListSkeleton rows={4} label="Loading grades" />}>
         <Grades />
       </Suspense>

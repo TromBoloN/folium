@@ -3,7 +3,6 @@ export const settings = {
   "Couldn't save.": "Gagal menyimpan.",
   "Settings saved": "Pengaturan disimpan",
   Appearance: "Tampilan",
-  "How Folium looks on this account, on every device.": "Tampilan Folium untuk akun ini, di semua perangkat.",
   Mode: "Mode",
   System: "Sistem",
   Light: "Terang",
@@ -16,7 +15,6 @@ export const settings = {
   Rose: "Merah muda",
   "Use a custom accent colour": "Pakai warna aksen sendiri",
   "Accent colour": "Warna aksen",
-  "Replaces the colour above for buttons and highlights.": "Menggantikan warna di atas untuk tombol dan sorotan.",
   Font: "Huruf",
   "System default": "Bawaan sistem",
   Density: "Kerapatan",
@@ -35,7 +33,6 @@ export const settings = {
   "How much of the {name} theme's background scene you see. Feedback such as a completed task still animates; Motion decides that.":
     "Seberapa banyak latar tema {name} yang kamu lihat. Umpan balik seperti tugas selesai tetap beranimasi; itu diatur oleh Animasi.",
   Preferences: "Preferensi",
-  "Calendar, time and language defaults.": "Kalender, waktu, dan bahasa.",
   "Time zone": "Zona waktu",
   "Decides what “today” is, and when date-only deadlines end.":
     "Menentukan kapan “hari ini”, dan kapan tenggat tanpa jam berakhir.",
@@ -60,8 +57,6 @@ export const settings = {
   "Money emails": "Email keuangan",
   "Remind me before a bill is due": "Ingatkan sebelum tagihan jatuh tempo",
   "A Monday summary: spent, left, and what's due": "Ringkasan tiap Senin: pengeluaran, sisa, dan yang jatuh tempo",
-  "Off unless you turn them on. Bills always show on Today and in Money.":
-    "Mati kecuali kamu nyalakan. Tagihan selalu tampil di Hari ini dan Keuangan.",
   "Save settings": "Simpan pengaturan",
   "Saved. Changes apply as you make them.": "Tersimpan. Perubahan langsung berlaku.",
   "Not saved: {reason}": "Tidak tersimpan: {reason}",
@@ -75,9 +70,6 @@ export const settings = {
   "Save name": "Simpan nama",
   "Name saved": "Nama disimpan",
   "Name cleared": "Nama dihapus",
-  "Make Folium look and work the way you like.": "Atur tampilan dan cara kerja Folium sesukamu.",
-  "Categories for spending and income, your accounts, and a CSV of everything.":
-    "Kategori pengeluaran dan pemasukan, rekeningmu, dan CSV semuanya.",
   "Export CSV": "Ekspor CSV",
   "Signed in as": "Masuk sebagai",
   "Change password": "Ganti kata sandi",

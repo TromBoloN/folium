@@ -83,10 +83,18 @@ async function HeroAndAccounts() {
       balanceSeries(a.id, a.balance, recent, { days: SPARK_DAYS, timeZone: preferences.timeZone, now }),
     ]),
   );
-  return <AccountCards accounts={accounts} series={series} safe={stats.safe} />;
+  return (
+    <AccountCards
+      accounts={accounts}
+      series={series}
+      safe={stats.safe}
+      firstNegative={stats.firstNegative}
+      today={today}
+    />
+  );
 }
 
-/** Bills due soon/overdue and budgets with activity; renders nothing when both are quiet. */
+/** Bills due soon/overdue and budgets near or over limit; renders nothing when healthy. */
 async function NeedsAttention() {
   await requireUser();
   await ensureFinanceDefaults();
@@ -98,13 +106,14 @@ async function NeedsAttention() {
     bills.map((b) => ({ ...b, dueOn: b.dueOn ?? b.occurredOn })),
     today,
   );
+  const watchBudgets = budgets.items.filter((b) => b.state !== "ok");
   const hasBills = overdue.length + soon.length > 0;
-  const hasBudgets = budgets.items.length > 0;
+  const hasBudgets = watchBudgets.length > 0;
   if (!hasBills && !hasBudgets) return null;
   return (
     <div className={hasBills && hasBudgets ? "grid gap-6 lg:grid-cols-2" : "flex flex-col gap-6"}>
       {hasBills ? <UpcomingBillsCard overdue={overdue} soon={soon} today={today} categories={categories} /> : null}
-      {hasBudgets ? <BudgetWatchCard items={budgets.items} month={month} /> : null}
+      {hasBudgets ? <BudgetWatchCard items={watchBudgets} month={month} /> : null}
     </div>
   );
 }

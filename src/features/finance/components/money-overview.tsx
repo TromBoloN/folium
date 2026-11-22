@@ -1,9 +1,9 @@
-import { ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
+import { AlertTriangle, ChevronLeft, ChevronRight, Plus, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Tile } from "@/components/ui/tile";
-import type { T } from "@/lib/i18n/core";
-import { getT } from "@/lib/i18n/server";
+import { formatDate } from "@/lib/dates";
+import { getI18n, getT } from "@/lib/i18n/server";
 import { cn } from "@/lib/utils";
 import type { SeriesPoint } from "../lib/balance-series";
 import { formatIdr } from "../lib/format-idr";
@@ -14,7 +14,7 @@ import { AccountBalanceInline } from "./account-balance-inline";
 import { MoneyCountUp } from "./money-count-up";
 import { accountGlyph, IconBadge } from "./money-icon";
 
-/** A tiny line of day-end balances. Decorative: the card says the change in words. */
+/** A tiny line of day-end balances. Decorative. */
 function Sparkline({ points }: { points: SeriesPoint[] }) {
   if (points.length < 2) return null;
   const values = points.map((p) => Number(p.balance));
@@ -28,7 +28,6 @@ function Sparkline({ points }: { points: SeriesPoint[] }) {
   ]);
   const line = xy.map(([x, y], i) => `${i ? "L" : "M"}${x.toFixed(1)} ${y.toFixed(1)}`).join(" ");
   if (max === min) {
-    // No change: a faint dashed baseline instead of a filled band.
     return (
       <svg
         aria-hidden
@@ -69,23 +68,21 @@ function Sparkline({ points }: { points: SeriesPoint[] }) {
   );
 }
 
-function changeText(change: bigint, t: T) {
-  if (change === 0n) return t("No change this week");
-  const amount = formatIdr(change > 0n ? change : -change);
-  return change > 0n ? t("Up {amount} this week", { amount }) : t("Down {amount} this week", { amount });
-}
-
-/** The calm Hero (total, safe-to-spend/day, Sync, Add) and account cards with 7-day sparklines and inline set-balance. */
+/** Hero (Total + Safe-to-Spend/day + Sync/Add) and Account cards (name, inline balance, sparkline). */
 export async function AccountCards({
   accounts,
   series,
   safe,
+  firstNegative,
+  today,
 }: {
   accounts: Account[];
   series: Record<string, SeriesPoint[]>;
   safe?: SafeToSpend;
+  firstNegative?: string | null;
+  today?: string;
 }) {
-  const t = await getT();
+  const { t, intl } = await getI18n();
   const active = accounts.filter((a) => !a.archived);
   const total = active.reduce((sum, a) => sum + a.balance, 0n);
   return (
@@ -93,7 +90,7 @@ export async function AccountCards({
       <div className="tile reveal flex flex-col gap-3 p-4 sm:flex-row sm:items-end sm:justify-between sm:p-5">
         <div className="flex flex-col gap-1.5">
           <h2 id="accounts-h" className="text-muted-foreground text-xs">
-            {t("Total across accounts")}
+            {t("Total")}
           </h2>
           <p
             data-slot="amount-total"
@@ -109,14 +106,23 @@ export async function AccountCards({
               {safe.perDay !== null ? (
                 <>
                   <span className="font-medium text-foreground">{formatIdr(safe.perDay)}</span>
-                  {t(" a day · {days}d", { days: safe.days })}
+                  {t("/day · {days}d", { days: safe.days })}
                 </>
               ) : (
                 <span className="font-medium text-money-out">
                   {t("Over by {amount}", { amount: formatIdr(safe.over ?? 0n) })}
                 </span>
               )}
-              {safe.outflows > 0n ? <> · {t("{amount} bills", { amount: formatIdr(safe.outflows) })}</> : null}
+            </p>
+          ) : null}
+          {firstNegative ? (
+            <p role="note" className="flex items-center gap-1.5 font-medium text-money-out text-xs">
+              <AlertTriangle aria-hidden className="size-3.5 shrink-0" />
+              {firstNegative === today
+                ? t("Planned bills already take you below zero.")
+                : t("Below zero on {date} if nothing changes.", {
+                    date: formatDate(firstNegative, { weekday: "short", day: "numeric", month: "short" }, intl),
+                  })}
             </p>
           ) : null}
         </div>
@@ -145,7 +151,6 @@ export async function AccountCards({
       <ul className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {active.map((a, i) => {
           const points = series[a.id] ?? [];
-          const change = points.length > 1 ? points[points.length - 1].balance - points[0].balance : 0n;
           const negative = a.balance < 0n;
           return (
             <li key={a.id}>
@@ -165,7 +170,7 @@ export async function AccountCards({
                 >
                   <IconBadge icon={accountGlyph(a)} color={a.color} size="sm" />
                   <span className="truncate font-medium">{a.name}</span>
-                  {/* Preserves the card link's accessible name without nesting a button inside a link. */}
+                  {/* Keeps the card link's accessible name (type + balance) for screen readers and e2e. */}
                   <span className="sr-only">
                     {t(", {type}, balance {amount} ", {
                       type: t(ACCOUNT_TYPE_LABELS[a.type]),
@@ -181,7 +186,6 @@ export async function AccountCards({
                 />
                 {negative ? <span className="font-medium text-money-out text-xs">{t("Overdrawn")}</span> : null}
                 <Sparkline points={points} />
-                <span className="text-muted-foreground text-xs">{changeText(change, t)}</span>
               </Tile>
             </li>
           );

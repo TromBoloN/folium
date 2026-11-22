@@ -33,7 +33,7 @@ export default function TodayPage({ searchParams }: PageProps<"/">) {
           <Greeting />
         </Suspense>
         <Suspense>
-          <EditToggle searchParams={searchParams} />
+          <EditToggle searchParams={searchParams} className="hidden md:inline-flex" />
         </Suspense>
       </div>
       <Suspense
@@ -50,21 +50,37 @@ export default function TodayPage({ searchParams }: PageProps<"/">) {
       >
         <Dashboard searchParams={searchParams} />
       </Suspense>
+      <div className="flex justify-center md:hidden">
+        <Suspense>
+          <EditToggle searchParams={searchParams} />
+        </Suspense>
+      </div>
     </div>
   );
 }
 
-async function EditToggle({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
+async function EditToggle({ searchParams, className }: Pick<PageProps<"/">, "searchParams"> & { className?: string }) {
   const [{ edit }, t] = await Promise.all([searchParams, getT()]);
   if (edit === "1") return null;
   return (
-    <Button asChild variant="outline" size="sm">
+    <Button asChild variant="outline" size="sm" className={className}>
       <Link href="/?edit=1">
         <SlidersHorizontal aria-hidden />
         {t("Customize")}
       </Link>
     </Button>
   );
+}
+
+/** At most one banner at the top of Today, in strict priority order: Setup → Welcome back → Attendance. */
+async function TopBanner() {
+  const onboarding = await Onboarding();
+  if (onboarding) return <SectionErrorBoundary label="Setup checklist">{onboarding}</SectionErrorBoundary>;
+  const welcomeBack = await WelcomeBack();
+  if (welcomeBack) return <SectionErrorBoundary label="Welcome back">{welcomeBack}</SectionErrorBoundary>;
+  const attendance = await AttendancePrompt();
+  if (attendance) return <SectionErrorBoundary label="Attendance">{attendance}</SectionErrorBoundary>;
+  return null;
 }
 
 async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">) {
@@ -119,16 +135,8 @@ async function Dashboard({ searchParams }: Pick<PageProps<"/">, "searchParams">)
     // A container, so the bento adapts to the space beside the sidebar: 1 column, 2 from @xl, 12 from @4xl.
     // Dense flow lets small tiles fill gaps; items-start keeps tiles at their content height.
     <div className="@container flex flex-col gap-4">
-      {/* No Suspense of their own: they arrive with the grid instead of pushing it down later. */}
-      <SectionErrorBoundary label="Setup checklist">
-        <Onboarding />
-      </SectionErrorBoundary>
-      <SectionErrorBoundary label="Welcome back">
-        <WelcomeBack />
-      </SectionErrorBoundary>
-      <SectionErrorBoundary label="Attendance">
-        <AttendancePrompt />
-      </SectionErrorBoundary>
+      {/* At most one top banner: Setup → Welcome back → Attendance. */}
+      <TopBanner />
       <div className="grid grid-flow-row-dense grid-cols-1 items-start gap-4 @xl:grid-cols-2 @4xl:grid-cols-12">
         {ids.map((id, index) => {
           const widget = WIDGETS[id];

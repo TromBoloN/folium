@@ -50,7 +50,13 @@ Rendering and routing, app shell and navigation, the Today dashboard, theme and 
 
 **Status:** active.
 
-**Decision.** New and reset Today layouts (`LAYOUT_VERSION = 2`) show only `next-up`, `classes`, and `due-soon` by default (with a quiet `"N waiting →"` link inside `due-soon` so overdue tasks stay visible; existing v1 layouts stay unchanged). Overdue labels use neutral `Waiting` copy instead of alarming red; `Due today` stays amber (`warning`) and red (`danger`) is reserved for timed tasks due within 3 hours. Money Overview drops to 4 zones (Hero + Safe-to-Spend + Sync/Add, Accounts with inline set-balance, conditional Needs attention, Recent) while month-by-month In/Out and category share bars merge into existing cards on `/money/reports`.
+**Decision.** Apply four UI density rules across every overview screen:
+1. **Say nothing when things are fine.** On overview screens, hide a block instead of announcing that it is empty or healthy ("Nothing due in the next 7 days", "never below zero", healthy budgets). Empty states stay only on dedicated pages like `/tasks`.
+2. **Show each thing once per screen.** On Today, at most one top banner renders (Setup → Welcome back → Attendance), Next-up shows only the next class (falling back to `"Done for today"` instead of repeating `Due soon`), Classes shows today's rest and Tomorrow only when today has no classes.
+3. **Numbers over sentences.** At most one muted line under any block (e.g. `Rp 45.000/day · 14d` with a warning only when negative); drop obvious page and card subtitles across School and Settings.
+4. **Details are one tap deeper.** Course cards keep name, next meeting, and `Meeting 7/14` (SKS, meeting days, and campus stay on `/courses/[id]`); account cards keep name, inline balance, and sparkline.
+
+New and reset Today layouts (`LAYOUT_VERSION = 2`) show only `next-up`, `classes`, and `due-soon` by default (with a quiet `"N waiting →"` link inside `due-soon` so overdue tasks stay visible; existing v1 layouts stay unchanged). Overdue labels use neutral `Waiting` copy instead of alarming red; `Due today` stays amber (`warning`) and red (`danger`) is reserved for timed tasks due within 3 hours. Money Overview drops to 4 blocks (Total + Safe-to-Spend + Sync/Add, Accounts with inline set-balance, conditional Needs attention showing only due bills and warn/over budgets, Recent) while month-by-month In/Out and category share bars merge into existing cards on `/money/reports`.
 
 **Why.** After a few days away, opening a wall of 7 Money cards, 9 Today widgets, and red overdue badges discourages daily use. Cutting default volume and replacing alarm colours with neutral catch-up links keeps everyday screens calm while preserving every power view one tap away.
 
